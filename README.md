@@ -1,5 +1,10 @@
-# Final Year Project
+﻿# Final Year Project — Audio Classification
 
-This repository has been created to store your final year project.
+This repo follows the department’s required layout. See diary.md for progress.
 
-You may edit it as you like, but please do not remove the default topics or the project members list. These need to stay as currently defined in order for your supervisor to be able to find your project.
+## Structure
+- diary.md — running log (reverse chronological)
+- product/ — code
+- documents/ — reports
+- .gitignore — ignores datasets, IDE/build artefacts
+- .gitlab-ci.yml — simple Python CI (optional)
