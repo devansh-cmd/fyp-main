@@ -10,6 +10,22 @@ Covered:
   - Concept of transfer learning using pre-trained CNNs **(e.g., ResNet-50) for ESC-50.**
   - Audio workflow: waveform → Mel-spectrogram → CNN for sound classification.
 
+## 2025-10-20 — Dataset verification + documentation
+- Successfully verified the ESC-50 dataset integrity.
+  - 2000 metadata entries matched with 2000 .wav files.
+- Verified metadata structure (esc50.csv) and directory consistency.
+- Added a short verification notebook (00_dataset_check.ipynb) and logged results in dataset_check.txt.
+- Created /documents/references/librosa_docs.md summarising all Librosa functions used in preprocessing.
+-Structured commits to mark milestone (Verified ESC-50 dataset, Add Librosa documentation summary).
+-Repository now fully aligned for Week 2 tasks (waveform visualization, spectrogram generation, augmentation).
+
+## 2025-10-15 — Research: Librosa & preprocessing fundamentals
+- Explored the Librosa library in detail for audio preprocessing tasks.
+- Understood how to load audio, inspect sampling rates, and visualise waveforms.
+- Studied Mel-spectrogram and Log-Mel conversion pipeline.
+- Reviewed augmentation methods: noise injection, pitch shift, and time stretch.
+- Compiled notes into librosa_docs.md covering relevant API calls and examples.
+
 ## 2025-10-03 — Kickoff + scope confirmation
 - Met with Li Zhang; agreed starting point:
   - Dataset: **ESC-50**, later extend to real-world (e.g., medical) audio.
