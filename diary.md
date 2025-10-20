@@ -1,15 +1,5 @@
 ﻿# Project Diary (reverse chronological)
 
-## 2025-10-08 — Research: neural + audio foundations
-
--Focused on understanding CNNs and their application to audio.
-Covered:
-  - How neurons and activation functions enable non-linear learning.
-  - How stacked layers form deep networks capable of complex pattern recognition.
-  - CNN structure: convolution, pooling, and dense layers for feature extraction and classification.
-  - Concept of transfer learning using pre-trained CNNs **(e.g., ResNet-50) for ESC-50.**
-  - Audio workflow: waveform → Mel-spectrogram → CNN for sound classification.
-
 ## 2025-10-20 — Dataset verification + documentation
 - Successfully verified the ESC-50 dataset integrity.
   - 2000 metadata entries matched with 2000 .wav files.
@@ -25,6 +15,17 @@ Covered:
 - Studied Mel-spectrogram and Log-Mel conversion pipeline.
 - Reviewed augmentation methods: noise injection, pitch shift, and time stretch.
 - Compiled notes into librosa_docs.md covering relevant API calls and examples.
+
+## 2025-10-08 — Research: neural + audio foundations
+
+-Focused on understanding CNNs and their application to audio.
+Covered:
+  - How neurons and activation functions enable non-linear learning.
+  - How stacked layers form deep networks capable of complex pattern recognition.
+  - CNN structure: convolution, pooling, and dense layers for feature extraction and classification.
+  - Concept of transfer learning using pre-trained CNNs **(e.g., ResNet-50) for ESC-50.**
+  - Audio workflow: waveform → Mel-spectrogram → CNN for sound classification.
+
 
 ## 2025-10-03 — Kickoff + scope confirmation
 - Met with Li Zhang; agreed starting point:
