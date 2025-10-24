@@ -21,6 +21,8 @@ build/
 *.log
 
 # Data & models (keep large files out of Git)
+
+product/audio_preprocessing/data/ESC-50/
 data/
 datasets/
 checkpoints/
