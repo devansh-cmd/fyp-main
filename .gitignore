@@ -21,7 +21,8 @@ build/
 *.log
 
 # Data & models (keep large files out of Git)
-
+product/audio_preprocessing/outputs/spectrograms/*.png
+product/audio_preprocessing/notebooks/example_waveforms.png
 product/audio_preprocessing/data/ESC-50/
 data/
 datasets/
