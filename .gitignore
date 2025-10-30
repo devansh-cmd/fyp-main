@@ -8,6 +8,7 @@ __pycache__/
 
 # Python envs
 .venv/
+.venv312/
 venv/
 env/
 *.egg-info/
@@ -25,7 +26,6 @@ product/audio_preprocessing/outputs/spectrograms/*.png
 product/audio_preprocessing/notebooks/example_waveforms.png
 product/audio_preprocessing/data/ESC-50/
 data/
-datasets/
 checkpoints/
 runs/
 *.pt
@@ -33,3 +33,7 @@ runs/
 *.onnx
 *.h5
 *.ckpt
+# --- allow source-code subpackages under product/ ---
+!product/datasets/
+!product/models/
+!product/training/
