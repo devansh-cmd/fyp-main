@@ -4,7 +4,7 @@ import torch
 from torch.utils.data import DataLoader
 import torch.nn as nn
 import torch.optim as optim
-
+from torch.utils.tensorboard import SummaryWriter
 from product.datasets.esc50_png_dataset import ESC50PNGDataset
 from product.models.baseline_cnn import BaselineCNN
 import pandas as pd
@@ -18,6 +18,7 @@ def parse_args():
     ap.add_argument("--epochs", type=int, default=1)   # ← run 1 epoch
     ap.add_argument("--lr", type=float, default=1e-3)
     ap.add_argument("--augment_png", action="store_true")
+    ap.add_argument("--logdir", type=str, default="runs\\baseline")
     return ap.parse_args()
 
 def accuracy(logits, targets):
@@ -47,7 +48,8 @@ def main():
     model = BaselineCNN(num_classes=len(train_ds.classes)).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
-
+    run_name = time.strftime("%Y%m%d-%H%M%S")
+    writer = SummaryWriter(str(Path(args.logdir) / run_name))
     # ---- 1 epoch training loop ----
     history = {"train_loss": [], "train_acc": [], "val_loss": [], "val_acc": []}
     for epoch in range(args.epochs):
@@ -83,6 +85,11 @@ def main():
         history["train_acc"].append(train_acc)
         history["val_loss"].append(val_loss)
         history["val_acc"].append(val_acc)
+        writer.add_scalar("loss/train", train_loss, epoch)
+        writer.add_scalar("loss/val",   val_loss,   epoch)
+        writer.add_scalar("acc/train",  train_acc,  epoch)
+        writer.add_scalar("acc/val",    val_acc,    epoch)
+        writer.flush()
         print(f"Epoch {epoch+1}/{args.epochs} | train {train_loss:.4f}/{train_acc:.3f} | val {val_loss:.4f}/{val_acc:.3f}")
 
     # save checkpoint + metrics
@@ -95,6 +102,6 @@ def main():
 
     print(f"Saved: {ckpt_path}")
     print("Done.")
-
+    writer.close()
 if __name__ == "__main__":
     main()
