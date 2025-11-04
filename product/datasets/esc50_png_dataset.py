@@ -30,7 +30,6 @@ class ESC50PNGDataset(Dataset):
         self.augment = augment
         self.aug = T.RandomApply(
             [
-                T.RandomHorizontalFlip(p=0.5),
                 T.RandomAffine(degrees=5, translate=(0.02, 0.02)),
             ],
             p=0.5,

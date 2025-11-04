@@ -19,6 +19,11 @@ def parse_args():
     ap.add_argument("--lr", type=float, default=1e-3)
     ap.add_argument("--augment_png", action="store_true")
     ap.add_argument("--logdir", type=str, default="runs\\baseline")
+    # parse_args(): add
+    ap.add_argument("--limit", type=int, default=0, help="limit train/val samples for quick runs")
+    ap.add_argument("--tiny_overfit", type=int, default=0, help="train on N samples and use the same for val")
+    ap.add_argument("--weight_decay", type=float, default=1e-2)
+    ap.add_argument("--run_name", type=str, default="")
     return ap.parse_args()
 
 def accuracy(logits, targets):
@@ -39,15 +44,19 @@ def main():
     val_csv = split_dir / "val.csv"
 
     train_ds = ESC50PNGDataset(spec_dir, esc50_csv, train_csv, img_size=args.img_size, normalize=True, augment=args.augment_png)
-    val_ds   = ESC50PNGDataset(spec_dir, esc50_csv, val_csv,   img_size=args.img_size, normalize=True, augment=False)
-
+    if args.tiny_overfit:
+        val_ds= train_ds
+    else:
+        val_ds   = ESC50PNGDataset(spec_dir, esc50_csv, val_csv,   img_size=args.img_size, normalize=True, augment=False)
     train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=args.workers, pin_memory=True)
+    x_dbg, y_dbg = next(iter(train_loader))
+    print("DEBUG batch:", x_dbg.shape, y_dbg.shape, "min/max", float(x_dbg.min()), float(x_dbg.max()))
     val_loader   = DataLoader(val_ds,   batch_size=args.batch_size, shuffle=False, num_workers=args.workers, pin_memory=True)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = BaselineCNN(num_classes=len(train_ds.classes)).to(device)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     run_name = time.strftime("%Y%m%d-%H%M%S")
     writer = SummaryWriter(str(Path(args.logdir) / run_name))
     # ---- 1 epoch training loop ----

@@ -1,4 +1,26 @@
 ﻿# Project Diary (reverse chronological)
+## 2025-11-04 — Hyperparameter Sweep & Baseline Validation
+- 2025-11-04 — Hyperparameter Sweep & Baseline Validation (Week 3 Milestone)
+- Completed systematic learning-rate / batch-size sweep to stabilise the baseline CNN.
+- Conducted five 5-epoch runs on the augmented ESC-50 subset (runs/sweep).
+- Best configuration: **lr = 5 × 10⁻⁴, batch = 32.**
+- Lower LR (1e-4) under-fit; higher LR (1e-3) caused mild validation oscillation.
+- Batch 64 showed slower generalisation.
+- Confirmed smooth convergence: loss ↓ 3.38 → 1.50, val acc ↑ 9 → 53 %.
+- Verified checkpoint saving (**baseline_cnn_e5.pt**)
+- Insight → **ESC-50 CNN learns reliably with modest regularisation; augmentation effective.**
+## 2025-11-02 — TensorBoard Integration and Stable Training Loop
+- **Added TensorBoard logging** for loss/accuracy tracking per epoch.
+- Timestamped runs stored under product/artifacts/runs.
+- Implemented model checkpoint saving after each training cycle.
+- Rewrote training loop with **AdamW optimizer + gradient stability fixes**.
+- Result → clean, monitorable training pipeline foundation for all future models (AlexNet, ResNet-50).
+
+## 2025-10-30 — Baseline CNN Implementation
+- Completed first functional CNN pipeline (spilt → dataset → model → train).
+- Verified shape integrity ([B, 3, 224, 224] → [B, 50]).
+- Conducted dummy dataset run to confirm end-to-end flow.
+- Logged commit “feat: baseline CNN pipeline (splits > dataset > model > train loop)”.
 
 ### Week 2 Reflection
 - **Key learning:** Transitioning from theory (Librosa basics) to a functioning pipeline revealed the importance of environment isolation and reproducible data paths. Migrating to `.venv` removed unexpected dependency conflicts and clarified version control.  
