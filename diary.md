@@ -101,7 +101,7 @@
 - Understood how to load audio, inspect sampling rates, and visualise waveforms.
 - Studied Mel-spectrogram and Log-Mel conversion pipeline.
 - Reviewed augmentation methods: noise injection, pitch shift, and time stretch.
-- Compiled notes into librosa_docs.md covering relevant API calls and examples.
+- Compiled notes into librosa_docs.md covering examples.
 
 ## 2025-10-08 — Research: neural + audio foundations
 
@@ -120,7 +120,7 @@ Covered:
   - Models: **CNN on spectrograms** → **ResNet-50 / AlexNet** with transfer learning; explore **attention**.
   - Metrics: **Accuracy, AUC, Confusion Matrix** (scikit-learn).
   - Language/tooling: **Python** (librosa, PyTorch/TensorFlow, sklearn).
-- Action items:
+- Action items: 
   - Set up repo per RHUL rules (diary at root, product/, documents/, .gitignore).
   - Prepare spectrogram pipeline stub and EDA notebook.
   - Read up: ESC-50 docs, spectrogram basics, ResNet-50 for audio.
