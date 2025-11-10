@@ -1,4 +1,6 @@
-﻿# OS / IDE
+﻿# ------------------------------
+# OS / IDE
+# ------------------------------
 .DS_Store
 Thumbs.db
 __pycache__/
@@ -6,30 +8,72 @@ __pycache__/
 .vscode/
 .idea/
 
-# Python envs
+# ------------------------------
+# Python virtual environments
+# ------------------------------
 .venv/
+.venv312/
 venv/
 env/
 *.egg-info/
 
+# ------------------------------
 # Jupyter
+# ------------------------------
 .ipynb_checkpoints/
 
+# ------------------------------
 # Build / artifacts
+# ------------------------------
 dist/
 build/
 *.log
 
-# Data & models (keep large files out of Git)
+# ------------------------------
+# Data & model outputs
+# ------------------------------
+# Keep data & heavy artifacts out of Git
 product/audio_preprocessing/outputs/spectrograms/*.png
 product/audio_preprocessing/notebooks/example_waveforms.png
 product/audio_preprocessing/data/ESC-50/
 data/
-datasets/
 checkpoints/
-runs/
+outputs/
+*.png
 *.pt
 *.pth
 *.onnx
 *.h5
 *.ckpt
+
+# ------------------------------
+# TensorBoard event logs
+# ------------------------------
+product/artifacts/runs/**/events.out.tfevents*
+product/artifacts/runs/**/*/tfevents*
+product/artifacts/runs/**/wandb/
+
+# ------------------------------
+# Local run folders 
+# ------------------------------
+runs/
+!product/artifacts/runs/**/*.json
+!product/artifacts/runs/graphs/
+!product/artifacts/runs/graphs/*.ipynb
+
+# ------------------------------
+# Source code exceptions
+# ------------------------------
+!product/datasets/
+!product/models/
+!product/training/
+!product/audio_preprocessing/
+!product/utils/
+!product/configs/
+
+# ------------------------------
+# Misc
+# ------------------------------
+*.bak
+*.tmp
+*.swp

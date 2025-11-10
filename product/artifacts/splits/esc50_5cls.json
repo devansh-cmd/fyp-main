@@ -1,0 +1,6 @@
+python product/datasets/make_split.py \
+  --spec-dir product/audio_preprocessing/outputs/spectrograms \
+  --meta-csv product/audio_preprocessing/data/ESC-50/meta/esc50.csv \
+  --classes "dog,chainsaw,rain,clock_tick,crying_baby" \
+  --val-ratio 0.2 \
+  --out splits/esc50_5cls.json
