@@ -54,7 +54,7 @@ product/artifacts/runs/**/*/tfevents*
 product/artifacts/runs/**/wandb/
 
 # ------------------------------
-# Local run folders (but keep JSON + notebooks)
+# Local run folders 
 # ------------------------------
 runs/
 !product/artifacts/runs/**/*.json
