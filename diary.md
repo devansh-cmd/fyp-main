@@ -1,4 +1,49 @@
 ﻿# Project Diary (reverse chronological)
+
+## 2025-11-12 — Data Leakage Discovery & AlexNet Transfer-Learning Setup
+- Implemented **AlexNet transfer-learning baseline** (T1 run) on clean ESC-50 splits.
+- Conducted leakage audit to verify dataset integrity before training.
+
+**Next Steps:**
+
+- Proceed with AlexNet T1 transfer-learning run using clean splits.
+- Compare metrics vs baseline CNN and prepare confusion-matrix visualisations.
+Once AlexNet is stable, **begin ResNet-50 transfer-learning for cross-architecture comparison.**
+
+## 2025-11-12
+**Issue Discovered:**
+
+While preparing the transfer learning phase for AlexNet, I ran a leakage audit script to verify the integrity of my training and validation splits.
+The results were alarming — 1,171 overlapping clip IDs were found between train.csv and val.csv. **This meant that augmented versions of the same original clip (e.g., _orig, _noisy, _pitchUp, _stretch) were appearing in both splits.**
+
+In other words, my baseline CNN had been trained and validated on overlapping data.
+That explains the unusually high validation accuracy — the model wasn’t truly generalising; **it was effectively seeing the same sounds twice, just slightly modified.**
+
+- Root Cause Analysis:
+The original make_split.py script stratified the data per spectrogram image, not per unique clip ID.
+Since I had generated multiple spectrograms for each audio clip (to increase training diversity), the script unknowingly distributed these variants across both train and val sets.
+
+This violated a core rule of machine learning experimentation:
+
+**No derivative of a training sample should ever appear in validation.** 
+
+**Fix Implemented:**
+- Re-wrote make_split.py to group by unique clip_id before stratified splitting.
+- Regenerated clean train.csv and val.csv.
+- Re-trained baseline CNN and logged new metrics.
+
+## 2025-11-10 — Baseline Integration & Refinements
+
+- Merged validated baseline CNN training branch into main (merge: integrate ESC-50 baseline CNN training).
+- Added final run logs and confusion matrices under product/artifacts/runs.
+- Extended .gitignore to exclude redundant generated files and experimental artifacts.
+- Baseline CNN 20-epoch run results (lr = 5e-4, wd = 1e-2, bs = 32):
+- Train loss: ↓ 3.2 → 1.0 | Val loss: ≈ 1.9 → 1.6
+- Accuracy: ↑ to ~60 % (train) / 38–42 % (val)
+- TensorBoard logs confirmed stable convergence, reproducible runs, and correct seed handling.
+
+- Insight: Baseline now ready to serve as benchmark for upcoming transfer-learning models (AlexNet, ResNet-50).
+
 ## 2025-11-04 — Hyperparameter Sweep & Baseline Validation
 - 2025-11-04 — Hyperparameter Sweep & Baseline Validation (Week 3 Milestone)
 - Completed systematic learning-rate / batch-size sweep to stabilise the baseline CNN.
