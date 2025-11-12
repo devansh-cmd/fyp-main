@@ -1,84 +1,78 @@
-﻿image: python:3.12-slim
+﻿# .gitlab-ci.yml
+image: python:3.12-slim
 
-stages: [setup, lint, test, audit, package]
+stages:
+  - setup
+  - lint
+  - test
+  - audit
+  - package
 
-# Create pipelines only for these events; otherwise don't create a pipeline at all.
+# Always create a pipeline when code is pushed or MR is created
 workflow:
   rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - when: never
 
 variables:
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
 
 cache:
-  key: "$CI_COMMIT_REF_SLUG"
   paths:
     - .cache/pip
-
-.before_install: &before_install
-  - python -V
-  - pip install -U pip
-  - pip install -r requirements.txt
-  - pip install ruff black mypy pytest pytest-cov
 
 setup:
   stage: setup
   script:
-    - *before_install
+    - python --version
+    - pip install -U pip
+    - pip install -r requirements.txt
+    - pip install ruff black mypy pytest pytest-cov
   artifacts:
-    when: always
-    paths: [ ".cache/pip" ]
+    paths:
+      - .cache/pip
     expire_in: 1 week
 
 lint:
   stage: lint
-  needs: ["setup"]
   script:
     - ruff check .
     - black --check .
-    - mypy product || true   # keep non-blocking until types are clean
+    - mypy product || true
 
 test:
   stage: test
-  needs: ["setup"]
   script:
-    - pytest -q --maxfail=1 --disable-warnings --cov=product --cov-report=term-missing
+    - pytest -q --disable-warnings --maxfail=1
 
-data_audit:
+audit:
   stage: audit
-  needs: ["setup"]
   script:
-    - python - << 'PY'
+    - python - <<'PY'
 from pathlib import Path
 import pandas as pd, re, sys
 def clip_id(p):
-    b = Path(p).stem
-    b = re.sub(r"_(orig|noisy|pitchUp\\d+|stretch\\d+\\.\\d+)$", "", b)
-    return b
+    name = Path(p).stem
+    return re.sub(r'_(orig|noisy|pitchUp\d+|stretch\d+\.\d+)$', '', name)
 train = pd.read_csv("product/artifacts/splits/clean_train.csv")
-val   = pd.read_csv("product/artifacts/splits/clean_val.csv")
+val = pd.read_csv("product/artifacts/splits/clean_val.csv")
 ti, vi = set(train["filepath"].map(clip_id)), set(val["filepath"].map(clip_id))
 overlap = ti & vi
-print(f"overlap_ids={len(overlap)}")
+print(f"Overlap IDs: {len(overlap)}")
 sys.exit(1 if overlap else 0)
 PY
 
-package_artifacts:
+package:
   stage: package
-  needs: ["test", "data_audit"]
   script:
     - python -m product.training.train_baseline --project_root . \
         --epochs 1 --batch_size 8 --img_size 224 \
         --lr 5e-4 --weight_decay 1e-2 \
         --train_csv product/artifacts/splits/mini_train.csv \
-        --val_csv   product/artifacts/splits/mini_val.csv \
+        --val_csv product/artifacts/splits/mini_val.csv \
         --logdir ci_runs
   artifacts:
-    when: always
     paths:
       - ci_runs/
       - product/artifacts/runs/**/metrics*.json
