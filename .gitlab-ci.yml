@@ -1,11 +1,80 @@
-﻿stages: [lint]
+﻿image: python:3.12-slim
+
+stages: [setup, lint, test, audit, package]
+
+variables:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+cache:
+  key: "$CI_COMMIT_REF_SLUG"
+  paths:
+    - .cache/pip
+
+.before_install: &before_install
+  - python -V
+  - pip install -U pip
+  - pip install -r requirements.txt
+  # Tools for CI-only checks
+  - pip install ruff black mypy pytest pytest-cov
+
+setup:
+  stage: setup
+  script:
+    - *before_install
+  rules: [ { if: '$CI_PIPELINE_SOURCE == "push"' } ]
+  artifacts:
+    when: always
+    paths: [ ".cache/pip" ]
+    expire_in: 1 week
 
 lint:
-  image: python:3.11-slim
   stage: lint
-  before_script:
-    - pip install --quiet ruff==0.6.8
+  needs: ["setup"]
   script:
-    - ruff ./product || true  # non-blocking lint for now
-  rules:
-    - when: always
+    - ruff check .
+    - black --check .
+    - mypy product || true  # keep non-blocking if types aren’t perfect yet
+  rules: [ { if: '$CI_PIPELINE_SOURCE == "push"' } ]
+
+test:
+  stage: test
+  needs: ["setup"]
+  script:
+    - pytest -q --maxfail=1 --disable-warnings --cov=product --cov-report=term-missing
+  rules: [ { if: '$CI_PIPELINE_SOURCE == "push"' } ]
+
+data_audit:
+  stage: audit
+  needs: ["setup"]
+  script:
+    # Fail if any clip_id appears in both splits
+    - python - << 'PY'
+from pathlib import Path
+import pandas as pd, re, sys
+def clip_id(p): 
+    b = Path(p).stem
+    b = re.sub(r"_(orig|noisy|pitchUp\\d+|stretch\\d+\\.\\d+)$", "", b)
+    return b
+train = pd.read_csv("product/artifacts/splits/clean_train.csv")
+val   = pd.read_csv("product/artifacts/splits/clean_val.csv")
+ti, vi = set(train["filepath"].map(clip_id)), set(val["filepath"].map(clip_id))
+overlap = ti & vi
+print(f"overlap_ids={len(overlap)}")
+sys.exit(1 if overlap else 0)
+PY
+  rules: [ { if: '$CI_PIPELINE_SOURCE == "push"' } ]
+
+package_artifacts:
+  stage: package
+  needs: ["test", "data_audit"]
+  script:
+    # Run a CPU-only smoke train on a tiny subset to ensure codepaths work
+    - python -m product.training.train_baseline --project_root . --epochs 1 --batch_size 8 --img_size 224 --lr 5e-4 --weight_decay 1e-2 --train_csv product/artifacts/splits/mini_train.csv --val_csv product/artifacts/splits/mini_val.csv --logdir ci_runs
+  rules: [ { if: '$CI_PIPELINE_SOURCE == "push"' } ]
+  artifacts:
+    when: always
+    paths:
+      - ci_runs/
+      - product/artifacts/runs/**/metrics*.json
+      - product/artifacts/runs/**/confusion*.png
+    expire_in: 1 week
