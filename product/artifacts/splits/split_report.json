@@ -1,0 +1,9 @@
+{
+  "train_png_count": 6401,
+  "val_png_count": 1600,
+  "train_clip_count": 1600,
+  "val_clip_count": 400,
+  "train_class_count": 50,
+  "val_class_count": 50,
+  "overlap_clips": 0
+}
