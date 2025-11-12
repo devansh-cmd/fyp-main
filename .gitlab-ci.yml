@@ -2,9 +2,18 @@
 
 stages: [setup, lint, test, audit, package]
 
+# Create pipelines only for these events; otherwise don't create a pipeline at all.
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - when: never
+
 variables:
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
 cache:
   key: "$CI_COMMIT_REF_SLUG"
   paths:
@@ -14,14 +23,12 @@ cache:
   - python -V
   - pip install -U pip
   - pip install -r requirements.txt
-  # Tools for CI-only checks
   - pip install ruff black mypy pytest pytest-cov
 
 setup:
   stage: setup
   script:
     - *before_install
-  rules: [ { if: '$CI_PIPELINE_SOURCE == "push"' } ]
   artifacts:
     when: always
     paths: [ ".cache/pip" ]
@@ -33,25 +40,22 @@ lint:
   script:
     - ruff check .
     - black --check .
-    - mypy product || true  # keep non-blocking if types aren’t perfect yet
-  rules: [ { if: '$CI_PIPELINE_SOURCE == "push"' } ]
+    - mypy product || true   # keep non-blocking until types are clean
 
 test:
   stage: test
   needs: ["setup"]
   script:
     - pytest -q --maxfail=1 --disable-warnings --cov=product --cov-report=term-missing
-  rules: [ { if: '$CI_PIPELINE_SOURCE == "push"' } ]
 
 data_audit:
   stage: audit
   needs: ["setup"]
   script:
-    # Fail if any clip_id appears in both splits
     - python - << 'PY'
 from pathlib import Path
 import pandas as pd, re, sys
-def clip_id(p): 
+def clip_id(p):
     b = Path(p).stem
     b = re.sub(r"_(orig|noisy|pitchUp\\d+|stretch\\d+\\.\\d+)$", "", b)
     return b
@@ -62,15 +66,17 @@ overlap = ti & vi
 print(f"overlap_ids={len(overlap)}")
 sys.exit(1 if overlap else 0)
 PY
-  rules: [ { if: '$CI_PIPELINE_SOURCE == "push"' } ]
 
 package_artifacts:
   stage: package
   needs: ["test", "data_audit"]
   script:
-    # Run a CPU-only smoke train on a tiny subset to ensure codepaths work
-    - python -m product.training.train_baseline --project_root . --epochs 1 --batch_size 8 --img_size 224 --lr 5e-4 --weight_decay 1e-2 --train_csv product/artifacts/splits/mini_train.csv --val_csv product/artifacts/splits/mini_val.csv --logdir ci_runs
-  rules: [ { if: '$CI_PIPELINE_SOURCE == "push"' } ]
+    - python -m product.training.train_baseline --project_root . \
+        --epochs 1 --batch_size 8 --img_size 224 \
+        --lr 5e-4 --weight_decay 1e-2 \
+        --train_csv product/artifacts/splits/mini_train.csv \
+        --val_csv   product/artifacts/splits/mini_val.csv \
+        --logdir ci_runs
   artifacts:
     when: always
     paths:
