@@ -1,5 +1,25 @@
 ﻿# Project Diary (reverse chronological)
 
+## 2025-11-13
+**AlexNet Baseline (ESC-50, Clean Split) — Final Summary**
+- Learning rate: 2.5e-4
+- Weight decay: 1e-2
+- Batch size: 64
+- Epochs: 20
+- Seed: 42
+- Train/Val split: Non-leaky; all augmented variants grouped
+**Results:**
+- Peak Val Accuracy: ~72–73% (epoch 5–7)
+- Final Train Accuracy: ~99%
+- Final Val Accuracy: ~70% (overfitting evident)
+
+Best Val Loss: ~1.0
+
+**Confusion Matrix:** clean diagonal structure, no leakage patterns
+
+**Interpretation:**
+AlexNet learns ESC-50 quickly, overfits after epoch ~5, and reaches expected performance comparable to published baselines. This is now a valid baseline for comparison against ResNet-50, CBAM, SE, and EfficientNet.
+
 ## 2025-11-12 — Data Leakage Discovery & AlexNet Transfer-Learning Setup
 - Implemented **AlexNet transfer-learning baseline** (T1 run) on clean ESC-50 splits.
 - Conducted leakage audit to verify dataset integrity before training.
