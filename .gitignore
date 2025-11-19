@@ -39,7 +39,6 @@ product/audio_preprocessing/data/ESC-50/
 data/
 checkpoints/
 outputs/
-*.png
 *.pt
 *.pth
 *.onnx
@@ -54,10 +53,13 @@ product/artifacts/runs/**/*/tfevents*
 product/artifacts/runs/**/wandb/
 
 # ------------------------------
-# Local run folders 
+# Block PNGs everywhere except in runs (allow JSON/checkpoints in runs)
 # ------------------------------
-# Ignore ONLY .pngs inside runs (keep JSON, pt, ckpt)
+*.png
+!product/artifacts/runs/**/*.png
 product/artifacts/runs/**/*.png
+!product/artifacts/runs/**/confusion_matrix*.png
+
 # ------------------------------
 # Source code exceptions
 # ------------------------------
