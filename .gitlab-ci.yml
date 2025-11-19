@@ -13,23 +13,20 @@ stages:
 workflow:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push"'
-      when: always
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      when: always
 
 variables:
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
 
 cache:
- key: ${CI_COMMIT_REF_SLUG}
- paths:
+  key: ${CI_COMMIT_REF_SLUG}-v2  # CHANGED: v2 forces new cache
+  paths:
     - venv/
-    - .cache/pip
 
 setup:
   stage: setup
   script:
     - python --version
+    - rm -rf venv  # ADDED: force clean rebuild
     - python -m venv venv
     - source venv/bin/activate
     - pip install -U pip
@@ -46,7 +43,7 @@ lint:
   script:
     - source venv/bin/activate
     - ruff check . --exclude "*.ipynb"
-    - black --check .  --exclude "\.ipynb$"
+    - black --check . --exclude "\.ipynb$"
     - mypy product || true
 
 test:
@@ -96,4 +93,3 @@ package:
       - ci_runs/*.json
       - ci_runs/*.png
     expire_in: 1 week
-
