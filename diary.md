@@ -1,4 +1,58 @@
 ﻿# Project Diary (reverse chronological)
+# 2025-11-19 ResNet50 Baseline Training
+
+**Summary**
+Completed ResNet50 transfer learning baseline with 3 random seeds (42, 123, 999).
+
+**Results** 
+
+| Seed | Val Acc | Macro F1 | Notes |
+|------|---------|----------|-------|
+| 42   | 89.4%   | 0.892    | First run, consistent performance |
+| 123  | 89.3%   | 0.892    | Very consistent with seed 42 |
+| 999  | 90.9%   | 0.909    | Best performance, better on quiet sounds |
+| **Mean** | **89.9% ±0.7%** | **0.898** | Strong reproducibility |
+
+## Key Observations
+
+### Model Behavior
+- Fast convergence: 85%+ by epoch 8
+- Overfitting after epoch 18: 100% train acc, val plateaus at 89-90%
+- Val loss best around epoch 24-25, then slight increase
+- Early stopping at epoch 20-22 would be optimal
+
+### Per-Class Performance
+**Strong classes (>90% recall):**
+- Siren, toilet_flush, thunderstorm, dog, fireworks, chainsaw
+
+**Challenging classes:**
+- Seed 42/123: insects (30) at 46-59%, mouse_click (33) at 47%
+- Seed 999: door_wood_creaks (19), hen (29), laughing (32) at ~69%
+
+**Interesting finding:** Seed 999 performed significantly better on quiet/transient sounds (insects 93.8% vs 46% in other seeds). Shows importance of multiple seeds.
+
+## Technical Details
+- Model: ResNet50 pretrained on ImageNet, fine-tuned classifier
+- Optimizer: AdamW, lr=5e-4, weight_decay=1e-2
+- Batch size: 64, Image size: 224x224
+- Epochs: 30 (but could stop at 20)
+- Data: ESC-50 spectrograms with augmentations (orig, noisy, pitch, stretch)
+
+## Next Steps
+1. Implement attention mechanisms (CBAM, SE-Net)
+2. Run 40-50 epochs for attention models
+3. Add early stopping (patience=10)
+4. Consider increasing regularization (weight_decay=5e-2, more dropout)
+
+## Issues Fixed Today
+- CSV file had wrong paths (missing _orig, _noisy suffixes)
+- Regenerated splits with make_split.py
+- Fixed .gitignore to allow JSON/PT but block PNGs in runs folder
+
+## GitLab CI/CD
+- Finally got pipeline working after 18+ commits
+- Simple pipeline: just install deps and run tests
+- Excluded notebooks from linting (cells run out of order)
 
 ## 2025-11-13
 **AlexNet Baseline (ESC-50, Clean Split) — Final Summary**
