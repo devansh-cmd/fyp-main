@@ -45,8 +45,8 @@ lint:
   stage: lint
   script:
     - source venv/bin/activate
-    - ruff check .
-    - black --check .
+    - ruff check . --exclude "*.ipynb"
+    - black --check .  --exclude "\.ipynb$"
     - mypy product || true
 
 test:

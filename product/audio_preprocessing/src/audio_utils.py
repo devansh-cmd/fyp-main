@@ -87,9 +87,6 @@ def _mel_filterbank(
     if fmax is None:
         fmax = sr / 2
 
-    # FFT bin freqs from 0..Nyquist
-    fft_freqs = np.linspace(0, sr / 2, 1 + n_fft // 2)
-
     # mel-scaled points
     mels = np.linspace(_hz_to_mel(fmin), _hz_to_mel(fmax), n_mels + 2)
     hz_points = _mel_to_hz(mels)
