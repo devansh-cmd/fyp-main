@@ -26,7 +26,7 @@ setup:
   stage: setup
   script:
     - python --version
-    - rm -rf venv  # ADDED: force clean rebuild
+    - rm -rf venv 
     - python -m venv venv
     - source venv/bin/activate
     - pip install -U pip
@@ -42,6 +42,7 @@ lint:
   stage: lint
   script:
     - source venv/bin/activate
+    - pip install ruff black mypy || true  # ADDED: ensure dev tools are installed
     - ruff check . --exclude "*.ipynb"
     - black --check . --exclude "\.ipynb$"
     - mypy product || true
