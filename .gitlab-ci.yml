@@ -1,12 +1,10 @@
 ﻿image: python:3.12-slim
 
-workflow:
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "push"'
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-
 test:
   script:
     - pip install --break-system-packages torch torchvision --index-url https://download.pytorch.org/whl/cpu
     - pip install --break-system-packages -r requirements.txt
     - python -m pytest tests/ -v || echo "Tests done"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
