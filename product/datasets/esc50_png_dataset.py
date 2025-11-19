@@ -5,6 +5,7 @@ from torch.utils.data import Dataset
 import torch
 import torchvision.transforms as T
 
+
 class ESC50PNGDataset(Dataset):
     """
     ESC-50 dataset loader for PNG spectrogram images.
@@ -12,11 +13,19 @@ class ESC50PNGDataset(Dataset):
     Expects filenames like: 1-100032-A-0_orig.png, 1-100032-A-0_noisy.png, etc.
     """
 
-    def __init__(self, spec_dir, esc50_csv, split_csv, img_size=224, normalize=True, augment=False):
+    def __init__(
+        self,
+        spec_dir,
+        esc50_csv,
+        split_csv,
+        img_size=224,
+        normalize=True,
+        augment=False,
+    ):
         self.spec_dir = Path(spec_dir)
         self.df_meta = pd.read_csv(esc50_csv)
         self.df_split = pd.read_csv(split_csv)  # columns: filepath, label
-        self.classes = sorted(self.df_meta['category'].unique())
+        self.classes = sorted(self.df_meta["category"].unique())
         self.class_to_idx = {c: i for i, c in enumerate(self.classes)}
         self.idx_to_class = {i: c for c, i in self.class_to_idx.items()}
 
@@ -34,13 +43,12 @@ class ESC50PNGDataset(Dataset):
             ],
             p=0.5,
         )
-        
 
         # precompute sample list
         self.samples = []
         for _, r in self.df_split.iterrows():
-            p = Path(r['filepath'])
-            y = self.class_to_idx[r['label']]
+            p = Path(r["filepath"])
+            y = self.class_to_idx[r["label"]]
             self.samples.append((p, y))
 
     def __len__(self):
@@ -48,7 +56,7 @@ class ESC50PNGDataset(Dataset):
 
     def __getitem__(self, idx):
         p, y = self.samples[idx]
-        img = Image.open(p).convert('RGB')
+        img = Image.open(p).convert("RGB")
         if self.augment:
             img = self.aug(img)
         img = self.transform(img)

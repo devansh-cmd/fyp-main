@@ -1,6 +1,15 @@
-# product/training/train_baseline.py
-# Purpose: Train the BaselineCNN on PNG spectrograms listed in CSVs and log proper metrics/plots.
-# Notes: This version fixes plotting, logging, and summary issues;# CHANGED: comments for fixes.
+"""
+AlexNex Transfer Learning model for ESC-50 spectrogram classification.
+
+Phase 1:
+→ Linear probe: freeze backbone, only train classifier.
+
+Phase 2:
+→ Partial fine-tune: unfreeze last conv block and classifier.
+
+This script almost mirrors the baseline implementation in every way:
+Devansh Dev 12-11-2025
+"""
 
 import argparse
 import json
@@ -21,37 +30,28 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-
 from PIL import Image
 
-# baseline CNN
-from product.models.baseline_cnn import BaselineCNN
+from torchvision import models
 
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
 
 
-# -----------------------
-# Dataset (CSV-backed)
-# -----------------------
-class SpectrogramCSVDataset(Dataset):
-    """
-    CSV-backed image dataset with columns: filepath,label
-    """
+class SpectrogramCSVDataset(Dataset):  # dataset(same as baseline)
 
     def __init__(self, csv_path: str, label2id: dict, img_size: int = 224):
         self.df = pd.read_csv(csv_path)
         assert {"filepath", "label"}.issubset(
             self.df.columns
-        ), f"{csv_path} must have columns: filepath,label"
+        ), f"{csv_path} missing required columns!"
         self.label2id = label2id
         self.img_size = img_size
 
-        # verify files exist up-front for fail-fast
         missing = [p for p in self.df["filepath"] if not Path(p).exists()]
         if missing:
             raise FileNotFoundError(
-                f"{len(missing)} files missing; first few: {missing[:5]}"
+                f"{len(missing)} missing files (first 5): {missing[:5]}"
             )
 
     def __len__(self):
@@ -64,16 +64,17 @@ class SpectrogramCSVDataset(Dataset):
 
         img = Image.open(path).convert("RGB")
         img = img.resize((self.img_size, self.img_size), resample=Image.BILINEAR)
-        # to tensor [0,1]
+
         x = torch.from_numpy(np.asarray(img, dtype=np.float32) / 255.0).permute(2, 0, 1)
-        # normalize
+
         mean = torch.tensor(IMAGENET_MEAN).view(3, 1, 1)
         std = torch.tensor(IMAGENET_STD).view(3, 1, 1)
         x = (x - mean) / std
+
         return x, torch.tensor(y, dtype=torch.long)
 
 
-def build_label_mapping(*csv_paths):
+def build_label_mapping(*csv_paths):  # utility, mapped label to id
     labels = set()
     for p in csv_paths:
         df = pd.read_csv(p)
@@ -82,7 +83,7 @@ def build_label_mapping(*csv_paths):
     return {lab: i for i, lab in enumerate(labels)}, labels
 
 
-def parse_args():
+def parse_args():  # CLI argument parser
     ap = argparse.ArgumentParser()
     ap.add_argument("--project_root", default=".", help="Repo root for relative paths")
     ap.add_argument("--train_csv", required=True)
@@ -98,6 +99,7 @@ def parse_args():
     return ap.parse_args()
 
 
+# To plot and log to TensorBoard
 def plot_and_add_figure(
     writer: SummaryWriter,
     tag: str,
@@ -116,12 +118,12 @@ def plot_and_add_figure(
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.legend()
-    writer.add_figure(tag, fig, global_step=step)  # CHANGED: add figures to TensorBoard
+    writer.add_figure(tag, fig, global_step=step)
     fig.savefig(fig_path)
     plt.close(fig)
 
 
-def main():
+def main():  # Actual main training function
     args = parse_args()
     root = Path(args.project_root)
     run_root = root / args.logdir
@@ -130,21 +132,16 @@ def main():
     run_name = args.run_name if args.run_name else time.strftime("%Y%m%d-%H%M%S")
     tb_logdir = run_root / run_name
     tb_logdir.mkdir(parents=True, exist_ok=True)
-    writer = SummaryWriter(
-        str(tb_logdir)
-    )  # CHANGED: use per-run folder for all artifacts
-
-    # Label mapping
+    writer = SummaryWriter(str(tb_logdir))
+    # Mapping setup
     label2id, labels = build_label_mapping(args.train_csv, args.val_csv)
     num_classes = len(labels)
     with open(tb_logdir / "label_mapping.json", "w") as f:
         json.dump({"labels": labels, "label2id": label2id}, f, indent=2)
-
-    # Datasets
+    # Dataset and Dataloaders
     train_ds = SpectrogramCSVDataset(args.train_csv, label2id, img_size=args.img_size)
     val_ds = SpectrogramCSVDataset(args.val_csv, label2id, img_size=args.img_size)
 
-    # DataLoaders (clean, no duplication)
     train_loader = DataLoader(
         train_ds,
         batch_size=args.batch_size,
@@ -160,7 +157,6 @@ def main():
         pin_memory=True,
     )
 
-    # Debug one batch
     try:
         xb, yb = next(iter(train_loader))
         print(
@@ -172,24 +168,38 @@ def main():
             float(xb.max()),
         )
     except Exception as e:
-        print("[WARN] couldn't fetch a debug batch:", e)
+        print("[WARN] Couldn't fetch debug batch:", e)
 
-    # Model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = BaselineCNN(num_classes=num_classes).to(device)
+    # model setup
+    model = models.alexnet(weights=models.AlexNet_Weights.IMAGENET1K_V1)
+    # loading pretrained AlexNet from torchvision (weights trained on Imagenet)
+    in_feats = model.classifier[6].in_features
+    model.classifier[6] = nn.Linear(in_feats, num_classes)
+
+    model = model.to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.AdamW(
         model.parameters(), lr=args.lr, weight_decay=args.weight_decay
     )
 
-    # History
     history = {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []}
+    best_val_acc = 0.0
+    best_ckpt = tb_logdir / "baseline_best.pt"
 
     global_step = 0
-    best_val_acc = 0.0
-    best_ckpt = tb_logdir / "baseline_best.pt"  # CHANGED: save in per-run folder
 
     for epoch in range(1, args.epochs + 1):
+        if epoch == 1:
+            for p in model.features.parameters():
+                p.requires_grad = False
+
+        if epoch == 3:
+            for i, layer in enumerate(model.features):
+                if i >= 10:
+                    for p in layer.parameters():
+                        p.requires_grad = True
+
         model.train()
         running_loss, running_correct, seen = 0.0, 0, 0
 
@@ -207,7 +217,6 @@ def main():
                 running_correct += (preds == yb).sum().item()
                 seen += yb.size(0)
 
-            # scalar per-step (optional)
             writer.add_scalar("train/loss_step", float(loss.item()), global_step)
             global_step += 1
 
@@ -216,10 +225,10 @@ def main():
         writer.add_scalar("train/loss_epoch", train_loss, epoch)
         writer.add_scalar("train/acc_epoch", train_acc, epoch)
 
-        # ---- Validation ----
         model.eval()
         v_loss, v_correct, v_seen = 0.0, 0, 0
         all_preds, all_targets = [], []
+
         with torch.no_grad():
             for xb, yb in val_loader:
                 xb, yb = xb.to(device), yb.to(device)
@@ -242,7 +251,6 @@ def main():
         history["train_acc"].append(train_acc)
         history["val_acc"].append(val_acc)
 
-        # Save best
         if val_acc > best_val_acc:
             best_val_acc = val_acc
             torch.save(
@@ -259,7 +267,6 @@ def main():
             f"Epoch {epoch}/{args.epochs} | train {train_loss:.4f}/{train_acc:.3f} | val {val_loss:.4f}/{val_acc:.3f}"
         )
 
-        # Plot curves (PNG + TensorBoard figure)
         epochs_axis = list(range(1, epoch + 1))
         plot_and_add_figure(
             writer,
@@ -287,7 +294,6 @@ def main():
             step=epoch,
         )
 
-    # ---- Final evaluation for confusion matrix and report ----
     model.eval()
     all_preds, all_targets = [], []
     with torch.no_grad():
@@ -297,6 +303,7 @@ def main():
             preds = logits.argmax(1)
             all_preds.append(preds.cpu().numpy())
             all_targets.append(yb.cpu().numpy())
+
     y_true = np.concatenate(all_targets)
     y_pred = np.concatenate(all_preds)
 
@@ -304,41 +311,29 @@ def main():
     rep = classification_report(y_true, y_pred, output_dict=True, zero_division=0)
     cm = confusion_matrix(y_true, y_pred)
 
-    # Confusion matrix plot (PNG + TB)
     fig = plt.figure(figsize=(10, 8))
     plt.imshow(cm, aspect="auto")
     plt.title("Confusion Matrix (Validation)")
     plt.colorbar(label="Count")
     plt.xlabel("Predicted")
     plt.ylabel("True")
-    writer.add_figure(
-        "fig/confusion_matrix", fig, global_step=args.epochs
-    )  # CHANGED: add CM to TB
+    writer.add_figure("fig/confusion_matrix", fig, global_step=args.epochs)
     fig.savefig(tb_logdir / f"confusion_matrix_e{args.epochs}.png")
     plt.close(fig)
 
-    # Save history
-    with open(tb_logdir / f"baseline_cnn_metrics_e{args.epochs}.json", "w") as f:
-        json.dump(history, f, indent=2)  # CHANGED: write to per-run folder only
+    with open(tb_logdir / f"alex_t1_metrics_e{args.epochs}.json", "w") as f:
+        json.dump(history, f, indent=2)
 
-    # Per-class recall extraction fixed (labels are strings in dict keys)
     per_class_recall = {
         k: v["recall"] for k, v in rep.items() if isinstance(v, dict) and "recall" in v
-    }  # CHANGED
-
+    }
     summary = {
         "final_val_acc": float(acc),
-        "macro_f1": float(
-            rep.get("macro avg", {}).get("f1-score", 0.0)
-        ),  # CHANGED: robust get()
-        "weighted_f1": float(
-            rep.get("weighted avg", {}).get("f1-score", 0.0)
-        ),  # CHANGED
+        "macro_f1": float(rep.get("macro avg", {}).get("f1-score", 0.0)),
+        "weighted_f1": float(rep.get("weighted avg", {}).get("f1-score", 0.0)),
         "per_class_recall": per_class_recall,
     }
-    with open(
-        tb_logdir / f"baseline_summary_e{args.epochs}.json", "w"
-    ) as f:  # CHANGED: correct folder
+    with open(tb_logdir / f"alex_t1_summary_e{args.epochs}.json", "w") as f:
         json.dump(summary, f, indent=2)
 
     print(
