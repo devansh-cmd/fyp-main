@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
-import os
 import soundfile as sf
 import scipy.signal
 
@@ -9,14 +8,27 @@ import scipy.signal
 # PATH MANAGEMENT
 ########################################
 
+
 def get_project_paths():
     """
     Centralised paths so every script agrees on dirs.
     """
     PROJECT_ROOT = Path(r"C:\FYP\PROJECT")
-    AUDIO_DIR = PROJECT_ROOT / "product" / "audio_preprocessing" / "data" / "ESC-50" / "audio"
-    META_CSV  = PROJECT_ROOT / "product" / "audio_preprocessing" / "data" / "ESC-50" / "meta" / "esc50.csv"
-    SPEC_OUT  = PROJECT_ROOT / "product" / "audio_preprocessing" / "outputs" / "spectrograms"
+    AUDIO_DIR = (
+        PROJECT_ROOT / "product" / "audio_preprocessing" / "data" / "ESC-50" / "audio"
+    )
+    META_CSV = (
+        PROJECT_ROOT
+        / "product"
+        / "audio_preprocessing"
+        / "data"
+        / "ESC-50"
+        / "meta"
+        / "esc50.csv"
+    )
+    SPEC_OUT = (
+        PROJECT_ROOT / "product" / "audio_preprocessing" / "outputs" / "spectrograms"
+    )
 
     return {
         "PROJECT_ROOT": PROJECT_ROOT,
@@ -25,9 +37,11 @@ def get_project_paths():
         "SPEC_OUT": SPEC_OUT,
     }
 
+
 ########################################
 # AUDIO LOADING (no librosa)
 ########################################
+
 
 def load_audio(path: Path, target_sr: int = 22050):
     """
@@ -49,19 +63,24 @@ def load_audio(path: Path, target_sr: int = 22050):
 
     return y, target_sr
 
+
 ########################################
 # MEL SPECTROGRAM (manual, no librosa.feature)
 ########################################
 
+
 def _hz_to_mel(hz: np.ndarray | float):
     return 2595.0 * np.log10(1.0 + (np.asarray(hz) / 700.0))
 
+
 def _mel_to_hz(mel: np.ndarray | float):
     mel = np.asarray(mel)
-    return 700.0 * (10.0**(mel / 2595.0) - 1.0)
+    return 700.0 * (10.0 ** (mel / 2595.0) - 1.0)
 
-def _mel_filterbank(sr: int, n_fft: int, n_mels: int = 128,
-                    fmin: float = 0.0, fmax: float | None = None):
+
+def _mel_filterbank(
+    sr: int, n_fft: int, n_mels: int = 128, fmin: float = 0.0, fmax: float | None = None
+):
     """
     Build a mel filterbank [n_mels x (1 + n_fft//2)].
     """
@@ -69,7 +88,7 @@ def _mel_filterbank(sr: int, n_fft: int, n_mels: int = 128,
         fmax = sr / 2
 
     # FFT bin freqs from 0..Nyquist
-    fft_freqs = np.linspace(0, sr/2, 1 + n_fft//2)
+    fft_freqs = np.linspace(0, sr / 2, 1 + n_fft // 2)
 
     # mel-scaled points
     mels = np.linspace(_hz_to_mel(fmin), _hz_to_mel(fmax), n_mels + 2)
@@ -78,7 +97,7 @@ def _mel_filterbank(sr: int, n_fft: int, n_mels: int = 128,
     # which fft bins each mel point maps to
     bin_idx = np.floor((n_fft + 1) * hz_points / sr).astype(int)
 
-    fbanks = np.zeros((n_mels, 1 + n_fft//2), dtype=np.float32)
+    fbanks = np.zeros((n_mels, 1 + n_fft // 2), dtype=np.float32)
 
     for m in range(1, n_mels + 1):
         left = bin_idx[m - 1]
@@ -102,17 +121,16 @@ def _mel_filterbank(sr: int, n_fft: int, n_mels: int = 128,
                 fbanks[m - 1, k] = (right - k) / (right - center)
 
         # normalise area so filters roughly comparable energy
-        denom = (hz_points[m+1] - hz_points[m-1])
+        denom = hz_points[m + 1] - hz_points[m - 1]
         if denom != 0:
-            fbanks[m - 1, :] *= (2.0 / denom)
+            fbanks[m - 1, :] *= 2.0 / denom
 
     return fbanks
 
-def compute_logmel(y: np.ndarray,
-                   sr: int,
-                   n_fft: int = 2048,
-                   hop_length: int = 512,
-                   n_mels: int = 128):
+
+def compute_logmel(
+    y: np.ndarray, sr: int, n_fft: int = 2048, hop_length: int = 512, n_mels: int = 128
+):
     """
     Compute log-mel spectrogram WITHOUT librosa / numba.
     Steps:
@@ -147,17 +165,21 @@ def compute_logmel(y: np.ndarray,
 
     return mel_db.astype(np.float32)
 
+
 ########################################
 # SAVE SPECTROGRAM IMAGE
 ########################################
 
-def save_logmel_png(S_db: np.ndarray, sr: int, out_path: Path, title: str | None = None):
+
+def save_logmel_png(
+    S_db: np.ndarray, sr: int, out_path: Path, title: str | None = None
+):
     """
     Save mel spectrogram as a tight 224x-ish PNG (no axes).
     """
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
-    plt.figure(figsize=(3, 3), dpi=224/3)  # ~224x224 pixels
+    plt.figure(figsize=(3, 3), dpi=224 / 3)  # ~224x224 pixels
     plt.axis("off")
     plt.imshow(
         S_db,
@@ -171,15 +193,17 @@ def save_logmel_png(S_db: np.ndarray, sr: int, out_path: Path, title: str | None
     plt.savefig(out_path, bbox_inches="tight", pad_inches=0)
     plt.close()
 
+
 ########################################
 # AUGMENTATIONS (pure numpy/scipy)
 ########################################
+
 
 def augment_add_noise(y: np.ndarray, snr_db: float = 25.0):
     """
     Add Gaussian noise at a target signal-to-noise ratio.
     """
-    rms_signal = np.sqrt(np.mean(y ** 2))
+    rms_signal = np.sqrt(np.mean(y**2))
     if rms_signal == 0:
         return y.copy()
 
@@ -187,6 +211,7 @@ def augment_add_noise(y: np.ndarray, snr_db: float = 25.0):
     noise = np.random.normal(0.0, rms_noise, size=y.shape).astype(np.float32)
     y_noisy = y + noise
     return y_noisy.astype(np.float32)
+
 
 def augment_pitch_up(y: np.ndarray, sr: int, n_steps: float = 2.0):
     """
@@ -206,6 +231,7 @@ def augment_pitch_up(y: np.ndarray, sr: int, n_steps: float = 2.0):
 
     return y_fast_fixed.astype(np.float32)
 
+
 def augment_time_stretch(y: np.ndarray, rate: float = 0.9):
     """
     Naive time stretch using resampling.
@@ -220,7 +246,7 @@ def augment_time_stretch(y: np.ndarray, rate: float = 0.9):
     if cur_len > target_len:
         # crop centre
         start = (cur_len - target_len) // 2
-        stretched = stretched[start:start + target_len]
+        stretched = stretched[start : start + target_len]
     elif cur_len < target_len:
         # zero-pad end
         pad = target_len - cur_len

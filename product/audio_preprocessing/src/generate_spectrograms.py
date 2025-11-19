@@ -1,4 +1,5 @@
 import os
+
 os.environ["NUMBA_DISABLE_JIT"] = "1"  # Fixes the LLVM/Numba overflow bug
 from pathlib import Path
 from typing import List
@@ -33,7 +34,7 @@ def process_single_file(wav_path: Path, spec_out: Path) -> List[Path]:
     print("Saved spectrogram →", out_orig)
     saved_paths.append(out_orig)
 
-# noisy
+    # noisy
     try:
         y_noisy = augment_add_noise(y, sr)
         S_db_noisy = compute_logmel(y_noisy, sr)

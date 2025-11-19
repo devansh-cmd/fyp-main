@@ -3,21 +3,25 @@ import pandas as pd
 import json
 import re
 
+
 def clip_id(p):
     stem = Path(p).stem
-    stem = re.sub(r"_(orig|noisy|pitchUp\d+|stretch\d+(?:\.\d+)?)$", "", stem, flags=re.IGNORECASE)
+    stem = re.sub(
+        r"_(orig|noisy|pitchUp\d+|stretch\d+(?:\.\d+)?)$", "", stem, flags=re.IGNORECASE
+    )
     return stem
+
 
 def main(
     train_csv=r"C:/FYP/PROJECT/product/artifacts/splits/clean_train.csv",
-    val_csv  =r"C:/FYP/PROJECT/product/artifacts/splits/clean_val.csv",
-    out_path =r"C:/FYP/PROJECT/product/artifacts/splits/split_report.json"
+    val_csv=r"C:/FYP/PROJECT/product/artifacts/splits/clean_val.csv",
+    out_path=r"C:/FYP/PROJECT/product/artifacts/splits/split_report.json",
 ):
     train = pd.read_csv(train_csv)
-    val   = pd.read_csv(val_csv)
+    val = pd.read_csv(val_csv)
 
     train_ids = set(train["filepath"].apply(clip_id))
-    val_ids   = set(val["filepath"].apply(clip_id))
+    val_ids = set(val["filepath"].apply(clip_id))
 
     overlap = train_ids & val_ids
     assert len(overlap) == 0, f"Leak persists: {len(overlap)} overlapping clip IDs."
@@ -35,6 +39,7 @@ def main(
     Path(out_path).write_text(json.dumps(report, indent=2))
     print("✅ Saved split_report.json")
     print(json.dumps(report, indent=2))
+
 
 if __name__ == "__main__":
     main()

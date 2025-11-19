@@ -1,4 +1,5 @@
 import os
+
 os.environ["NUMBA_DISABLE_JIT"] = "1"  # avoids the LLVM/Numba issue on some systems
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -16,6 +17,7 @@ from audio_utils import (
     augment_time_stretch,
 )
 
+
 def make_noisy_spec(y, sr, base_name: str, out_dir: Path) -> Path | None:
     """
     Add gaussian noise -> mel -> save PNG as *_noisy.png
@@ -32,7 +34,9 @@ def make_noisy_spec(y, sr, base_name: str, out_dir: Path) -> Path | None:
         return None
 
 
-def make_pitch_spec(y, sr, base_name: str, out_dir: Path, n_steps: float = 2.0) -> Path | None:
+def make_pitch_spec(
+    y, sr, base_name: str, out_dir: Path, n_steps: float = 2.0
+) -> Path | None:
     """
     Pitch shift up by n_steps semitones -> mel -> save *_pitchUp2.png
     Returns saved path or None if it fails.
@@ -48,7 +52,9 @@ def make_pitch_spec(y, sr, base_name: str, out_dir: Path, n_steps: float = 2.0) 
         return None
 
 
-def make_stretch_spec(y, sr, base_name: str, out_dir: Path, rate: float = 0.9) -> Path | None:
+def make_stretch_spec(
+    y, sr, base_name: str, out_dir: Path, rate: float = 0.9
+) -> Path | None:
     """
     Time-stretch by 'rate' (e.g. 0.9 = slightly slower) -> mel -> save *_stretch0.9.png
     Returns saved path or None if it fails.
@@ -57,7 +63,9 @@ def make_stretch_spec(y, sr, base_name: str, out_dir: Path, rate: float = 0.9) -
         y_stretch = augment_time_stretch(y, rate=rate)
         S_db_stretch = compute_logmel(y_stretch, sr)
         out_stretch = out_dir / f"{base_name}_stretch0.9.png"
-        save_logmel_png(S_db_stretch, sr, out_stretch, title=f"{base_name} (stretch0.9)")
+        save_logmel_png(
+            S_db_stretch, sr, out_stretch, title=f"{base_name} (stretch0.9)"
+        )
         return out_stretch
     except Exception as e:
         print(f"[WARN] stretch aug failed for {base_name}: {e}")
@@ -75,7 +83,7 @@ def process_single_wav(wav_path: Path, spec_out: Path) -> List[Path]:
 
     # load original audio
     y, sr = load_audio(wav_path)
-    base_name = wav_path.stem 
+    base_name = wav_path.stem
 
     # augmentation 1: noise
     noisy_path = make_noisy_spec(y, sr, base_name, spec_out)
@@ -121,8 +129,8 @@ def main() -> None:
         base_name = wav_path.stem
 
         # quick existence check so we don't re-do work every run
-        noisy_file   = SPEC_OUT / f"{base_name}_noisy.png"
-        pitch_file   = SPEC_OUT / f"{base_name}_pitchUp2.png"
+        noisy_file = SPEC_OUT / f"{base_name}_noisy.png"
+        pitch_file = SPEC_OUT / f"{base_name}_pitchUp2.png"
         stretch_file = SPEC_OUT / f"{base_name}_stretch0.9.png"
 
         if noisy_file.exists() and pitch_file.exists() and stretch_file.exists():
@@ -137,7 +145,9 @@ def main() -> None:
                 new_pngs += len(saved_list)
 
             if idx % 50 == 0 or idx == total_wavs:
-                print(f"[{idx}/{total_wavs}] augmented {base_name} -> {len(saved_list)} imgs")
+                print(
+                    f"[{idx}/{total_wavs}] augmented {base_name} -> {len(saved_list)} imgs"
+                )
 
         except Exception as e:
             print(f"[ERROR] could not augment {wav_path.name}: {e}")
