@@ -1,3 +1,109 @@
-﻿test_job:
+﻿
+image: python:3.12-slim
+
+stages:
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - when: never
+      when: always
+
+variables:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
+cache:
+  paths:
+ key: ${CI_COMMIT_REF_SLUG}
+ paths:
+    - venv/
+    - .cache/pip
+
+setup:
+  stage: setup
   script:
-    - echo "CI pipeline running successfully"
+    - python --version
+    - python -m venv venv
+    - source venv/bin/activate
+    - pip install -U pip
+    - pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+    - pip install -r requirements.txt
+    - pip install ruff black mypy pytest pytest-cov
+  artifacts:
+    paths:
+      - .cache/pip
+      - product/artifacts/splits/
+    expire_in: 1 week
+
+lint:
+  stage: lint
+  script:
+    - source venv/bin/activate
+    - ruff check .
+    - black --check .
+    - mypy product || true
+test:
+  stage: test
+  script:
+    - source venv/bin/activate
+    - pytest -q --disable-warnings --maxfail=1
+
+audit:
+  stage: audit
+  script:
+    - python - <<'PY'
+from pathlib import Path
+import pandas as pd, re, sys
+def clip_id(p):
+    name = Path(p).stem
+    return re.sub(r'_(orig|noisy|pitchUp\d+|stretch\d+\.\d+)$', '', name)
+train = pd.read_csv("product/artifacts/splits/clean_train.csv")
+val = pd.read_csv("product/artifacts/splits/clean_val.csv")
+ti, vi = set(train["filepath"].map(clip_id)), set(val["filepath"].map(clip_id))
+overlap = ti & vi
+print(f"Overlap IDs: {len(overlap)}")
+sys.exit(1 if overlap else 0)
+PY
+    - source venv/bin/activate
+    - |
+      python - <<'PY'
+      from pathlib import Path
+      import pandas as pd, re, sys
+
+      def clip_id(p):
+          name = Path(p).stem
+          return re.sub(r'_(orig|noisy|pitchUp\d+|stretch\d+\.\d+)$', '', name)
+
+      train = pd.read_csv("product/artifacts/splits/clean_train.csv")
+      val = pd.read_csv("product/artifacts/splits/clean_val.csv")
+
+      ti = set(train["filepath"].map(clip_id))
+      vi = set(val["filepath"].map(clip_id))
+      overlap = ti & vi
+
+      print(f"Overlap IDs: {len(overlap)}")
+      sys.exit(1 if overlap else 0)
+      PY
+
+package:
+  stage: package
+  script:
+    - python -m product.training.train_baseline --project_root . \
+    - source venv/bin/activate
+    - python -m product.training.train_baseline \
+        --project_root . \
+        --epochs 1 --batch_size 8 --img_size 224 \
+        --lr 5e-4 --weight_decay 1e-2 \
+        --train_csv product/artifacts/splits/mini_train.csv \
+        --logdir ci_runs
+  artifacts:
+    paths:
+      - ci_runs/
+      - product/artifacts/runs/**/metrics*.json
+      - product/artifacts/runs/**/confusion*.png
+      - ci_runs/metrics.jsonl
+      - ci_runs/*.json
+      - ci_runs/*.png
+    expire_in: 1 week
+
