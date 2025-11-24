@@ -1,4 +1,40 @@
 ﻿# Project Diary (reverse chronological)
+# 2025-11-20 EmoDB Integration + Augmented Spectrogram Generation
+
+**Summary**
+Set up the full EmoDB preprocessing pipeline and generated augmented spectrograms. Confirmed dataset structure, verified filename-based emotion labels, and produced a complete CSV for future training runs.
+
+## Dataset Verification
+- Successfully downloaded and mounted the EmoDB dataset.
+- Confirmed presence of **535 WAV files** under `wav/`.
+- Validated the official filename-label structure:
+  - Emotion is always the **6th character** (W, L, E, A, F, T, N).
+- Manually listened to several samples to confirm correct emotional categories and signal quality.
+- Ensured all files follow the expected pattern (`SS T RR E V.wav`) with no corruption.
+
+## Spectrogram Pipeline
+- Implemented the dedicated EmoDB generation script and verified end-to-end functionality.
+- Generated spectrograms for all 535 audio clips using the same Mel configuration as ESC-50.
+- Ensured consistent output dimensions (224×224) across all PNGs.
+
+## Augmentation
+- Applied controlled augmentation per clip: **1 original + 5 variations** (noise, pitch shift, stretch, reverb, gain).
+- Total generated: **3210 spectrograms**.
+- Verified augmentation grouping logic — all augmented variants remain under the same clip ID, preventing leakage.
+- Inspected random samples to confirm augmentation strength does not distort emotional prosody.
+
+## Technical Notes
+- Confirmed correct count before and after spectrogram generation.
+- Successfully produced `emodb_all.csv` mapping each PNG to its emotion class.
+- Verified paths, filenames, and label consistency across the entire dataset.
+
+## Next Steps
+1. Create grouped train/val splits for EmoDB.
+2. Run first ResNet-50 baseline on the EmoDB spectrogram dataset.
+3. Begin comparing ESC-50 vs EmoDB generalisation patterns.
+4. Prepare for integration of attention models (CBAM, SE) using both datasets.
+
+
 # 2025-11-19 ResNet50 Baseline Training
 
 **Summary**

@@ -250,3 +250,72 @@ def augment_time_stretch(y: np.ndarray, rate: float = 0.9):
         stretched = np.pad(stretched, (0, pad), mode="constant")
 
     return stretched.astype(np.float32)
+
+
+########################################
+# EMODB-SPECIFIC AUGMENTATIONS
+########################################
+
+
+def augment_random_gain(y: np.ndarray, gain_range=(0.8, 1.2)):
+    """
+    Apply random volume scaling (gain).
+    Default range: 0.8x to 1.2x
+    """
+    gain = np.random.uniform(gain_range[0], gain_range[1])
+    return (y * gain).astype(np.float32)
+
+
+def augment_reverb(y: np.ndarray, sr: int, room_scale=0.3):
+    """
+    Add mild reverb using a simple synthetic impulse response.
+    room_scale: controls reverb intensity (0.1-0.5 recommended)
+    """
+    # Create a simple exponentially decaying impulse response
+    reverb_len = int(sr * 0.05)  # 50ms reverb tail
+    decay = np.exp(-np.arange(reverb_len) / (sr * room_scale))
+    impulse = np.random.randn(reverb_len) * decay
+    impulse = impulse / np.max(np.abs(impulse))  # normalize
+    
+    # Convolve with impulse response
+    reverb_signal = np.convolve(y, impulse, mode='same')
+    
+    # Mix dry and wet (70% dry, 30% wet for mild reverb)
+    output = 0.7 * y + 0.3 * reverb_signal
+    
+    # Normalize to prevent clipping
+    max_val = np.max(np.abs(output))
+    if max_val > 1.0:
+        output = output / max_val
+    
+    return output.astype(np.float32)
+
+
+def augment_noise_random_snr(y: np.ndarray, snr_range=(5.0, 15.0)):
+    """
+    Add Gaussian noise with random SNR in the specified range.
+    Default: 5-15 dB (low SNR for robustness)
+    """
+    snr_db = np.random.uniform(snr_range[0], snr_range[1])
+    return augment_add_noise(y, snr_db=snr_db)
+
+
+def augment_pitch_random(y: np.ndarray, sr: int, semitone_range=(-2, 2)):
+    """
+    Pitch shift by random semitones in the specified range.
+    Default: ±1-2 semitones (avoids gender flip / weirdness)
+    """
+    # Random semitone shift, avoiding 0 (no change)
+    n_steps = np.random.uniform(semitone_range[0], semitone_range[1])
+    if abs(n_steps) < 0.1:  # if too close to 0, pick a minimum shift
+        n_steps = np.random.choice([-1, 1]) * np.random.uniform(1.0, 2.0)
+    return augment_pitch_up(y, sr, n_steps=n_steps)
+
+
+def augment_stretch_random(y: np.ndarray, rate_range=(0.9, 1.1)):
+    """
+    Time stretch by random rate in the specified range.
+    Default: 0.9-1.1 (subtle, no chipmunk/slow-mo)
+    """
+    rate = np.random.uniform(rate_range[0], rate_range[1])
+    return augment_time_stretch(y, rate=rate)
