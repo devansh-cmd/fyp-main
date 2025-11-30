@@ -1,0 +1,20 @@
+{
+  "labels": [
+    "anger",
+    "boredom",
+    "disgust",
+    "fear",
+    "happiness",
+    "neutral",
+    "sadness"
+  ],
+  "label2id": {
+    "anger": 0,
+    "boredom": 1,
+    "disgust": 2,
+    "fear": 3,
+    "happiness": 4,
+    "neutral": 5,
+    "sadness": 6
+  }
+}
