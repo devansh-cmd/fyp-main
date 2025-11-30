@@ -227,7 +227,7 @@ def main():  # Actual main training function
 
         model.eval()
         v_loss, v_correct, v_seen = 0.0, 0, 0
-        all_preds, all_targets = [], []
+        all_preds, all_targets, all_probs = [], [], []
 
         with torch.no_grad():
             for xb, yb in val_loader:
@@ -236,10 +236,12 @@ def main():  # Actual main training function
                 loss = criterion(logits, yb)
                 v_loss += loss.item() * yb.size(0)
                 preds = logits.argmax(1)
+                probs = torch.softmax(logits, dim=1)
                 v_correct += (preds == yb).sum().item()
                 v_seen += yb.size(0)
                 all_preds.append(preds.cpu().numpy())
                 all_targets.append(yb.cpu().numpy())
+                all_probs.append(probs.cpu().numpy())
 
         val_loss = v_loss / max(1, v_seen)
         val_acc = v_correct / max(1, v_seen)
@@ -294,22 +296,27 @@ def main():  # Actual main training function
             step=epoch,
         )
 
-    model.eval()
-    all_preds, all_targets = [], []
-    with torch.no_grad():
-        for xb, yb in val_loader:
-            xb, yb = xb.to(device), yb.to(device)
-            logits = model(xb)
-            preds = logits.argmax(1)
-            all_preds.append(preds.cpu().numpy())
-            all_targets.append(yb.cpu().numpy())
-
+    # Reuse last epoch predictions
     y_true = np.concatenate(all_targets)
     y_pred = np.concatenate(all_preds)
+    y_probs = np.concatenate(all_probs)
 
     acc = accuracy_score(y_true, y_pred)
     rep = classification_report(y_true, y_pred, output_dict=True, zero_division=0)
     cm = confusion_matrix(y_true, y_pred)
+    
+    # ROC-AUC (macro)
+    try:
+        from sklearn.metrics import roc_auc_score
+        auc_macro = roc_auc_score(y_true, y_probs, multi_class='ovr', average='macro')
+    except Exception as e:
+        print(f"[WARN] Could not compute ROC-AUC: {e}")
+        auc_macro = 0.0
+    
+    # Top-3 Accuracy
+    top3_preds = np.argsort(y_probs, axis=1)[:, -3:]
+    top3_correct = np.any(top3_preds == y_true[:, None], axis=1)
+    top3_acc = top3_correct.mean()
 
     fig = plt.figure(figsize=(10, 8))
     plt.imshow(cm, aspect="auto")
@@ -324,20 +331,32 @@ def main():  # Actual main training function
     with open(tb_logdir / f"alex_t1_metrics_e{args.epochs}.json", "w") as f:
         json.dump(history, f, indent=2)
 
-    per_class_recall = {
-        k: v["recall"] for k, v in rep.items() if isinstance(v, dict) and "recall" in v
-    }
+    # Extract full per-class metrics
+    per_class_metrics = {}
+    for k, v in rep.items():
+        if isinstance(v, dict) and "recall" in v:
+            per_class_metrics[k] = {
+                "precision": float(v["precision"]),
+                "recall": float(v["recall"]),
+                "f1-score": float(v["f1-score"]),
+                "support": int(v["support"])
+            }
+    
     summary = {
         "final_val_acc": float(acc),
+        "top3_acc": float(top3_acc),
+        "auc_macro": float(auc_macro),
         "macro_f1": float(rep.get("macro avg", {}).get("f1-score", 0.0)),
+        "macro_precision": float(rep.get("macro avg", {}).get("precision", 0.0)),
+        "macro_recall": float(rep.get("macro avg", {}).get("recall", 0.0)),
         "weighted_f1": float(rep.get("weighted avg", {}).get("f1-score", 0.0)),
-        "per_class_recall": per_class_recall,
+        "per_class_metrics": per_class_metrics,
     }
     with open(tb_logdir / f"alex_t1_summary_e{args.epochs}.json", "w") as f:
         json.dump(summary, f, indent=2)
 
     print(
-        f"[Summary] val_acc={acc:.4f}  macroF1={summary['macro_f1']:.4f}  weightedF1={summary['weighted_f1']:.4f}"
+        f"[Summary] val_acc={acc:.4f}  top3_acc={top3_acc:.4f}  macroF1={summary['macro_f1']:.4f}  AUC={auc_macro:.4f}"
     )
     print(f"Saved best checkpoint: {best_ckpt}")
     print("Done.")
