@@ -1,0 +1,384 @@
+\documentclass[]{final_report}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%% Input project details
+\def\studentname{Devansh Dev}
+\def\reportyear{2024/2025}
+\def\projecttitle{Comparative Evaluation of Deep Learning Architectures for Audio and Visual Recognition Tasks}
+\def\supervisorname{Dr. Zhang}
+\def\degree{BSc (Hons) in Computer Science}
+\def\fullOrHalfUnit{Full Unit}
+\def\finalOrInterim{Interim Report}
+
+\begin{document}
+
+\maketitle
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%% Declaration
+
+\chapter*{Declaration}
+
+This report has been prepared on the basis of my own work. Where other published and unpublished source materials have been used, these have been acknowledged.
+
+\vskip3em
+
+Word Count: [To be completed]
+
+\vskip3em
+
+Student Name: \studentname
+
+\vskip3em
+
+Date of Submission: December 2024
+
+\vskip3em
+
+Signature:
+
+\newpage
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%% Table of Contents
+\tableofcontents\pdfbookmark[0]{Table of Contents}{toc}\newpage
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%% Abstract
+
+\begin{abstract}
+
+[To be completed]
+
+\end{abstract}
+\newpage
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%% Project Specification
+
+\chapter*{Project Specification}
+\addcontentsline{toc}{chapter}{Project Specification}
+
+[To be completed]
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%% Introduction
+\chapter{Introduction}
+
+[To be completed]
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%% Background Theory
+\chapter{Background Theory}
+\label{ch:background}
+
+This chapter provides the theoretical foundations for understanding deep learning architectures applied to audio classification tasks.
+
+\section{Audio Representation and Spectrograms}
+
+\subsection{Short-Time Fourier Transform}
+
+Audio signals are one-dimensional time-series data. To capture both temporal and spectral information simultaneously, we transform audio into spectrograms using the Short-Time Fourier Transform (STFT):
+
+\begin{equation}
+X(m, \omega) = \sum_{n=-\infty}^{\infty} x[n] w[n - m] e^{-j\omega n}
+\end{equation}
+
+where $x[n]$ is the discrete audio signal, $w[n]$ is a window function (typically Hann window), $m$ is the time frame index, and $\omega$ is the angular frequency. The STFT provides a time-frequency representation by applying the Fourier transform to short, overlapping segments of the signal.
+
+\subsection{Mel-Frequency Spectrograms}
+
+Human auditory perception of frequency is approximately logarithmic rather than linear. The mel scale~\cite{stevens1937scale} provides a perceptually-motivated frequency representation:
+
+\begin{equation}
+m = 2595 \log_{10}\left(1 + \frac{f}{700}\right)
+\end{equation}
+
+where $f$ is frequency in Hz and $m$ is frequency in mels. We apply triangular mel-scale filterbanks to the STFT magnitude spectrum to obtain mel-spectrograms, which are then converted to logarithmic scale (decibels) for improved dynamic range:
+
+\begin{equation}
+S_{dB} = 10 \log_{10}(S_{mel} + \epsilon)
+\end{equation}
+
+where $\epsilon$ is a small constant (typically $10^{-10}$) to avoid numerical instability from $\log(0)$.
+
+This transformation produces a 2D representation where the horizontal axis represents time, the vertical axis represents mel-frequency bins, and pixel intensity represents energy. This visual representation allows us to apply computer vision techniques to audio classification tasks.
+
+\section{Convolutional Neural Networks}
+
+\subsection{Convolution Operation}
+
+Convolutional Neural Networks (CNNs)~\cite{lecun1998gradient} apply learnable filters to extract hierarchical features from input data. For a 2D input $I$ and filter kernel $K$, the discrete convolution operation is defined as:
+
+\begin{equation}
+(I * K)(i, j) = \sum_{m}\sum_{n} I(i+m, j+n) \cdot K(m, n)
+\end{equation}
+
+For spectrograms, convolution captures local time-frequency patterns. Early convolutional layers typically detect simple patterns such as edges and textures, while deeper layers learn increasingly complex combinations such as harmonic structures and temporal sequences.
+
+\subsection{Pooling Operations}
+
+Pooling layers reduce spatial dimensions while retaining important features. Max pooling selects the maximum value in each local region:
+
+\begin{equation}
+y_{i,j} = \max_{(m,n) \in R_{i,j}} x_{m,n}
+\end{equation}
+
+where $R_{i,j}$ is the pooling region. Average pooling computes the mean instead. Pooling provides translation invariance and reduces computational cost.
+
+\subsection{Batch Normalization}
+
+Batch Normalization~\cite{ioffe2015batch} normalizes layer inputs to stabilize training and enable higher learning rates:
+
+\begin{equation}
+\hat{x} = \frac{x - \mu_B}{\sqrt{\sigma_B^2 + \epsilon}}
+\end{equation}
+
+\begin{equation}
+y = \gamma \hat{x} + \beta
+\end{equation}
+
+where $\mu_B$ and $\sigma_B^2$ are the batch mean and variance, and $\gamma$ and $\beta$ are learnable scale and shift parameters.
+
+\subsection{Activation Functions}
+
+Non-linear activation functions enable neural networks to learn complex patterns. The Rectified Linear Unit (ReLU) is widely used:
+
+\begin{equation}
+\text{ReLU}(x) = \max(0, x)
+\end{equation}
+
+ReLU addresses the vanishing gradient problem and provides computational efficiency compared to sigmoid or tanh activations.
+
+\section{Deep Learning Architectures}
+
+\subsection{AlexNet}
+
+AlexNet~\cite{krizhevsky2012imagenet} demonstrated the effectiveness of deep CNNs for image classification, winning the ImageNet 2012 competition. The architecture consists of five convolutional layers followed by three fully-connected layers, with ReLU activations and dropout for regularization.
+
+Key innovations include:
+\begin{itemize}
+    \item Use of ReLU activation instead of tanh
+    \item Overlapping max pooling
+    \item Dropout regularization (p=0.5)
+    \item Data augmentation
+\end{itemize}
+
+\subsection{ResNet-50}
+
+Residual Networks (ResNet)~\cite{he2016deep} introduced skip connections to address the degradation problem in very deep networks. The key innovation is the residual block:
+
+\begin{equation}
+\mathbf{y} = \mathcal{F}(\mathbf{x}, \{W_i\}) + \mathbf{x}
+\end{equation}
+
+where $\mathcal{F}(\mathbf{x}, \{W_i\})$ represents the residual mapping to be learned, and the identity mapping $\mathbf{x}$ is added via a skip connection. This formulation allows gradients to flow directly through the network, enabling training of networks with 50, 101, or even 152 layers.
+
+ResNet-50 consists of 50 layers organized into four stages, each containing multiple residual blocks. The architecture uses bottleneck blocks with 1×1, 3×3, and 1×1 convolutions to reduce computational cost while maintaining representational power.
+
+\section{Transfer Learning}
+
+\subsection{Pre-training and Fine-tuning}
+
+Transfer learning leverages knowledge learned from large-scale datasets (e.g., ImageNet~\cite{deng2009imagenet} with 1.2M images and 1000 classes) to improve performance on target tasks with limited data. Despite the domain difference between natural images and spectrograms, low-level features (edges, textures) and mid-level features (patterns, shapes) transfer effectively.
+
+The transfer learning process typically involves two phases:
+
+\textbf{Phase 1 - Feature Extraction (Linear Probing):} Freeze all convolutional layers and train only the final classification layer. This adapts the pre-trained feature representations to the new task without catastrophic forgetting of learned features.
+
+\textbf{Phase 2 - Fine-tuning:} Unfreeze some or all layers and continue training with a lower learning rate. This allows task-specific adaptation of features while preserving useful representations from pre-training.
+
+\subsection{Domain Adaptation}
+
+Applying models pre-trained on natural images to audio spectrograms represents cross-domain transfer learning. While spectrograms are visual representations, they differ from natural images in several ways:
+\begin{itemize}
+    \item Spectrograms have structured axes (time and frequency) with physical meaning
+    \item Patterns are often more regular and repetitive
+    \item Color information is absent (spectrograms are grayscale)
+\end{itemize}
+
+Despite these differences, empirical evidence shows that ImageNet pre-training provides a strong initialization for spectrogram-based audio classification~\cite{hershey2017cnn}.
+
+\section{Attention Mechanisms}
+
+Attention mechanisms enable neural networks to focus on informative regions while suppressing irrelevant information. This section describes two prominent attention mechanisms applicable to CNNs.
+
+\subsection{Squeeze-and-Excitation (SE) Blocks}
+
+SE blocks~\cite{hu2018squeeze} perform channel-wise attention by explicitly modeling interdependencies between channels.
+
+\subsubsection{Architecture}
+
+Given input feature map $\mathbf{X} \in \mathbb{R}^{H \times W \times C}$, SE blocks apply three operations:
+
+\textbf{1. Squeeze:} Global average pooling aggregates spatial information:
+
+\begin{equation}
+z_c = \frac{1}{H \times W} \sum_{i=1}^{H} \sum_{j=1}^{W} x_c(i, j)
+\end{equation}
+
+This produces a channel descriptor $\mathbf{z} \in \mathbb{R}^C$.
+
+\textbf{2. Excitation:} A two-layer fully-connected network with bottleneck learns channel dependencies:
+
+\begin{equation}
+\mathbf{s} = \sigma(W_2 \cdot \delta(W_1 \cdot \mathbf{z}))
+\end{equation}
+
+where $W_1 \in \mathbb{R}^{\frac{C}{r} \times C}$, $W_2 \in \mathbb{R}^{C \times \frac{C}{r}}$, $r$ is the reduction ratio (typically 16), $\delta$ is ReLU, and $\sigma$ is sigmoid.
+
+\textbf{3. Scale:} Channel-wise multiplication applies learned weights:
+
+\begin{equation}
+\tilde{x}_c = s_c \cdot x_c
+\end{equation}
+
+\subsection{Convolutional Block Attention Module (CBAM)}
+
+CBAM~\cite{woo2018cbam} extends channel attention by adding spatial attention, applying both sequentially.
+
+\subsubsection{Channel Attention}
+
+CBAM uses both average and max pooling:
+
+\begin{equation}
+\mathbf{M}_c = \sigma(MLP(AvgPool(\mathbf{X})) + MLP(MaxPool(\mathbf{X})))
+\end{equation}
+
+\subsubsection{Spatial Attention}
+
+After channel refinement, spatial attention emphasizes informative regions:
+
+\begin{equation}
+\mathbf{M}_s = \sigma(f^{7\times7}([AvgPool(\mathbf{X'}); MaxPool(\mathbf{X'})]))
+\end{equation}
+
+where $[\cdot;\cdot]$ denotes channel-wise concatenation and $f^{7\times7}$ is a $7\times7$ convolution.
+
+\section{Evaluation Metrics}
+
+\subsection{Classification Accuracy}
+
+Standard accuracy measures the proportion of correct predictions:
+
+\begin{equation}
+\text{Accuracy} = \frac{\text{TP + TN}}{\text{TP + TN + FP + FN}}
+\end{equation}
+
+\subsection{Precision, Recall, and F1-Score}
+
+For multi-class classification, we compute per-class metrics and aggregate using macro-averaging:
+
+\begin{equation}
+\text{Precision}_k = \frac{\text{TP}_k}{\text{TP}_k + \text{FP}_k}
+\end{equation}
+
+\begin{equation}
+\text{Recall}_k = \frac{\text{TP}_k}{\text{TP}_k + \text{FN}_k}
+\end{equation}
+
+\begin{equation}
+\text{F1}_k = 2 \cdot \frac{\text{Precision}_k \cdot \text{Recall}_k}{\text{Precision}_k + \text{Recall}_k}
+\end{equation}
+
+Macro-averaging treats all classes equally:
+
+\begin{equation}
+\text{Macro-F1} = \frac{1}{K} \sum_{k=1}^{K} \text{F1}_k
+\end{equation}
+
+\subsection{ROC-AUC}
+
+The Area Under the Receiver Operating Characteristic curve (ROC-AUC) measures classification performance across all decision thresholds. For multi-class problems, we use one-vs-rest with macro-averaging:
+
+\begin{equation}
+\text{AUC}_{\text{macro}} = \frac{1}{K} \sum_{k=1}^{K} \text{AUC}_k
+\end{equation}
+
+ROC-AUC is particularly useful for imbalanced datasets as it is insensitive to class distribution.
+
+\subsection{Top-K Accuracy}
+
+Top-K accuracy measures whether the correct class appears in the model's top-K predictions:
+
+\begin{equation}
+\text{Top-K Acc} = \frac{1}{N} \sum_{i=1}^{N} \mathbb{1}[y_i \in \text{Top-K}(\hat{y}_i)]
+\end{equation}
+
+For audio classification, Top-3 accuracy is relevant as perceptually similar sounds may have ambiguous labels.
+
+\subsection{Statistical Significance}
+
+To ensure reproducibility and account for training stochasticity, we run experiments with multiple random seeds and report:
+
+\begin{equation}
+\mu \pm \sigma = \frac{1}{n}\sum_{i=1}^{n} x_i \pm \sqrt{\frac{1}{n}\sum_{i=1}^{n}(x_i - \mu)^2}
+\end{equation}
+
+This provides confidence intervals for performance comparisons between architectures.
+
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%% Methodology
+\chapter{Methodology}
+
+[To be completed]
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%% Implementation
+\chapter{Implementation}
+
+[To be completed]
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%% Results
+\chapter{Results and Analysis}
+
+[To be completed]
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%% Planning
+\chapter{Planning and Timeline}
+
+[To be completed]
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%% Diary
+\chapter{Project Diary}
+
+[To be completed]
+
+
+%%%% BIBLIOGRAPHY
+\newpage
+\begin{thebibliography}{99}
+\addcontentsline{toc}{chapter}{Bibliography}
+
+\bibitem{stevens1937scale} Stanley Smith Stevens, John Volkmann, and Edwin B. Newman. \emph{A Scale for the Measurement of the Psychological Magnitude Pitch}. The Journal of the Acoustical Society of America, 1937.
+
+\bibitem{lecun1998gradient} Yann LeCun, Léon Bottou, Yoshua Bengio, and Patrick Haffner. \emph{Gradient-Based Learning Applied to Document Recognition}. Proceedings of the IEEE, 1998.
+
+\bibitem{ioffe2015batch} Sergey Ioffe and Christian Szegedy. \emph{Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift}. In Proceedings of ICML, 2015.
+
+\bibitem{krizhevsky2012imagenet} Alex Krizhevsky, Ilya Sutskever, and Geoffrey E. Hinton. \emph{ImageNet Classification with Deep Convolutional Neural Networks}. In Advances in Neural Information Processing Systems (NIPS), 2012.
+
+\bibitem{he2016deep} Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. \emph{Deep Residual Learning for Image Recognition}. In Proceedings of CVPR, 2016.
+
+\bibitem{deng2009imagenet} Jia Deng, Wei Dong, Richard Socher, Li-Jia Li, Kai Li, and Li Fei-Fei. \emph{ImageNet: A Large-Scale Hierarchical Image Database}. In Proceedings of CVPR, 2009.
+
+\bibitem{hershey2017cnn} Shawn Hershey et al. \emph{CNN Architectures for Large-Scale Audio Classification}. In Proceedings of ICASSP, 2017.
+
+\bibitem{hu2018squeeze} Jie Hu, Li Shen, and Gang Sun. \emph{Squeeze-and-Excitation Networks}. In Proceedings of CVPR, 2018.
+
+\bibitem{woo2018cbam} Sanghyun Woo, Jongchan Park, Joon-Young Lee, and In So Kweon. \emph{CBAM: Convolutional Block Attention Module}. In Proceedings of ECCV, 2018.
+
+\end{thebibliography}
+\label{endpage}
+
+\end{document}
