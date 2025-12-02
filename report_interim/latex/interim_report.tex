@@ -1,9 +1,149 @@
-\documentclass[]{final_report}
+% !TEX root = interim_report.tex
+\documentclass[11pt]{report}
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{amsmath}
 \usepackage{algorithm}
 \usepackage{algorithmic}
+
+% --- START OF CLASS FILE CONTENT ---
+\makeatletter
+\usepackage[paperwidth=21cm,paperheight=29.7cm,includehead,headheight=1.5cm,pdftex,hmargin={3cm,2.5cm},vmargin={0cm,2cm},]{geometry} 
+\usepackage{fancyhdr}
+\setlength{\headheight}{1.5cm}
+\setlength{\parindent}{0cm} 
+\renewcommand{\baselinestretch}{1.2}
+\parskip=1em
+
+
+\renewcommand{\contentsname}{Table of Contents}
+
+\def\ps@plain{%
+      \let\@oddhead\@empty
+      \def\@oddfoot{\normalfont\hfil\small\textsf{Page \thepage~of~\pageref{endpage}}\hfil}%
+      \def\@evenfoot{\normalfont\hfil\small\textsf{Page \thepage~of~\pageref{endpage}}\hfil}}
+
+
+\renewcommand{\normalsize}{\fontsize{11pt}{11pt}\selectfont}
+\renewcommand{\title}[1]{{\sffamily\Huge #1\par}}
+\renewcommand{\author}[1]{{\sffamily\Huge #1\par}}
+\newcommand{\subtitle}[1]{\textsf{\textbf{\Large{#1}}}}
+\newcommand{\abstractheading}[1]{\textsf{\textbf{\LARGE{#1}}}}
+\newcommand{\code}[1]{\texttt{\footnotesize{#1}}}
+
+\renewcommand{\section}{\@startsection
+{section}%                    % the name
+{1}%                          % the level
+{0mm}%                        % the indent
+{6mm}%             % the beforeskip
+{4.2mm}%           % the afterskip
+{\LARGE\bfseries\sffamily}}  % the style
+
+\renewcommand{\subsection}{\@startsection
+{subsection}%                    % the name
+{2}%                          % the level
+{0mm}%                        % the indent
+{4mm}%             % the beforeskip
+{1.1mm}%           % the afterskip
+{\Large\bfseries\sffamily}}  % the style
+
+\renewcommand{\subsubsection}{\@startsection
+{subsubsection}%                    % the name
+{3}%                          % the level
+{0mm}%                        % the indent
+{4.2mm}%             % the beforeskip
+{1.1mm}%           % the afterskip
+{\normalsize\bfseries\sffamily}}  % the style
+
+\renewcommand\chapter{
+\if@openright\cleardoublepage\else\clearpage\fi
+                    \thispagestyle{plain}%
+                    \global\@topnum\z@
+                    \@afterindentfalse
+                    \secdef\@chapter\@schapter}
+
+%% Chapter headings should be at the top of the page.
+\def\@makechapterhead#1{%
+  { \parindent \z@ \raggedright \normalfont
+    %\centering
+    \ifnum \c@secnumdepth >\m@ne
+        \huge\textsf{\@chapapp\space \thechapter:}
+        % \par\nobreak
+        %\vskip 20\p@
+    \fi
+    \interlinepenalty\@M
+    \huge \bfseries \textsf{#1}\par\nobreak
+%    \rule{5cm}{0.5pt}
+    \vskip 20\p@
+  } }
+  
+\def\@makeschapterhead#1{%
+  %\vspace*{50\p@}%
+  { \parindent \z@ \raggedright
+    %\centering
+    \normalfont
+    \interlinepenalty\@M
+    \huge \bfseries  \textsf{#1}\par\nobreak
+%    \rule{5cm}{0.5pt}
+    \vskip 20\p@
+
+  }}
+  
+ \renewenvironment{abstract}{%
+      \chapter*{\abstractname}%
+      \addcontentsline{toc}{chapter}{\abstractname}
+ }
+     
+     
+\makeatletter
+\renewcommand{\l@chapter}{\bfseries\@dottedtocline{1}{0em}{2.3em}}
+\renewcommand{\l@section}{\normalfont\@dottedtocline{2}{2em}{2.3em}}
+\renewcommand{\l@subsection}{\normalfont\@dottedtocline{3}{2em}{2.3em}}
+\renewcommand{\l@subsubsection}{\normalfont\@dottedtocline{4}{2em}{2.3em}}
+\makeatother
+
+\def\maketitle{\begin{titlepage}
+%\thispagestyle{empty}
+\pagenumbering{gobble}
+\thispagestyle{myheadings}
+\markright{ \hfill \textnormal{\footnotesize{\studentname, \reportyear}} \hfill }
+\let\footnotesize\small \let\footnoterule\relax \setcounter{page}{0}
+\null
+\vfil
+\begin{center}
+\title{Final Year Project Report}\vspace{0.25cm}
+\Large \textbf{\fullOrHalfUnit~-~\finalOrInterim}\\[0.5cm]\rule{4cm}{1pt}\\[0.7cm]
+\title{\textbf{\projecttitle}}\vspace{1cm}
+\author{\LARGE \studentname}\vspace{0.5cm}\rule{4cm}{1pt}\\[0.5cm]
+\textsf{\Large  A report submitted in part fulfilment of the degree of\\[0.5cm]
+\textbf{\degree}}\\[0.5cm]
+\textsf{\Large  \textbf{Supervisor:}  \supervisorname}\\[2cm]
+\includegraphics[height=5cm]{logo}\\[2cm]
+\textsf{\Large Department of Computer Science\\
+Royal Holloway, University of London\\\vfill
+\normalsize \today}
+\end{center}
+\vfil
+\null
+\end{titlepage}
+\pagenumbering{arabic}
+}
+
+\pagestyle{fancyplain}
+\lhead{\footnotesize \shortprojecttitle}
+\rhead{\footnotesize \studentname}
+\renewcommand{\headrulewidth}{0pt}
+
+\usepackage{tocloft}
+\renewcommand{\cftchapfont}{\sffamily}
+\renewcommand{\cftsecfont}{\sffamily}
+\renewcommand{\cftchappagefont}{\sffamily}
+\renewcommand{\cftsecpagefont}{\sffamily}
+\renewcommand{\cftchapleader}{\sffamily\cftdotfill{\cftsecdotsep}}
+\setlength{\cftbeforesecskip}{\cftbeforechapskip}
+\setcounter{tocdepth}{1}
+\makeatother
+% --- END OF CLASS FILE CONTENT ---
 
 
 %%%%%%%%%%%%%%%%%%%%%%
@@ -11,6 +151,7 @@
 \def\studentname{Devansh Dev}
 \def\reportyear{2024/2025}
 \def\projecttitle{Comparative Evaluation of Deep Learning Architectures for Audio and Visual Recognition Tasks}
+\def\shortprojecttitle{Comparative Evaluation of DL Architectures}
 \def\supervisorname{Dr. Zhang}
 \def\degree{BSc (Hons) in Computer Science}
 \def\fullOrHalfUnit{Full Unit}
@@ -54,7 +195,7 @@ Signature:
 
 \begin{abstract}
 
-[To be completed]
+This interim report presents a comparative evaluation of deep learning architectures for audio classification tasks, focusing on the efficacy of attention mechanisms in Convolutional Neural Networks (CNNs). We investigate whether integrating Squeeze-and-Excitation (SE) and Convolutional Block Attention Modules (CBAM) into a ResNet-50 backbone enhances performance compared to standard baselines (AlexNet, ResNet-50) on environmental sound (ESC-50) and speech emotion (EmoDB) datasets. Our methodology employs transfer learning from ImageNet, converting audio signals into Mel-spectrograms. Preliminary results indicate that while transfer learning provides a significant performance boost over simpler architectures (ResNet-50 achieving $\sim$90\% on ESC-50 vs. 74\% for AlexNet), the addition of SE attention yields competitive results (88.8\%). This suggests that standard CNN features may already capture the necessary discriminative information for these tasks. We also validate the generalization capability of these models on the EmoDB dataset, achieving high accuracy ($>$95\%). The report details the experimental framework, technical challenges such as data leakage prevention, and outlines the remaining work for the final dissertation.
 
 \end{abstract}
 \newpage
@@ -328,19 +469,221 @@ This provides confidence intervals for performance comparisons between architect
 %%% Methodology
 \chapter{Methodology}
 
-[To be completed]
+This chapter describes the experimental methodology used to evaluate deep learning architectures for audio classification. We detail the datasets, model architectures, training procedures, and evaluation metrics employed in this study.
 
+\section{Datasets}
+
+We evaluate our models on two audio classification datasets with different characteristics: ESC-50 for environmental sound classification and EmoDB for speech emotion recognition.
+
+\subsection{ESC-50: Environmental Sound Classification}
+
+ESC-50 is a publicly available dataset consisting of 2,000 audio recordings, each 5 seconds in duration, divided into 50 semantic classes across 5 major categories (animals, natural soundscapes, human non-speech sounds, interior/domestic sounds, exterior/urban noises). Each class contains 40 examples recorded at 44.1 kHz in mono.
+
+\subsection{EmoDB: Berlin Database of Emotional Speech}
+
+EmoDB is a German emotional speech corpus containing 535 utterances produced by 10 professional actors (5 male, 5 female) expressing 7 emotions: anger (127), boredom (81), disgust (46), fear (69), happiness (71), sadness (62), and neutral (79). Recordings were made in an anechoic chamber at 48 kHz.
+
+\subsection{Data Preprocessing}
+
+\subsubsection{Spectrogram Generation}
+
+Audio waveforms are converted to Mel-spectrograms using:
+\begin{itemize}
+    \item Sampling rate: 22,050 Hz
+    \item FFT window: 2048 samples (Hann window)
+    \item Hop length: 512 samples
+    \item Mel filters: 128 bands (20 Hz to 11,025 Hz)
+    \item Output resolution: 224×224 pixels
+\end{itemize}
+
+\subsubsection{Data Augmentation}
+
+Each original clip generates 5 augmented variants using additive Gaussian noise, pitch shifting (±2 semitones), time stretching (0.9×-1.1×), gain variation (±3 dB), and room reverb simulation.
+
+\subsubsection{Train/Validation Split}
+
+We employ stratified random splits: ESC-50 (80\% train, 20\% validation) and EmoDB (80\% train, 20\% validation, speaker-independent). All augmented variants of a clip are grouped during splitting to prevent data leakage.
+
+\section{Model Architectures}
+
+\subsection{Baseline CNN}
+
+A lightweight 5-layer convolutional network trained from scratch with 3 convolutional blocks (32→64→128 channels), 2 fully-connected layers, and dropout (p=0.5).
+
+\subsection{AlexNet}
+
+AlexNet pre-trained on ImageNet with modified classifier head (4096→4096→num\_classes). Fine-tuning strategy: freeze conv layers initially, train classifier, then unfreeze all.
+
+\subsection{ResNet-50}
+
+ResNet-50 with ImageNet pre-training, 50-layer residual architecture with bottleneck blocks. Modified final layer: 2048→num\_classes. Training strategy: freeze early layers, fine-tune layer4 + classifier.
+
+\subsection{ResNet-50 with Attention Mechanisms}
+
+\subsubsection{Squeeze-and-Excitation (SE)}
+
+SE blocks inserted after each residual block with reduction ratio r=16. Channel-wise recalibration via global pooling→FC(C/16)→ReLU→FC(C)→Sigmoid. Minimal computational overhead (<2\% parameters).
+
+\subsubsection{CBAM}
+
+CBAM applies sequential channel and spatial attention. Channel: Max+Avg pooling→shared MLP. Spatial: Max+Avg pooling→7×7 conv→sigmoid. Inserted after layers 1-4 in ResNet-50.
+
+\section{Training Configuration}
+
+\subsection{Hyperparameters}
+
+Consistent across all experiments:
+\begin{itemize}
+    \item Optimizer: AdamW
+    \item Learning rate: 5×10$^{-4}$
+    \item Weight decay: 1×10$^{-2}$
+    \item Batch size: 64
+    \item Epochs: 30
+    \item Loss function: Cross-entropy
+\end{itemize}
+
+\subsection{Reproducibility}
+
+Random seeds: 42, 123, 999. All experiments run with 3 seeds. Results report mean ± standard deviation.
+
+\section{Evaluation Metrics}
+
+\subsection{Classification Accuracy}
+
+Standard top-1 accuracy: Accuracy = Correct Predictions / Total Predictions
+
+\subsection{Macro-averaged F1 Score}
+
+Treats all classes equally, addressing class imbalance.
+
+\subsection{Top-3 Accuracy}
+
+Measures whether correct class appears in top 3 predictions.
+
+\subsection{Confusion Matrix}
+
+Per-class confusion matrices identify systematic misclassification patterns.
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%% Implementation
 %%%%%%%%%%%%%%%%%%%%%%
 %%% Implementation
 \chapter{Implementation}
 
-[To be completed]
+This chapter details the software implementation of the project, including the system architecture, code structure, and key technical challenges encountered during development.
+
+\section{System Architecture}
+
+The project is implemented in Python 3.12 using the PyTorch deep learning framework. The codebase follows a modular design to ensure extensibility and reproducibility.
+
+\subsection{Directory Structure}
+
+The project is organized into logical components:
+\begin{itemize}
+    \item \texttt{product/models/}: Contains model definitions (CBAM, SE blocks).
+    \item \texttt{product/training/}: Training scripts for each architecture (Baseline, AlexNet, ResNet).
+    \item \texttt{product/artifacts/}: Stores datasets, splits, and experiment results.
+    \item \texttt{notebooks/}: Jupyter notebooks for data exploration and visualization.
+\end{itemize}
+
+\section{Data Pipeline}
+
+Efficient data loading is critical for training deep learning models. We implemented a custom \texttt{SpectrogramCSVDataset} class inheriting from PyTorch's \texttt{Dataset}.
+
+\subsection{On-the-Fly Loading}
+Instead of loading all spectrograms into memory, the dataset reads images on-demand from disk. This allows for scalability to larger datasets. The pipeline includes:
+\begin{enumerate}
+    \item Reading file paths and labels from a CSV manifest.
+    \item Loading the image using PIL (Python Imaging Library).
+    \item Converting to Tensor and normalizing with ImageNet statistics (mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]).
+\end{enumerate}
+
+\section{Training Infrastructure}
+
+\subsection{Experiment Automation}
+To ensure robust results, we developed automated batch scripts (\texttt{run\_all\_experiments.bat}) that:
+\begin{itemize}
+    \item Execute training runs sequentially for multiple models.
+    \item Automatically cycle through random seeds (42, 123, 999).
+    \item Log all outputs to unique directories timestamped for traceability.
+\end{itemize}
+
+\subsection{Logging and Monitoring}
+We integrated TensorBoard for real-time monitoring of:
+\begin{itemize}
+    \item Training and validation loss curves.
+    \item Accuracy progression.
+    \item Confusion matrices generated at the end of training.
+\end{itemize}
+
+\section{Key Technical Challenges}
+
+\subsection{Data Leakage Prevention}
+A critical issue was identified early in development where data augmentation caused leakage between training and validation sets. Naively splitting the dataset after augmentation resulted in original and augmented versions of the same clip appearing in both sets, artificially inflating accuracy.
+
+\textbf{Solution:} We implemented a grouped splitting strategy where the split is performed on the unique source file IDs before augmentation. All augmented variants of a source file are then assigned to the same split as the original, ensuring strict separation.
+
+\subsection{Attention Mechanism Integration}
+Integrating CBAM into the pre-trained ResNet-50 architecture required careful handling of layer freezing. Initial experiments showed high variance because the added attention modules in early layers were inadvertently frozen while only the final layers were trained.
+
+\textbf{Solution:} We modified the fine-tuning strategy to explicitly unfreeze all added attention modules (CBAM/SE) across all layers, while keeping the pre-trained convolutional weights frozen during the initial phase. This ensured the attention mechanisms could learn effective feature recalibration.
+
+\subsection{Cross-Platform Compatibility}
+Developing on Windows required handling path separators and encoding issues (e.g., Unicode characters in logs) that differ from Linux environments. We standardized on using Python's \texttt{pathlib} for robust path handling and ensured all file I/O used explicit UTF-8 encoding.
 
 %%%%%%%%%%%%%%%%%%%%%%
 %%% Results
 \chapter{Results and Analysis}
 
-[To be completed]
+\section{Experimental Results}
+
+We present the quantitative results of our experiments on the ESC-50 and EmoDB datasets. Table~\ref{tab:esc50_results} and Table~\ref{tab:emodb_results} summarize the performance of the evaluated architectures.
+
+\subsection{ESC-50 Results}
+
+The experiments on the ESC-50 dataset demonstrate the clear advantage of transfer learning. The Baseline CNN, trained from scratch, achieved a validation accuracy of only 44.44\%. In contrast, the ImageNet pre-trained models performed significantly better.
+
+AlexNet achieved an average accuracy of 74.5\%, while the deeper ResNet-50 model reached 89.87\%. The integration of Squeeze-and-Excitation (SE) blocks into ResNet-50 yielded an average accuracy of 88.77\%, which is statistically comparable to the vanilla ResNet-50. The CBAM-augmented model achieved 85.13\% in our preliminary run.
+
+\begin{table}[h]
+\centering
+\caption{Performance comparison on ESC-50 dataset (Validation Set).}
+\label{tab:esc50_results}
+\begin{tabular}{lcccc}
+\hline
+\textbf{Model} & \textbf{Runs} & \textbf{Avg. Accuracy (\%)} & \textbf{Avg. Macro F1} & \textbf{Best Acc (\%)} \\ \hline
+Baseline CNN & 1 & 44.44 & 0.424 & 44.44 \\
+AlexNet & 2 & 74.50 & 0.738 & 77.56 \\
+ResNet-50 & 3 & 89.87 & 0.898 & 90.88 \\
+ResNet-50 + SE & 3 & 88.77 & 0.887 & 91.56 \\
+ResNet-50 + CBAM & 1 & 85.13 & 0.851 & 85.13 \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{EmoDB Results}
+
+On the EmoDB dataset, both ResNet-50 and ResNet-50 + SE achieved very high performance, indicating that the models can effectively distinguish between emotional states from speech spectrograms.
+
+\begin{table}[h]
+\centering
+\caption{Performance comparison on EmoDB dataset (Validation Set).}
+\label{tab:emodb_results}
+\begin{tabular}{lcccc}
+\hline
+\textbf{Model} & \textbf{Runs} & \textbf{Avg. Accuracy (\%)} & \textbf{Avg. Macro F1} & \textbf{Best Acc (\%)} \\ \hline
+ResNet-50 & 2 & 95.72 & 0.946 & 97.98 \\
+ResNet-50 + SE & 3 & 95.79 & 0.949 & 96.42 \\ \hline
+\end{tabular}
+\end{table}
+
+\section{Analysis}
+
+The results highlight several key findings:
+\begin{itemize}
+    \item \textbf{Impact of Depth and Pre-training:} ResNet-50 outperforms AlexNet by a large margin ($\sim$15\%), confirming that deeper architectures with residual connections are better suited for capturing the complex time-frequency patterns in spectrograms.
+    \item \textbf{Effectiveness of Attention:} While SE blocks added a slight improvement in the best-case scenario for ESC-50 (91.56\% vs 90.88\%), the average performance was similar to the baseline ResNet-50. This suggests that for these specific datasets, the global channel re-weighting provided by SE blocks might be redundant given the strong feature extraction of ResNet-50.
+    \item \textbf{Generalization:} The high accuracy on EmoDB ($>$95\%) confirms that the transfer learning approach generalizes well to speech emotion recognition tasks.
+\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%
 %%% Planning

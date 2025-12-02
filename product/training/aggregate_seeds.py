@@ -1,180 +1,158 @@
 """
-Aggregate metrics across multiple seed runs to compute mean ± std.
-
-Usage:
-    python product/training/aggregate_seeds.py \
-        --run_dirs runs/resnet50_seed42 runs/resnet50_seed123 runs/resnet50_seed999 \
-        --output runs/resnet50_aggregated.json
-
-Devansh Dev - 2025-11-29
+Aggregate experiment results across multiple seeds.
+Reads all *_summary_e*.json files and creates comparison tables.
 """
-
-import argparse
 import json
+import glob
 from pathlib import Path
-import numpy as np
+import pandas as pd
 
-
-def parse_args():
-    ap = argparse.ArgumentParser(description="Aggregate metrics across seed runs")
-    ap.add_argument(
-        "--run_dirs",
-        nargs="+",
-        required=True,
-        help="List of run directories containing summary JSON files"
+def load_all_results():
+    """Load all summary JSON files"""
+    results = []
+    
+    # Find all summary files (ResNet, AlexNet, Baseline)
+    summary_files = (
+        glob.glob('product/artifacts/runs/**/*summary*.json', recursive=True)
     )
-    ap.add_argument(
-        "--metric_file",
-        default="resnet50_t1_summary_e30.json",
-        help="Name of the summary JSON file in each run directory"
-    )
-    ap.add_argument(
-        "--output",
-        required=True,
-        help="Output path for aggregated results JSON"
-    )
-    return ap.parse_args()
-
-
-def load_metrics(run_dirs, metric_file):
-    """Load metrics from all seed runs."""
-    all_metrics = []
     
-    for run_dir in run_dirs:
-        run_path = Path(run_dir)
-        # print(f"checking {run_path}")  # debug
-        metric_path = run_path / metric_file
-        
-        if not metric_path.exists():
-            print(f"[WARN] Metric file not found: {metric_path}")
-            continue
-        
-        with open(metric_path, 'r') as f:
-            metrics = json.load(f)
-            all_metrics.append(metrics)
-            print(f"[INFO] Loaded metrics from: {metric_path}")
+    # Exclude _BROKEN folder
+    summary_files = [f for f in summary_files if '_BROKEN' not in f]
     
-    return all_metrics
-
-
-def aggregate_metrics(all_metrics):
-    """Compute mean ± std for key metrics across seeds."""
-    
-    # Extract scalar metrics
-    metrics_to_aggregate = [
-        "final_val_acc",
-        "top3_acc",
-        "auc_macro",
-        "macro_f1",
-        "macro_precision",
-        "macro_recall",
-        "weighted_f1"
-    ]
-    
-    aggregated = {}
-    
-    for metric_name in metrics_to_aggregate:
-        values = [m.get(metric_name, 0.0) for m in all_metrics]
-        
-        if len(values) > 0:
-            aggregated[metric_name] = {
-                "mean": float(np.mean(values)),
-                "std": float(np.std(values)),
-                "min": float(np.min(values)),
-                "max": float(np.max(values)),
-                "values": [float(v) for v in values]
-            }
-    
-    # Aggregate per-class metrics (average across seeds)
-    per_class_aggregated = {}
-    
-    # Get all class names from first run
-    if all_metrics and "per_class_metrics" in all_metrics[0]:
-        class_names = all_metrics[0]["per_class_metrics"].keys()
-        
-        for class_name in class_names:
-            class_metrics = {
-                "precision": [],
-                "recall": [],
-                "f1-score": []
-            }
+    for filepath in summary_files:
+        try:
+            with open(filepath, 'r') as f:
+                data = json.load(f)
+                
+            # Extract info from path
+            path_parts = Path(filepath).parts
+            run_name = path_parts[-2]  # e.g., "resnet50_cbam_seed42" or "emodb_cbam_seed123"
             
-            for metrics in all_metrics:
-                if class_name in metrics.get("per_class_metrics", {}):
-                    cm = metrics["per_class_metrics"][class_name]
-                    class_metrics["precision"].append(cm.get("precision", 0.0))
-                    class_metrics["recall"].append(cm.get("recall", 0.0))
-                    class_metrics["f1-score"].append(cm.get("f1-score", 0.0))
+            # Determine dataset
+            dataset = "EmoDB" if run_name.startswith("emodb_") else "ESC-50"
             
-            per_class_aggregated[class_name] = {
-                "precision_mean": float(np.mean(class_metrics["precision"])),
-                "precision_std": float(np.std(class_metrics["precision"])),
-                "recall_mean": float(np.mean(class_metrics["recall"])),
-                "recall_std": float(np.std(class_metrics["recall"])),
-                "f1_mean": float(np.mean(class_metrics["f1-score"])),
-                "f1_std": float(np.std(class_metrics["f1-score"])),
-            }
+            # Determine model type
+            if "cbam" in run_name.lower():
+                model = "ResNet50+CBAM"
+            elif "_se_" in run_name.lower() or run_name.lower().endswith("_se"):
+                model = "ResNet50+SE"
+            elif "alex" in run_name.lower():
+                model = "AlexNet"
+            elif "baseline" in run_name.lower() and "resnet" not in run_name.lower():
+                model = "Baseline CNN"
+            elif "resnet50" in run_name.lower() or "resnet_50" in run_name.lower() or "20251119" in run_name:
+                model = "ResNet50"
+            else:
+                model = "Unknown"
+            
+            # Extract seed if present
+            seed = None
+            if "seed42" in run_name:
+                seed = 42
+            elif "seed123" in run_name:
+                seed = 123
+            elif "seed999" in run_name:
+                seed = 999
+            
+            # Add to results
+            results.append({
+                'Dataset': dataset,
+                'Model': model,
+                'Seed': seed,
+                'Run': run_name,
+                'Val_Accuracy': data.get('final_val_acc', 0) * 100,  # Convert to percentage
+                'Macro_F1': data.get('macro_f1', 0),
+                'Top3_Accuracy': data.get('top3_accuracy', 0) * 100 if 'top3_accuracy' in data else None,
+                'Filepath': filepath
+            })
+            
+        except Exception as e:
+            print(f"Error loading {filepath}: {e}")
     
-    aggregated["per_class_aggregated"] = per_class_aggregated
-    aggregated["num_seeds"] = len(all_metrics)
-    
-    return aggregated
+    return pd.DataFrame(results)
 
+def aggregate_by_model(df):
+    """Aggregate results by dataset and model (mean ± std across seeds)"""
+    grouped = df.groupby(['Dataset', 'Model']).agg({
+        'Val_Accuracy': ['mean', 'std', 'count'],
+        'Macro_F1': ['mean', 'std'],
+        'Top3_Accuracy': ['mean', 'std']
+    }).round(3)
+    
+    return grouped
 
-def print_summary(aggregated):
-    """Print formatted summary to console."""
-    print("\n" + "="*60)
-    print("AGGREGATED METRICS ACROSS SEEDS")
-    print("="*60)
-    print(f"Number of seeds: {aggregated['num_seeds']}\n")
+def create_latex_table(df):
+    """Create LaTeX table format"""
+    print("\n" + "="*80)
+    print("LATEX TABLE FORMAT")
+    print("="*80)
     
-    print("Overall Metrics:")
-    print("-" * 60)
-    
-    metrics_display = [
-        ("Accuracy", "final_val_acc"),
-        ("Top-3 Accuracy", "top3_acc"),
-        ("ROC-AUC (macro)", "auc_macro"),
-        ("Macro F1", "macro_f1"),
-        ("Macro Precision", "macro_precision"),
-        ("Macro Recall", "macro_recall"),
-        ("Weighted F1", "weighted_f1")
-    ]
-    
-    for display_name, key in metrics_display:
-        if key in aggregated:
-            data = aggregated[key]
-            print(f"{display_name:20s}: {data['mean']:.4f} ± {data['std']:.4f}  "
-                  f"[{data['min']:.4f}, {data['max']:.4f}]")
-    
-    print("\n" + "="*60)
-
+    for dataset in df['Dataset'].unique():
+        subset = df[df['Dataset'] == dataset]
+        print(f"\n\\textbf{{{dataset}}}\n")
+        print("\\begin{tabular}{lcccc}")
+        print("\\hline")
+        print("Model & Val Accuracy (\\%) & Macro-F1 & Top-3 Acc (\\%) & Runs \\\\")
+        print("\\hline")
+        
+        for model in subset['Model'].unique():
+            model_data = subset[subset['Model'] == model]
+            acc_mean = model_data['Val_Accuracy'].mean()
+            acc_std = model_data['Val_Accuracy'].std()
+            f1_mean = model_data['Macro_F1'].mean()
+            f1_std = model_data['Macro_F1'].std()
+            count = len(model_data)
+            
+            top3 = model_data['Top3_Accuracy'].mean()
+            top3_str = f"{top3:.1f}" if pd.notna(top3) else "-"
+            
+            print(f"{model} & {acc_mean:.1f} $\\pm$ {acc_std:.1f} & "
+                  f"{f1_mean:.3f} $\\pm$ {f1_std:.3f} & {top3_str} & {count} \\\\")
+        
+        print("\\hline")
+        print("\\end{tabular}\n")
 
 def main():
-    args = parse_args()
+    print("Loading experiment results...")
+    df = load_all_results()
     
-    # Load metrics from all runs
-    all_metrics = load_metrics(args.run_dirs, args.metric_file)
-    
-    if len(all_metrics) == 0:
-        print("[ERROR] No metrics loaded. Check run directories and metric file name.")
+    if df.empty:
+        print("No results found!")
         return
     
-    # Aggregate
-    aggregated = aggregate_metrics(all_metrics)
+    print(f"\nFound {len(df)} experiment runs\n")
     
-    # Save to JSON
-    output_path = Path(args.output)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    # Show all results
+    print("="*80)
+    print("ALL RESULTS")
+    print("="*80)
+    print(df.to_string(index=False))
     
-    with open(output_path, 'w') as f:
-        json.dump(aggregated, f, indent=2)
+    # Save to CSV
+    df.to_csv('product/artifacts/all_results.csv', index=False)
+    print("\n[SAVED] product/artifacts/all_results.csv")
     
-    print(f"\n[INFO] Aggregated metrics saved to: {output_path}")
+    # Aggregated summary
+    print("\n" + "="*80)
+    print("AGGREGATED SUMMARY (Mean +/- Std across seeds)")
+    print("="*80)
+    agg = aggregate_by_model(df)
+    print(agg)
     
-    # Print summary
-    print_summary(aggregated)
-
+    # Save aggregated
+    agg.to_csv('product/artifacts/aggregated_results.csv')
+    print("\n[SAVED] product/artifacts/aggregated_results.csv")
+    
+    # LaTeX format
+    create_latex_table(df)
+    
+    print("\n" + "="*80)
+    print("SUMMARY BY DATASET")
+    print("="*80)
+    for dataset in df['Dataset'].unique():
+        subset = df[df['Dataset'] == dataset]
+        print(f"\n{dataset}: {len(subset)} runs")
+        print(subset[['Model', 'Seed', 'Val_Accuracy', 'Macro_F1']].to_string(index=False))
 
 if __name__ == "__main__":
     main()

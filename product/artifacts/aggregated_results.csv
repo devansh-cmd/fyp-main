@@ -1,0 +1,10 @@
+,,Val_Accuracy,Val_Accuracy,Val_Accuracy,Macro_F1,Macro_F1,Top3_Accuracy,Top3_Accuracy
+,,mean,std,count,mean,std,mean,std
+Dataset,Model,,,,,,,
+ESC-50,AlexNet,74.5,4.331,2,0.738,0.042,,
+ESC-50,Baseline CNN,44.438,,1,0.424,,,
+ESC-50,ResNet50,89.875,0.868,3,0.898,0.01,,
+ESC-50,ResNet50+CBAM,85.125,,1,0.851,,,
+ESC-50,ResNet50+SE,88.771,2.447,3,0.887,0.024,,
+EmoDB,ResNet50,95.717,3.194,2,0.946,0.041,,
+EmoDB,ResNet50+SE,95.794,0.947,3,0.949,0.011,,

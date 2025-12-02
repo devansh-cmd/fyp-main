@@ -1,0 +1,16 @@
+Dataset,Model,Seed,Run,Val_Accuracy,Macro_F1,Top3_Accuracy,Filepath
+ESC-50,AlexNet,,alexnet_1e-4_5e-3_bs32_e25,77.5625,0.7679518018046947,,product/artifacts/runs\alexnet_1e-4_5e-3_bs32_e25\alex_t1_summary_e25.json
+ESC-50,AlexNet,42.0,alexnet_2.5e-4_1e-2_seed42,71.4375,0.7086629027342869,,product/artifacts/runs\alexnet_2.5e-4_1e-2_seed42\alex_t1_summary_e20.json
+ESC-50,Baseline CNN,42.0,baseline_clean_e10_seed42,44.4375,0.42403865857527356,,product/artifacts/runs\baseline_clean_e10_seed42\baseline_summary_e10.json
+EmoDB,ResNet50,123.0,emodb_resnet50_seed123,93.45794392523365,0.9169852268988218,,product/artifacts/runs\emodb_resnet50_seed123\resnet50_t1_summary_e30.json
+EmoDB,ResNet50,999.0,emodb_resnet50_seed999,97.97507788161994,0.9747849513072203,,product/artifacts/runs\emodb_resnet50_seed999\resnet50_t1_summary_e30.json
+EmoDB,ResNet50+SE,123.0,emodb_se_seed123,96.26168224299066,0.952404342745292,,product/artifacts/runs\emodb_se_seed123\resnet50_se_summary_e30.json
+EmoDB,ResNet50+SE,42.0,emodb_se_seed42,96.41744548286604,0.9580445316794984,,product/artifacts/runs\emodb_se_seed42\resnet50_se_summary_e30.json
+EmoDB,ResNet50+SE,999.0,emodb_se_seed999,94.70404984423676,0.9361048580081313,,product/artifacts/runs\emodb_se_seed999\resnet50_se_summary_e30.json
+ESC-50,ResNet50,,20251119-203728,89.3125,0.8915208853211795,,product/artifacts/runs\resnet50_baseline_seed123\20251119-203728\resnet50_t1_summary_e30.json
+ESC-50,ResNet50,,20251119-201437,89.4375,0.8922212762197127,,product/artifacts/runs\resnet50_baseline_seed42\20251119-201437\resnet50_t1_summary_e30.json
+ESC-50,ResNet50,,20251119-222204,90.875,0.9088621675915145,,product/artifacts/runs\resnet50_baseline_seed999\20251119-222204\resnet50_t1_summary_e30.json
+ESC-50,ResNet50+CBAM,42.0,resnet50_cbam_seed42_fixed,85.125,0.8508709313905204,,product/artifacts/runs\resnet50_cbam_seed42_fixed\resnet50_cbam_summary_e30.json
+ESC-50,ResNet50+SE,123.0,resnet50_se_seed123,87.75,0.8764830550675213,,product/artifacts/runs\resnet50_se_seed123\resnet50_se_summary_e30.json
+ESC-50,ResNet50+SE,42.0,resnet50_se_seed42,87.0,0.8701163927837711,,product/artifacts/runs\resnet50_se_seed42\resnet50_se_summary_e30.json
+ESC-50,ResNet50+SE,999.0,resnet50_se_seed999,91.5625,0.9144793860348038,,product/artifacts/runs\resnet50_se_seed999\resnet50_se_summary_e30.json

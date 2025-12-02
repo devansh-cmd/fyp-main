@@ -20,6 +20,9 @@ echo.
 echo Starting experiments sequentially...
 echo.
 
+REM ResNet50+CBAM - Seed 42
+echo [1/6] Running CBAM seed 42...
+.venv312\Scripts\python.exe -m product.training.resnet50_cbam --train_csv product/artifacts/splits/train.csv --val_csv product/artifacts/splits/val.csv --epochs 30 --batch_size 64 --lr 5e-4 --seed 42 --run_name resnet50_cbam_seed42
 
 REM ResNet50+CBAM - Seed 123
 echo [2/6] Running CBAM seed 123...

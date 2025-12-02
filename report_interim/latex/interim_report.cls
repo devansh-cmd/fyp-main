@@ -27,8 +27,8 @@
 
 
 \renewcommand{\normalsize}{\fontsize{11pt}{11pt}\selectfont}
-\renewcommand{\title}[1]{\textsf{\Huge{#1}}}
-\renewcommand{\author}[1]{\textsf{\Huge{#1}}}
+\renewcommand{\title}[1]{{\sffamily\Huge #1\par}}
+\renewcommand{\author}[1]{{\sffamily\Huge #1\par}}
 \newcommand{\subtitle}[1]{\textsf{\textbf{\Large{#1}}}}
 \newcommand{\abstractheading}[1]{\textsf{\textbf{\LARGE{#1}}}}
 \newcommand{\code}[1]{\texttt{\footnotesize{#1}}}
@@ -122,10 +122,10 @@
 \null
 \vfil
 \begin{center}
-\title{Final Year Project Report}\\[0.25cm]
+\title{Final Year Project Report}\vspace{0.25cm}
 \Large \textbf{\fullOrHalfUnit~-~\finalOrInterim}\\[0.5cm]\rule{4cm}{1pt}\\[0.7cm]
-\title{\textbf{\projecttitle}}\\[1cm]
-\author{\LARGE \studentname}\\[0.5cm]\rule{4cm}{1pt}\\[0.5cm]
+\title{\textbf{\projecttitle}}\vspace{1cm}
+\author{\LARGE \studentname}\vspace{0.5cm}\rule{4cm}{1pt}\\[0.5cm]
 \textsf{\Large  A report submitted in part fulfilment of the degree of\\[0.5cm]
 \textbf{\degree}}\\[0.5cm]
 \textsf{\Large  \textbf{Supervisor:}  \supervisorname}\\[2cm]

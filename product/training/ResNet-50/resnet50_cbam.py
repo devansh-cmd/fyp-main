@@ -193,8 +193,14 @@ def main():  # Actual main training function
     for param in model.parameters():  # Freeze all initially
         param.requires_grad = False
     
-    # Unfreeze layer4 + CBAM + classifier
+    # Unfreeze layer4 + ALL CBAM modules + classifier
     for p in model.layer4.parameters():
+        p.requires_grad = True
+    for p in model.layer1[1].parameters():  # CBAM in layer1
+        p.requires_grad = True
+    for p in model.layer2[1].parameters():  # CBAM in layer2
+        p.requires_grad = True
+    for p in model.layer3[1].parameters():  # CBAM in layer3
         p.requires_grad = True
     for p in model.fc.parameters():
         p.requires_grad = True
