@@ -1,4 +1,228 @@
 ﻿# Project Diary (reverse chronological)
+
+# 2025-12-02 Results Aggregation for Interim Report
+
+**Summary**
+Fixed aggregate_seeds.py to correctly identify all model types and generated comprehensive results tables with LaTeX format for interim report.
+
+## Results Analysis
+- Fixed model detection logic to recognize ResNet50 baseline runs (timestamp-based directory names)
+- Successfully aggregated results across all experiments:
+  - **ESC-50**: ResNet50 89.9%±0.9, SE 88.8%±2.4, CBAM 85.1%, AlexNet 74.5%±4.3, Baseline CNN 44.4%
+  - **EmoDB**: ResNet50 95.7%±3.2, SE 95.8%±0.9
+- Generated LaTeX tables ready for inclusion in interim report
+- Organized broken CBAM runs into _BROKEN folder for clarity
+
+## Technical Notes
+- Script now uses glob pattern `**/*summary*.json` to catch all summary files
+- Properly handles both timestamp directories and named run folders
+- Validates all results against original JSON files - confirmed accuracy
+- CSV outputs saved to product/artifacts/ (all_results.csv, aggregated_results.csv)
+
+## Next Steps
+1. Focus on writing interim report (Abstract, Intro, Methodology done)
+2. Complete Results chapter with generated tables and analysis
+3. Finish Planning and Conclusion chapters
+4. Consider running remaining CBAM seeds (123, 999) if time permits
+
+# 2025-11-30 ResNet50+CBAM Fixed Implementation
+
+**Summary**
+Successfully fixed CBAM attention module implementation and completed seed42 training run for ESC-50 dataset.
+
+## CBAM Training Results (Seed 42)
+- **Val Accuracy**: 85.1%
+- **Macro F1**: 0.851
+- **Top-3 Accuracy**: 95.5%
+- Training completed successfully with fixed attention integration
+
+## Technical Fixes
+- Fixed CBAM module integration with ResNet50 bottleneck blocks
+- Corrected channel attention pooling dimensions
+- Verified gradient flow through attention pathways
+- Run saved to: resnet50_cbam_seed42_fixed/
+
+## Observations
+- CBAM performance (85.1%) lower than baseline ResNet50 (89.9%) and SE-Net (88.8%)
+- Possible explanations:
+  - Attention mechanism may need different hyperparameters for audio spectrograms
+  - CBAM adds more parameters → may need longer training or different regularization
+  - Spatial attention in CBAM might not be as beneficial for spectrogram features
+
+## Next Steps
+1. Run CBAM with seeds 123 and 999 for reproducibility analysis
+2. Consider hyperparameter tuning (learning rate, weight decay) for CBAM
+3. Analyze attention maps to understand what CBAM focuses on
+4. Begin writing interim report with current results
+
+# 2025-11-29 EmoDB SE-Net Training (Seed 999)
+
+**Summary**
+Completed third EmoDB SE-Net training run with seed 999 for reproducibility analysis.
+
+## Results (Seed 999)
+- **Val Accuracy**: 94.7%
+- **Macro F1**: 0.936
+- Slightly lower than seeds 42 (96.4%) and 123 (96.3%)
+- All three seeds show consistent high performance on EmoDB
+
+## EmoDB SE-Net Summary (All Seeds)
+| Seed | Val Acc | Macro F1 |
+|------|---------|----------|
+| 42   | 96.4%   | 0.958    |
+| 123  | 96.3%   | 0.952    |
+| 999  | 94.7%   | 0.936    |
+| **Mean** | **95.8% ±0.9%** | **0.949** |
+
+## Observations
+- EmoDB shows higher accuracy than ESC-50 (expected - only 7 emotion classes vs 50 sound classes)
+- SE-Net provides small improvement over baseline ResNet50 (95.8% vs 95.7%)
+- Low variance across seeds indicates good reproducibility
+- German speech emotions well-captured by transfer learning from ImageNet
+
+## Next Steps
+1. Fix and re-run CBAM experiments (previous runs had implementation bugs)
+2. Complete all ESC-50 CBAM runs with 3 seeds
+3. Begin aggregating all results for interim report
+4. Start writing Results and Analysis chapter
+
+# 2025-11-26 ESC-50 SE-Net Training Complete
+
+**Summary**
+Completed all three SE-Net training runs on ESC-50 with seeds 42, 123, and 999. SE-Net shows competitive but slightly lower performance compared to baseline ResNet50.
+
+## Final SE-Net Results (ESC-50)
+| Seed | Val Acc | Macro F1 | Top-3 Acc | Notes |
+|------|---------|----------|-----------|-------|
+| 42   | 87.0%   | 0.870    | 95.7%     | Lowest of three seeds |
+| 123  | 87.8%   | 0.876    | -         | Middle performance |
+| 999  | 91.6%   | 0.914    | -         | Best performance |
+| **Mean** | **88.8% ±2.4%** | **0.887** | - | Comparable to baseline |
+
+## Key Observations
+- SE-Net mean (88.8%) slightly lower than ResNet50 baseline (89.9%)
+- Higher variance (±2.4%) compared to baseline (±0.7%)
+- Seed 999 significantly outperformed other seeds (91.6% vs 87.0%)
+- Suggests SE-Net may be more sensitive to initialization
+
+## Comparison: SE-Net vs Baseline
+- Baseline ResNet50: 89.9% ±0.7%
+- SE-Net: 88.8% ±2.4%
+- Difference: -1.1% (not significant given variance)
+- SE-Net adds channel attention but doesn't clearly improve ESC-50
+
+## Technical Notes
+- All runs used same hyperparameters: lr=5e-4, wd=1e-2, bs=64
+- Training stable across all seeds
+- No implementation issues observed
+- Confusion matrices show similar patterns to baseline
+
+## Next Steps
+1. Complete CBAM experiments (currently in progress)
+2. Run EmoDB experiments for both SE-Net and CBAM
+3. Aggregate all results and perform statistical analysis
+4. Begin interim report writing with focus on attention mechanism comparison
+
+# 2025-11-25 ResNet50 SE-Net Implementation
+
+**Summary**
+Implemented Squeeze-and-Excitation (SE) blocks for ResNet50 and began training on ESC-50 dataset with multiple seeds.
+
+## SE-Net Implementation
+- Added SE blocks to ResNet50 bottleneck layers
+- SE ratio: 16 (reduces channels by 16x in squeeze operation)
+- Integrated after each bottleneck block's final convolution
+- Verified gradient flow through SE pathways
+
+## Training Configuration
+- Same setup as baseline ResNet50 for fair comparison
+- Learning rate: 5e-4, Weight decay: 1e-2, Batch size: 64
+- 30 epochs, AdamW optimizer
+- Seeds: 42, 123, 999 for reproducibility
+
+## Early Results (Seeds 42, 123)
+- Seed 42: 87.0% validation accuracy
+- Seed 123: 87.8% validation accuracy
+- Performance comparable to baseline ResNet50 (~89.9%)
+- SE blocks add minimal overhead (<1% parameter increase)
+
+## Next Steps
+1. Complete seed 999 run
+2. Analyze per-class performance differences vs baseline
+3. Implement CBAM (Convolutional Block Attention Module)
+4. Compare all three attention mechanisms systematically
+
+# 2025-11-23 GitLab CI/CD Pipeline Fix
+
+**Summary**
+After 18+ commits and extensive debugging, finally resolved all GitLab CI/CD pipeline issues. Pipeline now runs successfully on university runners.
+
+## Issues Resolved
+1. **Cache corruption across runners**: Venv binaries incompatible between cim-ts-node-01/02/03
+   - Solution: Force venv recreation in setup stage with `rm -rf .venv312`
+2. **PEP 668 externally-managed-environment**: System Python blocked pip installs
+   - Solution: Always create fresh venv, use `python -m pip` instead of bare `pip`
+3. **Workflow rules blocking jobs**: No jobs visible on main branch
+   - Solution: Added `when: always` rule for main branch
+4. **Missing dev tools in lint stage**: Ruff not installed
+   - Solution: Added `pip install ruff black mypy` in lint stage script
+
+## Pipeline Stages
+1. **setup**: Create venv, install PyTorch CPU + dependencies
+2. **lint**: Run ruff, black, mypy (excluding notebooks)
+3. **test**: Run pytest on codebase
+4. **audit**: Security checks with pip-audit
+5. **package**: Save artifacts (checkpoints, results)
+
+## Lessons Learned
+- Heterogeneous runners require explicit venv versioning or recreation
+- Docker Python 3.12-slim images have PEP 668 restrictions
+- Notebook cells run out of order → exclude from linting
+- Simpler is better: recreate venv instead of complex caching
+
+## Next Steps
+1. Focus on experiments (SE-Net, CBAM implementations)
+2. Stop fighting with CI/CD - it works now
+3. Prepare for interim report with working pipeline as evidence
+
+# 2025-11-21 EmoDB Training Splits & ResNet50 Baseline
+
+**Summary**
+Created stratified train/val splits for EmoDB dataset and completed initial ResNet50 baseline training runs with seeds 123 and 999.
+
+## EmoDB Split Creation
+- Total spectrograms: 3,210 (535 clips × 6 augmentations)
+- Split: 80% train / 20% val
+- Stratified by emotion class to maintain class balance
+- Clip-level grouping to prevent augmentation leakage
+- Generated train_emodb.csv and val_emodb.csv
+
+## ResNet50 Baseline Results (EmoDB)
+| Seed | Val Acc | Macro F1 | Notes |
+|------|---------|----------|-------|
+| 123  | 93.5%   | 0.917    | Lower than seed 999 |
+| 999  | 98.0%   | 0.975    | Excellent performance |
+| **Mean** | **95.7% ±3.2%** | **0.946** | Strong but high variance |
+
+## Observations
+- EmoDB easier than ESC-50 (95.7% vs 89.9%) - only 7 emotion classes
+- Higher variance between seeds (±3.2% vs ±0.7% for ESC-50)
+- Seed 999 nearly perfect performance (98%)
+- German emotional speech well-captured by spectrogram representations
+- Transfer learning from ImageNet works surprisingly well for speech emotions
+
+## Technical Notes
+- Same hyperparameters as ESC-50: lr=5e-4, wd=1e-2, bs=64
+- 30 epochs training
+- 224×224 mel spectrograms with same preprocessing pipeline
+- AdamW optimizer
+
+## Next Steps
+1. Complete remaining baseline runs (seed 42 if needed)
+2. Begin SE-Net experiments on both datasets
+3. Implement CBAM attention mechanism
+4. Cross-dataset analysis: ESC-50 vs EmoDB patterns
+
 # 2025-11-20 EmoDB Integration + Augmented Spectrogram Generation
 
 **Summary**
