@@ -1,5 +1,21 @@
 ﻿# Project Diary (reverse chronological)
 
+# 2025-12-16 Final Report Polish & Submission Prep
+
+**Summary**
+Finalized the Interim Report with all required figures and corrections. Prepared the codebase for technical submission by updating documentation and packaging the project.
+
+## Improvements Made
+- **Report**: 
+  - Added confusion matrices and UML diagrams (Class & Sequence).
+  - Fixed typos and aligned formatting with submission guidelines.
+  - Updated abstract and project title.
+- **Documentation**:
+  - Overhauled `README.md` to highlight "Advanced Targets" (Attention, Reproducibility).
+  - Detailed the full project workflow including EmoDB and Attention experiments.
+- **Submission**:
+  - Prepared repository for submission.
+
 # 2025-12-02 Results Aggregation for Interim Report
 
 **Summary**
