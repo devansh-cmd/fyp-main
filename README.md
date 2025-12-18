@@ -12,9 +12,25 @@ The pipeline converts raw audio into spectrogram images, splits them into train/
 
 ---
 
+---
+
+## Data Setup
+
+Since the datasets are excluded from this repository (as per submission guidelines), please follow these steps to set up the data:
+
+1.  **ESC-50 Dataset**: 
+    - Download from: [ESC-50 GitHub](https://github.com/karolpiczak/ESC-50)
+    - Place the `audio/` folder and `meta/esc50.csv` into:
+      `product/audio_preprocessing/data/ESC-50/`
+2.  **EmoDB (Berlin Emotional Speech Database)**:
+    - Download from: [EmoDB Kaggle (mirror)](https://www.kaggle.com/piyushagni5/berlin-database-of-emotional-speech-emodb)
+    - Place the `.wav` files **directly** into (do not include a sub-folder):
+      `product/audio_preprocessing/data/EmoDB-wav/`
+
+---
+
 ## Repository Structure
 
-```
 product/
 │
 ├── audio_preprocessing/
@@ -26,61 +42,119 @@ product/
 │   └── outputs/spectrograms/      # Generated spectrogram PNGs
 │
 ├── datasets/
-│   ├── make_split.py              # Creates train/val CSVs
+│   ├── make_split.py              # Creates train/val CSVs (ESC-50)
+│   ├── make_split_emodb.py        # Creates train/val CSVs (EmoDB)
 │   └── esc50_png_dataset.py       # PyTorch Dataset for spectrograms
 │
 ├── models/
-│   └── baseline_cnn.py            # Baseline CNN architecture
+│   ├── baseline_cnn.py            # Baseline CNN architecture
+│   ├── cbam.py                    # Convolutional Block Attention Module (Reusable)
+│   ├── se_block.py                # Squeeze-and-Excitation Block (Reusable)
+│   └── __init__.py
 │
 ├── training/
-│   └── train_baseline.py          # Main training script
+│   ├── train_baseline.py          # Baseline training script
+│   ├── resnet50_se.py             # ResNet-50 + SE training script
+│   ├── resnet50_cbam.py           # ResNet-50 + CBAM training script
+│   ├── Resnet50_t1.py             # Standard ResNet-50 training script
+│   ├── alexnet_t1.py              # AlexNet training script
+│   └── aggregate_seeds.py         # Results aggregation tool
 │
 └── artifacts/
     ├── splits/                    # train.csv / val.csv
     └── runs/                      # Model checkpoints, logs, TensorBoard data
 ```
 
-- **`documents/`** — contains notes and `diary.md` (progress log).
-- **`notebooks/`** — exploratory Jupyter notebooks for waveform and spectrogram checks.
+## Advanced Targets
 
----
+- **CBAM & SE Blocks:** Native implementation of attention mechanisms for audio feature refinement.
+- **Data Leakage Resolution:** Stratified splitting based on source file metadata to prevent class pollution.
+- **Aggregation Logic:** Multiple seed runs with statistical aggregation.
+
+## System Architecture
+
+The codebase follows a modular design:
+- `models/`: Architecture definitions.
+- `training/`: Training and validation loops.
+- `datasets/`: Data loading and preprocessing.
+
 
 ## Workflow Summary
 
-1. **Generate spectrograms**
+1. **Generate Spectrograms**
 
-   Convert WAVs to log-mel PNGs with augmentations (noise, pitch-up, time-stretch):
+   Convert the raw audio into log-mel PNGs. This is required once per dataset.
 
+   **For ESC-50:**
    ```powershell
    python product/audio_preprocessing/src/generate_spectrograms.py
    ```
 
-   Output PNGs are saved under  
-   `product/audio_preprocessing/outputs/spectrograms/`, e.g.:
-
-   ```
-   1-100032-A-0_orig.png
-   1-100032-A-0_noisy.png
-   1-100032-A-0_pitchUp2.png
-   1-100032-A-0_stretch0.9.png
-   ```
-
-2. **Create train/validation splits**
-
+   **For EmoDB:**
    ```powershell
-   python product/datasets/make_split.py `
-     --spec_dir product/audio_preprocessing/outputs/spectrograms `
-     --esc50_csv product/audio_preprocessing/data/ESC-50/meta/esc50.csv `
-     --out_dir product/artifacts/splits --val_ratio 0.2
+   python product/audio_preprocessing/src/generate_spectrograms_emodb.py
    ```
 
-   Generates stratified `train.csv` and `val.csv` files.
+2. **Run Batch Experiments (The "One-Click" Way)**
 
-3. **Train the baseline model**
+   Instead of running individual training commands, use these scripts. They will automatically handle the **train/val splitting** (preventing data leakage) and then run all experiments sequentially.
 
-   ```powershell
-   python -m product.training.train_baseline --project_root . --epochs 10 --batch_size 32
-   ```
+   - **ESC-50 Suite**: Run `run_all_experiments.bat`
+     *(Trains ResNet-50 with/without SE and CBAM across 3 seeds)*
+
+   - **EmoDB Suite**: Run `run_emodb_experiments.bat`
+     *(Validates system robustness on Speech Emotion Recognition)*
+
+*Note: For granular control, individual training scripts in `product/training/` can still be run manually using the commands detailed in the sections below.*
+
+---
+
+## Granular Control (Manual Execution)
+
+For detailed evaluation of specific components or custom hyperparameter testing, you can run the internal scripts directly.
+
+### 1. Manual Dataset Splitting
+Use these to re-generate splits with different ratios or seeds.
+- **ESC-50**:
+  ```powershell
+  python product/datasets/make_split.py --val_ratio 0.1 --seed 123
+  ```
+- **EmoDB**:
+  ```powershell
+  python product/datasets/make_split_emodb.py --spec_dir product/audio_preprocessing/outputs/spectrograms_emodb --out_dir product/artifacts/splits
+  ```
+
+### 2. Manual Model Training
+All training scripts support standardized arguments (`--epochs`, `--batch_size`, `--lr`, `--seed`).
+- **Baseline CNN**: 
+  ```powershell
+  python -m product.training.train_baseline --epochs 10 --batch_size 32
+  ```
+- **ResNet-50 + Attention (SE)**:
+  ```powershell
+  python -m product.training.resnet50_se --lr 1e-3 --run_name custom_test
+  ```
+
+### 3. Cross-Dataset Testing
+To train any architecture on EmoDB instead of the default ESC-50, override the CSV paths:
+```powershell
+python -m product.training.resnet50_cbam `
+  --train_csv product/artifacts/splits/train_emodb.csv `
+  --val_csv product/artifacts/splits/val_emodb.csv
+```
+
+---
+
+## 🚀 Marker's Quick Start (Batch Verification)
+
+Once the data is set up and spectrograms are generated, use these "one-click" scripts to verify the core results:
+
+1.  **ESC-50 Validation (Attention Models)**: 
+    Run `run_all_experiments.bat` to execute the full test suite for ResNet-50 with SE and CBAM modules across 3 random seeds.
+2.  **EmoDB Cross-Dataset Validation**: 
+    Run `run_emodb_experiments.bat` to verify the system's robustness on a different domain (Speech Emotion Recognition).
+
+*The results will be logged to `product/artifacts/runs/` and can be aggregated using `python -m product.training.aggregate_seeds`.*
 
 ---
 
