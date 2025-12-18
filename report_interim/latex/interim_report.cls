@@ -67,7 +67,7 @@
 %}
 
 \renewcommand\chapter{
-\if@openright\cleardoublepage\else\clearpage\fi
+\clearpage
                     \thispagestyle{plain}%
                     \global\@topnum\z@
                     \@afterindentfalse
@@ -113,14 +113,10 @@
 \renewcommand{\l@subsubsection}{\normalfont\@dottedtocline{4}{2em}{2.3em}}
 \makeatother
 
-\def\maketitle{\begin{titlepage}
-%\thispagestyle{empty}
+\def\maketitle{%
+\thispagestyle{empty}
 \pagenumbering{gobble}
-\thispagestyle{myheadings}
-\markright{ \hfill \textnormal{\footnotesize{\studentname, \reportyear}} \hfill }
-\let\footnotesize\small \let\footnoterule\relax \setcounter{page}{0}
-\null
-\vfil
+\vspace*{\fill}
 \begin{center}
 \title{Final Year Project Report}\vspace{0.25cm}
 \Large \textbf{\fullOrHalfUnit~-~\finalOrInterim}\\[0.5cm]\rule{4cm}{1pt}\\[0.7cm]
@@ -134,9 +130,7 @@
 Royal Holloway, University of London\\\vfill
 \normalsize \today}
 \end{center}
-\vfil
-\null
-\end{titlepage}
+\vspace*{\fill}
 \pagenumbering{arabic}
 }
 

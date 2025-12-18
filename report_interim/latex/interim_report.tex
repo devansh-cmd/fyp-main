@@ -55,8 +55,7 @@
 {1.1mm}%           % the afterskip
 {\normalsize\bfseries\sffamily}}  % the style
 
-\renewcommand\chapter{
-\if@openright\cleardoublepage\else\clearpage\fi
+\renewcommand\chapter{\if@openright\cleardoublepage\else\clearpage\fi
                     \thispagestyle{plain}%
                     \global\@topnum\z@
                     \@afterindentfalse
@@ -102,31 +101,21 @@
 \renewcommand{\l@subsubsection}{\normalfont\@dottedtocline{4}{2em}{2.3em}}
 \makeatother
 
-\def\maketitle{\begin{titlepage}
-%\thispagestyle{empty}
-\pagenumbering{gobble}
-\thispagestyle{myheadings}
-\markright{ \hfill \textnormal{\footnotesize{\studentname, \reportyear}} \hfill }
-\let\footnotesize\small \let\footnoterule\relax \setcounter{page}{0}
-\null
-\vfil
-\begin{center}
-\title{Final Year Project Report}\vspace{0.25cm}
-\Large \textbf{\fullOrHalfUnit~-~\finalOrInterim}\\[0.5cm]\rule{4cm}{1pt}\\[0.7cm]
-\title{\textbf{\projecttitle}}\vspace{1cm}
-\author{\LARGE \studentname}\vspace{0.5cm}\rule{4cm}{1pt}\\[0.5cm]
-\textsf{\Large  A report submitted in part fulfilment of the degree of\\[0.5cm]
-\textbf{\degree}}\\[0.5cm]
-\textsf{\Large  \textbf{Supervisor:}  \supervisorname}\\[2cm]
-\includegraphics[height=5cm]{logo}\\[2cm]
-\textsf{\Large Department of Computer Science\\
-Royal Holloway, University of London\\\vfill
-\normalsize \today}
-\end{center}
-\vfil
-\null
-\end{titlepage}
-\pagenumbering{arabic}
+\def\maketitle{%
+  \begin{titlepage}%
+  \centering
+  \title{Final Year Project Report}\vspace{0.25cm}
+  \Large \textbf{\fullOrHalfUnit~-~\finalOrInterim}\\[0.5cm]\rule{4cm}{1pt}\\[0.7cm]
+  \title{\textbf{\projecttitle}}\vspace{1cm}
+  \author{\LARGE \studentname}\vspace{0.5cm}\rule{4cm}{1pt}\\[0.5cm]
+  \textsf{\Large  A report submitted in part fulfilment of the degree of\\[0.5cm]
+  \textbf{\degree}}\\[0.5cm]
+  \textsf{\Large  \textbf{Supervisor:}  \supervisorname}\\[2cm]
+  \includegraphics[height=5cm]{logo}\\[2cm]
+  \textsf{\Large Department of Computer Science\\
+  Royal Holloway, University of London\\\vfill
+  \normalsize \today}
+  \end{titlepage}%
 }
 
 \pagestyle{fancyplain}
@@ -149,8 +138,8 @@ Royal Holloway, University of London\\\vfill
 %%%%%%%%%%%%%%%%%%%%%%
 %%% Input project details
 \def\studentname{Devansh Dev}
-\def\reportyear{2024/2025}
-\def\projecttitle{Comparative Evaluation of Deep Learning Architectures for Audio and Visual Recognition Tasks}
+\def\reportyear{2025/2026}
+\def\projecttitle{Comparative Evaluation of Deep Learning Architectures for Audio Recognition Tasks}
 \def\shortprojecttitle{Comparative Evaluation of DL Architectures}
 \def\supervisorname{Dr. Zhang}
 \def\degree{BSc (Hons) in Computer Science}
@@ -170,7 +159,7 @@ This report has been prepared on the basis of my own work. Where other published
 
 \vskip3em
 
-Word Count: [To be completed]
+Word Count: Approximately 6,200 words
 
 \vskip3em
 
@@ -178,27 +167,26 @@ Student Name: \studentname
 
 \vskip3em
 
-Date of Submission: December 2024
+Date of Submission: December 2025
 
 \vskip3em
 
 Signature:
 
-\newpage
+
 
 %%%%%%%%%%%%%%%%%%%%%%
 %%% Table of Contents
-\tableofcontents\pdfbookmark[0]{Table of Contents}{toc}\newpage
+\tableofcontents\pdfbookmark[0]{Table of Contents}{toc}
 
 %%%%%%%%%%%%%%%%%%%%%%
 %%% Abstract
 
 \begin{abstract}
 
-This interim report presents a comparative evaluation of deep learning architectures for audio classification tasks, focusing on the efficacy of attention mechanisms in Convolutional Neural Networks (CNNs). We investigate whether integrating Squeeze-and-Excitation (SE) and Convolutional Block Attention Modules (CBAM) into a ResNet-50 backbone enhances performance compared to standard baselines (AlexNet, ResNet-50) on environmental sound (ESC-50) and speech emotion (EmoDB) datasets. Our methodology employs transfer learning from ImageNet, converting audio signals into Mel-spectrograms. Preliminary results indicate that while transfer learning provides a significant performance boost over simpler architectures (ResNet-50 achieving $\sim$90\% on ESC-50 vs. 74\% for AlexNet), the addition of SE attention yields competitive results (88.8\%). This suggests that standard CNN features may already capture the necessary discriminative information for these tasks. We also validate the generalization capability of these models on the EmoDB dataset, achieving high accuracy ($>$95\%). The report details the experimental framework, technical challenges such as data leakage prevention, and outlines the remaining work for the final dissertation.
-
+Environmental sound recognition is a fundamental component of modern artificial intelligence systems. This interim report presents a comparative evaluation of deep learning architectures for audio classification, focusing on the effectiveness of attention mechanisms in Convolutional Neural Networks (CNNs). We investigate whether integrating Squeeze-and-Excitation (SE) and Convolutional Block Attention Modules (CBAM) into a ResNet-50 backbone enhances or decreases performance compared to standard baselines (AlexNet, ResNet-50) on environmental sound (ESC-50) and speech emotion (EmoDB) datasets. The methodology employs transfer learning from ImageNet-pretrained weights, with audio signals converted to 224×224 Mel-spectrograms through a consistent preprocessing and augmentation pipeline. Initial results indicate that transfer learning provides a significant performance boost over simpler architectures (ResNet-50 achieving 89.9\% on ESC-50 vs. 74.5\% for AlexNet). Surprisingly, the addition of attention mechanisms showed limited benefits; while SE-Net achieves 88.8\% $\pm$2.4\%, CBAM exhibited severe training instability with mean accuracies of 73.4\% $\pm$10.9\% on ESC-50 and 80.2\% $\pm$19.3\% on EmoDB. This suggests that standard ResNet-50 features may already capture the necessary discriminative information and that spatial attention (CBAM) may introduce inappropriate inductive biases for spectrogram data. The models also demonstrate strong generalization on the EmoDB dataset with baseline accuracy exceeding 95\%. The report describes the experimental framework, discusses technical challenges such as data leakage prevention and attention mechanism integration, and outlines future work for the final dissertation. 
 \end{abstract}
-\newpage
+
 
 %%%%%%%%%%%%%%%%%%%%%%
 %%% Project Specification
@@ -206,13 +194,119 @@ This interim report presents a comparative evaluation of deep learning architect
 \chapter*{Project Specification}
 \addcontentsline{toc}{chapter}{Project Specification}
 
-[To be completed]
+\textbf{Project Title:} Comparative Evaluation of Deep Learning Architectures for Audio Recognition Tasks
+
+\textbf{Student:} Devansh Dev
+
+\textbf{Supervisor:} Dr. Zhang
+
+\textbf{Project Type:} Full Unit Final Year Project
+
+\section*{Aims}
+
+The aim of this project is to conduct a systematic comparative evaluation of deep learning architectures for audio classification tasks, with particular focus on the possible effectiveness of
+attention mechanisms when applied to spectrogram-based representations.
+\section*{Objectives}
+
+\begin{enumerate}
+    \item Implementation and evaluation of baseline CNN architectures (custom CNN, AlexNet, ResNet-50) for audio classification using transfer learning from ImageNet.
+    \item To integrate attention mechanisms (SE and CBAM) into ResNet-50 and evaluate their impact on classification performance.
+    \item Conduct experiments on multiple audio datasets as to cross-validate across domains: ESC-50 (environmental sounds) and EmoDB (speech emotion recognition).
+    \item Perform rigorous statistical analysis with multiple random seeds to ensure reproducibility and quantify performance variance.
+    \item Analyze per-class performance and identify systematic failure patterns through confusion matrix analysis.
+    \item Document technical challenges, solutions, and then reflect moving forward with audio tasks.
+    \item (Future) Extend evaluation to visual recognition tasks and conduct cross-modal comparison.
+\end{enumerate}
+\newpage
+\section*{Deliverables}
+
+\textbf{Interim Report (Current):}
+\begin{itemize}
+    \item Literature review and background theory
+    \item Methodology and experimental design
+    \item Implementation of baseline and attention-augmented models
+    \item Experimental results on ESC-50 and EmoDB datasets
+    \item Project timeline and diary
+\end{itemize}
+
+\textbf{Final Dissertation:}
+\begin{itemize}
+    \item Extended experiments with additional datasets and architectures
+    \item Attention visualization using Grad-CAM
+    \item Ablation studies on attention mechanism components
+    \item Comparison with state-of-the-art published results
+    \item Cross-modal evaluation (audio vs. visual recognition)
+    \item Comprehensive analysis and recommendations
+\end{itemize}
+
 
 %%%%%%%%%%%%%%%%%%%%%%
 %%% Introduction
 \chapter{Introduction}
 
-[To be completed]
+Audio classification is one of the most fundamental tasks in machine learning domains, which facilitates advancements in the fields of speech recognition, music information retrieval, environmental monitoring, and assistive technologies for the hearing impaired.
+
+Unlike classical signal processing techniques based on manually-crafted features, deep learning techniques are able to automatically learn hierarchical representations directly from audio data. However, raw audio waveforms pose certain challenges: raw audio is high-dimensional data, temporally extended, and contains information at multiple time scales.
+
+
+A common approach is to transform audio into sound images like spectrograms, which transcode both time and frequency information in a two-dimensional format. This allows for the implementation of computer vision methods, specifically Convolution Neural Networks (CNN), which have been incredibly successful in image classification problems. Transfer learning from large scale image datasets such as ImageNet has been shown to be effective even with audio spectrograms, in spite of the difference between the domains in which natural images and acoustic patterns exist.
+
+\section{Motivation}
+
+Despite the fact that the canonical CNN architecture of AlexNet and ResNet have achieved high performance on well-established audio-classification benchmarks, the recent advances in attention mechanisms have the potential to help improve it even more. These processes allow networks to selectively pay attention to information features and ignore irrelevant information features. Squeeze-and-Excitation (SE) blocks perform channel-wise attention, recalibrating feature maps to emphasize discriminative channels. Convolutional Block Attention Module (CBAM) extends that by introducing spatial attention that allows the models to focus on particular time-frequency areas in spectrograms. 
+
+However, it remains unclear whether these attention mechanisms, originally designed for natural images, provide consistent benefits for audio spectrograms. Spectrograms have structured axes (time and frequency) with physical meaning, unlike the more arbitrary spatial structure of natural images. This raises the question: \textit{Do attention mechanisms that excel at natural image classification transfer effectively to audio classification tasks?}
+
+\section{Research Questions}
+
+This project investigates and aims to answer the following research questions:
+
+\begin{enumerate}
+    \item To what extent can transfer learning from ImageNet-pretrained models be effective on audio classification tasks when using spectrogram representations? 
+    \item Are attention mechanisms, that is, SE and CBAM, better at classification over baseline resnets like ResNet-50? 
+    \item How do these architectures generalize across different audio domains (environmental sounds vs. speech emotion)?
+    \item What are the failure modes and weaknesses of attention mechanisms on spectrogram-based classification? 
+\end{enumerate}
+
+\section{Objectives}
+
+The primary objectives of this interim report are:
+
+\begin{itemize}
+    \item Have strong experimental baselines that use traditional CNN architectures (Baseline CNN, AlexNet, ResNet50). 
+    \item Implement and assess attention mechanisms (SE, CBAM) in the ResNet -50 architecture. 
+    \item Conduct rigorous experiments on two heterogeneous audio samples: ESC50 (sounds in the environment) and EmoDB (speech emotion).
+    \item Analyze per-class performance and identify systematic failure patterns.
+    \item Document technical challenges and solutions for reproducible research.
+\end{itemize}
+
+\section{Contributions}
+
+This interim report presents the following contributions:
+
+\begin{itemize}
+    \item A comprehensive comparative evaluation of CNN architectures and attention mechanisms for audio classification.
+    \item Empirical evidence that standard ResNet-50 features may already capture sufficient discriminative information for spectrograms, with attention mechanisms providing limited additional benefit.
+    \item Identification of training instability issues with CBAM on spectrogram data, suggesting that spatial attention may introduce inappropriate inductive biases.
+    \item A reproducible experimental framework with proper data leakage prevention and multi-seed validation.
+    \item Cross-dataset validation demonstrating generalization from environmental sounds to speech emotion recognition.
+\end{itemize}
+
+\section{Report Structure}
+
+The remainder of this report is organized as follows:
+
+\textbf{Chapter 2: Background Theory} provides the theoretical foundations, covering audio representation, CNN architectures, transfer learning, and attention mechanisms.
+
+\textbf{Chapter 3: Methodology} describes the experimental setup, including datasets, model architectures, training procedures, and evaluation metrics.
+
+\textbf{Chapter 4: Implementation} details the software architecture, data pipeline, and technical challenges encountered during development.
+
+\textbf{Chapter 5: Results and Analysis} presents quantitative results and per-class performance analysis across both datasets.
+
+\textbf{Chapter 6: Planning and Schedule} outlines the original project plan versus the actual execution timeline.
+
+\textbf{Chapter 7: Project Diary} documents the chronological progression of work and how the project evolved from September 2025 to December 2025.
 
 %%%%%%%%%%%%%%%%%%%%%%
 %%% Background Theory
@@ -225,31 +319,29 @@ This chapter provides the theoretical foundations for understanding deep learnin
 
 \subsection{Short-Time Fourier Transform}
 
-Audio signals are one-dimensional time-series data. To capture both temporal and spectral information simultaneously, we transform audio into spectrograms using the Short-Time Fourier Transform (STFT):
-
+Audio signals are one-dimensional time-series data. In order to simultaneously have the time and frequency information we transform audio to spectrograms with the Short-Time Fourier Transform (STFT):
 \begin{equation}
 X(m, \omega) = \sum_{n=-\infty}^{\infty} x[n] w[n - m] e^{-j\omega n}
 \end{equation}
 
-where $x[n]$ is the discrete audio signal, $w[n]$ is a window function (typically Hann window), $m$ is the time frame index, and $\omega$ is the angular frequency. The STFT provides a time-frequency representation by applying the Fourier transform to short, overlapping segments of the signal.
+where $x[n]$ is the discrete audio signal, $w[n]$ is a window function (typically Hann window), $m$ is the time frame index, and $\omega$ is the angular frequency. The STFT provides a time-frequency representation by using Fourier transform of short and overlapping signal segments. 
 
 \subsection{Mel-Frequency Spectrograms}
 
-Human auditory perception of frequency is approximately logarithmic rather than linear. The mel scale~\cite{stevens1937scale} provides a perceptually-motivated frequency representation:
+Human hearing is sensitive to frequency, and thus perceives frequencies on a logarithmic scale, and not a linear one. The mel scale~\cite{stevens1937scale} provides a perceptually-motivated frequency representation:
 
 \begin{equation}
 m = 2595 \log_{10}\left(1 + \frac{f}{700}\right)
 \end{equation}
 
-where $f$ is frequency in Hz and $m$ is frequency in mels. We apply triangular mel-scale filterbanks to the STFT magnitude spectrum to obtain mel-spectrograms, which are then converted to logarithmic scale (decibels) for improved dynamic range:
-
+where f and m are frequency in Hz and mels respectively. Triangular mel-scale filterbanks on the STFT magnitude spectrum give us mel-spectrograms, which we scale to the logarithmic scale (decibels) to provide a better dynamic range:
 \begin{equation}
 S_{dB} = 10 \log_{10}(S_{mel} + \epsilon)
 \end{equation}
 
 where $\epsilon$ is a small constant (typically $10^{-10}$) to avoid numerical instability from $\log(0)$.
 
-This transformation produces a 2D representation where the horizontal axis represents time, the vertical axis represents mel-frequency bins, and pixel intensity represents energy. This visual representation allows us to apply computer vision techniques to audio classification tasks.
+The result of this transformation is a 2-D image in which the horizontal axis is time, the vertical axis is mel-frequency bins, and the value of the pixel is the energy. Using that visual format, it is possible to apply computer-vision techniques to audio classification.
 
 \section{Convolutional Neural Networks}
 
@@ -261,7 +353,9 @@ Convolutional Neural Networks (CNNs)~\cite{lecun1998gradient} apply learnable fi
 (I * K)(i, j) = \sum_{m}\sum_{n} I(i+m, j+n) \cdot K(m, n)
 \end{equation}
 
-For spectrograms, convolution captures local time-frequency patterns. Early convolutional layers typically detect simple patterns such as edges and textures, while deeper layers learn increasingly complex combinations such as harmonic structures and temporal sequences.
+In the case of spectrograms, local time-frequency patterns are pulled out by convolution. Simple shapes such as edges and textures are often picked by the first convolutional layers, and deeper conv layers begin to pick up more interesting objects such as harmonic patterns and time series. 
+
+ 
 
 \subsection{Pooling Operations}
 
@@ -298,108 +392,84 @@ Non-linear activation functions enable neural networks to learn complex patterns
 ReLU addresses the vanishing gradient problem and provides computational efficiency compared to sigmoid or tanh activations.
 
 \section{Deep Learning Architectures}
+Deep learning architectures represent a category of neural network frameworks that are typically designed to execute complex neural network tasks at large scale.
 
 \subsection{AlexNet}
+The effectiveness of deep convolutional neural networks (CNNs) in image classification was demonstrated by AlexNet~\cite{krizhevsky2012imagenet}, which won the ImageNet 2012 competition. The architecture consists of five convolutional layers followed by three fully-connected layers, with regularisation applied through dropout and Rectified Linear Unit (ReLU) activations.
 
-AlexNet~\cite{krizhevsky2012imagenet} demonstrated the effectiveness of deep CNNs for image classification, winning the ImageNet 2012 competition. The architecture consists of five convolutional layers followed by three fully-connected layers, with ReLU activations and dropout for regularization.
-
-Key innovations include:
+Key innovations introduced by AlexNet include:
 \begin{itemize}
-    \item Use of ReLU activation instead of tanh
-    \item Overlapping max pooling
-    \item Dropout regularization (p=0.5)
-    \item Data augmentation
+    \item Use of ReLU activation instead of the hyperbolic tangent function, which accelerated training
+    \item Overlapping max-pooling
+    \item Dropout regularisation with probability 0.5
+    \item Data augmentation techniques
 \end{itemize}
 
 \subsection{ResNet-50}
-
-Residual Networks (ResNet)~\cite{he2016deep} introduced skip connections to address the degradation problem in very deep networks. The key innovation is the residual block:
-
+Residual Networks (ResNet)~\cite{he2016deep} addressed the degradation problem in very deep networks by introducing skip connections. The core residual block is defined as:
 \begin{equation}
-\mathbf{y} = \mathcal{F}(\mathbf{x}, \{W_i\}) + \mathbf{x}
+    y = F(x, \{W_i\}) + x
+    \label{eq:resnet_residual}
 \end{equation}
+where $F(x, \{W_i\})$ is the residual mapping to be learned and $x$ is added via an identity skip connection. This allows effective gradient propagation, enabling training of networks with 50, 101, or 152 layers.
 
-where $\mathcal{F}(\mathbf{x}, \{W_i\})$ represents the residual mapping to be learned, and the identity mapping $\mathbf{x}$ is added via a skip connection. This formulation allows gradients to flow directly through the network, enabling training of networks with 50, 101, or even 152 layers.
-
-ResNet-50 consists of 50 layers organized into four stages, each containing multiple residual blocks. The architecture uses bottleneck blocks with 1×1, 3×3, and 1×1 convolutions to reduce computational cost while maintaining representational power.
+ResNet-50 consists of 50 layers organised into four stages, each containing multiple residual blocks. It employs bottleneck blocks (1×1, 3×3, 1×1 convolutions) to reduce computational cost while preserving representational power.
 
 \section{Transfer Learning}
-
 \subsection{Pre-training and Fine-tuning}
+Transfer learning leverages knowledge from large-scale datasets such as ImageNet~\cite{deng2009imagenet} (1.2 million images across 1,000 categories) to improve performance on target tasks with limited data. Despite the domain difference between natural images and audio spectrograms, low-level (edges, textures) and mid-level (patterns, shapes) features transfer effectively.
 
-Transfer learning leverages knowledge learned from large-scale datasets (e.g., ImageNet~\cite{deng2009imagenet} with 1.2M images and 1000 classes) to improve performance on target tasks with limited data. Despite the domain difference between natural images and spectrograms, low-level features (edges, textures) and mid-level features (patterns, shapes) transfer effectively.
-
-The transfer learning process typically involves two phases:
-
-\textbf{Phase 1 - Feature Extraction (Linear Probing):} Freeze all convolutional layers and train only the final classification layer. This adapts the pre-trained feature representations to the new task without catastrophic forgetting of learned features.
-
-\textbf{Phase 2 - Fine-tuning:} Unfreeze some or all layers and continue training with a lower learning rate. This allows task-specific adaptation of features while preserving useful representations from pre-training.
-
-\subsection{Domain Adaptation}
-
-Applying models pre-trained on natural images to audio spectrograms represents cross-domain transfer learning. While spectrograms are visual representations, they differ from natural images in several ways:
+The process typically involves two stages:
 \begin{itemize}
-    \item Spectrograms have structured axes (time and frequency) with physical meaning
-    \item Patterns are often more regular and repetitive
-    \item Color information is absent (spectrograms are grayscale)
+    \item \textbf{Phase 1 — Feature Extraction (Linear Probing):} Freeze all convolutional layers and train only the final classification layer.
+    \item \textbf{Phase 2 — Fine-tuning:} Unfreeze selected or all layers and train with a lower learning rate for task-specific optimisation.
 \end{itemize}
 
-Despite these differences, empirical evidence shows that ImageNet pre-training provides a strong initialization for spectrogram-based audio classification~\cite{hershey2017cnn}.
+\subsection{Domain Adaptation}
+Applying ImageNet-pretrained models to audio spectrograms is cross-domain transfer learning. Spectrograms differ from natural images in:
+\begin{itemize}
+    \item Structured time and frequency axes with physical meaning
+    \item More consistent and repetitive trends
+    \item Lack of colour information (grayscale)
+\end{itemize}
+Nevertheless, experimental results show ImageNet pre-training provides a strong baseline for spectrogram-based audio classification~\cite{hershey2017cnn}.
 
 \section{Attention Mechanisms}
-
-Attention mechanisms enable neural networks to focus on informative regions while suppressing irrelevant information. This section describes two prominent attention mechanisms applicable to CNNs.
+Attention mechanisms allow neural networks to focus on informative features while suppressing irrelevant ones. This section covers two key mechanisms for CNNs.
 
 \subsection{Squeeze-and-Excitation (SE) Blocks}
-
-SE blocks~\cite{hu2018squeeze} perform channel-wise attention by explicitly modeling interdependencies between channels.
+SE blocks~\cite{hu2018squeeze} perform channel-wise attention by modelling inter-channel dependencies.
 
 \subsubsection{Architecture}
-
-Given input feature map $\mathbf{X} \in \mathbb{R}^{H \times W \times C}$, SE blocks apply three operations:
-
-\textbf{1. Squeeze:} Global average pooling aggregates spatial information:
-
-\begin{equation}
-z_c = \frac{1}{H \times W} \sum_{i=1}^{H} \sum_{j=1}^{W} x_c(i, j)
-\end{equation}
-
-This produces a channel descriptor $\mathbf{z} \in \mathbb{R}^C$.
-
-\textbf{2. Excitation:} A two-layer fully-connected network with bottleneck learns channel dependencies:
-
-\begin{equation}
-\mathbf{s} = \sigma(W_2 \cdot \delta(W_1 \cdot \mathbf{z}))
-\end{equation}
-
-where $W_1 \in \mathbb{R}^{\frac{C}{r} \times C}$, $W_2 \in \mathbb{R}^{C \times \frac{C}{r}}$, $r$ is the reduction ratio (typically 16), $\delta$ is ReLU, and $\sigma$ is sigmoid.
-
-\textbf{3. Scale:} Channel-wise multiplication applies learned weights:
-
-\begin{equation}
-\tilde{x}_c = s_c \cdot x_c
-\end{equation}
+For an input feature map of dimensions $H \times W \times C$:
+\begin{enumerate}
+    \item \textbf{Squeeze:} Global average pooling aggregates spatial information:
+    \begin{equation}
+        z_c = \frac{1}{H W} \sum_{i=1}^{H} \sum_{j=1}^{W} x_c(i, j)
+    \end{equation}
+    producing a channel descriptor $z \in \mathbb{R}^C$.
+    \item \textbf{Excitation:} A bottleneck fully-connected network learns channel weights:
+    \begin{equation}
+        s = \sigma(W_2 \delta(W_1 z))
+    \end{equation}
+    where $W_1$ reduces to $C/r$ (r=16 typically), $W_2$ restores to C, $\delta$ is ReLU, $\sigma$ is sigmoid.
+    \item \textbf{Scale:} Recalibrate features channel-wise: $\tilde{x}_c = s_c \cdot x_c$.
+\end{enumerate}
 
 \subsection{Convolutional Block Attention Module (CBAM)}
-
-CBAM~\cite{woo2018cbam} extends channel attention by adding spatial attention, applying both sequentially.
+CBAM~\cite{woo2018cbam} sequentially applies channel and spatial attention.
 
 \subsubsection{Channel Attention}
-
 CBAM uses both average and max pooling:
-
 \begin{equation}
 \mathbf{M}_c = \sigma(MLP(AvgPool(\mathbf{X})) + MLP(MaxPool(\mathbf{X})))
 \end{equation}
 
 \subsubsection{Spatial Attention}
-
 After channel refinement, spatial attention emphasizes informative regions:
-
 \begin{equation}
 \mathbf{M}_s = \sigma(f^{7\times7}([AvgPool(\mathbf{X'}); MaxPool(\mathbf{X'})]))
 \end{equation}
-
 where $[\cdot;\cdot]$ denotes channel-wise concatenation and $f^{7\times7}$ is a $7\times7$ convolution.
 
 \section{Evaluation Metrics}
@@ -586,6 +656,19 @@ The project is organized into logical components:
     \item \texttt{notebooks/}: Jupyter notebooks for data exploration and visualization.
 \end{itemize}
 
+\subsection{System Architecture Overview}
+
+Figure~\ref{fig:system_architecture} illustrates the complete system architecture, showing the data pipeline, model variants, and training/evaluation workflow.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{system_architecture.jpg}
+\caption{System architecture showing the end-to-end pipeline from audio files to trained models and evaluation metrics.}
+\label{fig:system_architecture}
+\end{figure}
+
+The architecture follows a modular design where each component (data preprocessing, model training, evaluation) is independently testable and reusable across different experiments.
+
 \section{Data Pipeline}
 
 Efficient data loading is critical for training deep learning models. We implemented a custom \texttt{SpectrogramCSVDataset} class inheriting from PyTorch's \texttt{Dataset}.
@@ -621,15 +704,95 @@ We integrated TensorBoard for real-time monitoring of:
 \subsection{Data Leakage Prevention}
 A critical issue was identified early in development where data augmentation caused leakage between training and validation sets. Naively splitting the dataset after augmentation resulted in original and augmented versions of the same clip appearing in both sets, artificially inflating accuracy.
 
-\textbf{Solution:} We implemented a grouped splitting strategy where the split is performed on the unique source file IDs before augmentation. All augmented variants of a source file are then assigned to the same split as the original, ensuring strict separation.
+\textbf{Solution:} The solution implemented is a grouped splitting strategy in which the split is done on the unique source file IDs before augmentation. All augmented variants of a source file are then assigned to the same split as the original, ensuring strict separation.
 
 \subsection{Attention Mechanism Integration}
 Integrating CBAM into the pre-trained ResNet-50 architecture required careful handling of layer freezing. Initial experiments showed high variance because the added attention modules in early layers were inadvertently frozen while only the final layers were trained.
 
-\textbf{Solution:} We modified the fine-tuning strategy to explicitly unfreeze all added attention modules (CBAM/SE) across all layers, while keeping the pre-trained convolutional weights frozen during the initial phase. This ensured the attention mechanisms could learn effective feature recalibration.
+\textbf{Solution:} We adapted the fine-tuning strategy so that we are explicitly not freezing out all added attention
+modules (CBAM/SE) in all the layers but preserving the pre-trained convolutional weights
+frozen during the first phase. This ensured that the attention mechanisms had the chance to learn effective
+feature recalibration.
 
 \subsection{Cross-Platform Compatibility}
-Developing on Windows required handling path separators and encoding issues (e.g., Unicode characters in logs) that differ from Linux environments. We standardized on using Python's \texttt{pathlib} for robust path handling and ensured all file I/O used explicit UTF-8 encoding.
+Developing through Windows means dealing with path separators and encoding issues (e.g. Unicode
+characters in logs) that are different from the Linux environments. We standardized on using python's
+\texttt{pathlib} to be robust about the use of paths and make certain all the file I/O used explicit UTF-8 Encoding.
+
+\section{Version Control and Reproducibility}
+
+\subsection{Git Version Control}
+The entire project is maintained under Git version control with a structured branching strategy:
+\begin{itemize}
+    \item \texttt{main} branch: Stable, tested code
+    \item \texttt{dev} branch: Active development
+    \item Feature branches: Individual experiments and model implementations
+\end{itemize}
+
+Commit messages follow conventional commit standards, documenting changes to models, datasets, and experimental configurations. This ensures full traceability of all experiments and enables rollback to previous states if needed.
+
+\subsection{Experiment Tracking}
+Each experiment run is logged with:
+\begin{itemize}
+    \item Timestamp and unique experiment ID
+    \item Model architecture and hyperparameters
+    \item Random seed for reproducibility
+    \item Training/validation metrics at each epoch
+    \item Final confusion matrices and classification reports
+\end{itemize}
+
+All experiment artifacts are stored in timestamped directories under \texttt{product/artifacts/}, allowing comparison across runs.
+
+\section{Testing and Validation}
+
+\subsection{Data Integrity Testing}
+Before training, we implemented validation checks to ensure:
+\begin{itemize}
+    \item No overlap between training and validation sets (grouped split verification)
+    \item All spectrogram files are readable and correctly formatted
+    \item Label distributions are balanced across splits
+    \item Augmented variants are correctly linked to source files
+\end{itemize}
+
+\subsection{Model Validation}
+To verify correct model implementation:
+\begin{itemize}
+    \item Loaded pre-trained weights and verified output dimensions match expected shapes
+    \item Tested attention modules in isolation before integration
+    \item Compared gradient flow through attention layers vs. baseline
+    \item Validated that freezing/unfreezing strategies correctly update \texttt{requires\_grad} flags
+\end{itemize}
+
+\subsection{Multi-Seed Reproducibility}
+All experiments are run with three random seeds (42, 123, 999) to quantify variance and ensure results are not artifacts of lucky initialization. This statistical rigor is essential for drawing valid conclusions about model performance.
+
+\section{System Design Diagrams}
+
+To illustrate the modular architecture and workflow of the system, we provide UML diagrams showing the class structure and training sequence.
+
+\subsection{Class Diagram}
+
+Figure~\ref{fig:uml_class} illustrates the modular class structure of the system. The \texttt{SpectrogramDataset} class handles data loading, while \texttt{BaseModel} provides an abstract interface for all model architectures. Specific models (\texttt{ResNet50Model}) inherit from this base, and attention modules (\texttt{SEBlock}, \texttt{CBAMBlock}) are implemented as reusable components. The \texttt{Trainer} class orchestrates the training process.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\textwidth]{uml_class_diagram.png}
+\caption{UML class diagram showing the modular architecture with inheritance relationships and key components.}
+\label{fig:uml_class}
+\end{figure}
+
+\subsection{Training Sequence Diagram}
+
+Figure~\ref{fig:uml_sequence} shows the training sequence, depicting the interaction between components during a single training iteration. The \texttt{Trainer} coordinates data loading, forward pass, loss computation, backpropagation, and logging.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\textwidth]{uml_sequence_diagram.png}
+\caption{UML sequence diagram illustrating the training pipeline flow from data loading to metric logging.}
+\label{fig:uml_sequence}
+\end{figure}
+
+These diagrams demonstrate the separation of concerns and modularity of the codebase, facilitating maintainability and extensibility.
 
 %%%%%%%%%%%%%%%%%%%%%%
 %%% Results
@@ -641,9 +804,9 @@ We present the quantitative results of our experiments on the ESC-50 and EmoDB d
 
 \subsection{ESC-50 Results}
 
-The experiments on the ESC-50 dataset demonstrate the clear advantage of transfer learning. The Baseline CNN, trained from scratch, achieved a validation accuracy of only 44.44\%. In contrast, the ImageNet pre-trained models performed significantly better.
+The experiments on the ESC-50 dataset demonstrate the clear advantage of transfer learning. The Baseline CNN, trained from scratch, achieved a validation accuracy of only 44.4\%. In contrast, the ImageNet pre-trained models performed significantly better.
 
-AlexNet achieved an average accuracy of 74.5\%, while the deeper ResNet-50 model reached 89.87\%. The integration of Squeeze-and-Excitation (SE) blocks into ResNet-50 yielded an average accuracy of 88.77\%, which is statistically comparable to the vanilla ResNet-50. The CBAM-augmented model achieved 85.13\% in our preliminary run.
+AlexNet achieved an average accuracy of 74.5\%, while the deeper ResNet-50 model reached 89.9\%. The integration of Squeeze-and-Excitation (SE) blocks into ResNet-50 yielded an average accuracy of 88.8\%, which is statistically comparable to the vanilla ResNet-50. The CBAM-augmented model demonstrated significant instability, achieving a mean accuracy of 73.4\% with high variance ($\pm$10.9\%) across seeds.
 
 \begin{table}[h]
 \centering
@@ -651,12 +814,12 @@ AlexNet achieved an average accuracy of 74.5\%, while the deeper ResNet-50 model
 \label{tab:esc50_results}
 \begin{tabular}{lcccc}
 \hline
-\textbf{Model} & \textbf{Runs} & \textbf{Avg. Accuracy (\%)} & \textbf{Avg. Macro F1} & \textbf{Best Acc (\%)} \\ \hline
-Baseline CNN & 1 & 44.44 & 0.424 & 44.44 \\
-AlexNet & 2 & 74.50 & 0.738 & 77.56 \\
-ResNet-50 & 3 & 89.87 & 0.898 & 90.88 \\
-ResNet-50 + SE & 3 & 88.77 & 0.887 & 91.56 \\
-ResNet-50 + CBAM & 1 & 85.13 & 0.851 & 85.13 \\ \hline
+\textbf{Model} & \textbf{Runs} & \textbf{Avg. Acc (\%)} & \textbf{Std Dev} & \textbf{Avg. Macro F1} \\ \hline
+Baseline CNN & 1 & 44.4 & -- & 0.424 \\
+AlexNet & 2 & 74.5 & $\pm$4.3 & 0.738 \\
+ResNet-50 & 3 & 89.9 & $\pm$0.9 & 0.898 \\
+ResNet-50 + SE & 3 & 88.8 & $\pm$2.4 & 0.887 \\
+ResNet-50 + CBAM & 3 & 73.4 & $\pm$10.9 & -- \\ \hline
 \end{tabular}
 \end{table}
 
@@ -670,9 +833,10 @@ On the EmoDB dataset, both ResNet-50 and ResNet-50 + SE achieved very high perfo
 \label{tab:emodb_results}
 \begin{tabular}{lcccc}
 \hline
-\textbf{Model} & \textbf{Runs} & \textbf{Avg. Accuracy (\%)} & \textbf{Avg. Macro F1} & \textbf{Best Acc (\%)} \\ \hline
-ResNet-50 & 2 & 95.72 & 0.946 & 97.98 \\
-ResNet-50 + SE & 3 & 95.79 & 0.949 & 96.42 \\ \hline
+\textbf{Model} & \textbf{Runs} & \textbf{Avg. Acc (\%)} & \textbf{Std Dev} & \textbf{Avg. Macro F1} \\ \hline
+ResNet-50 & 2 & 95.7 & $\pm$3.2 & 0.946 \\
+ResNet-50 + SE & 3 & 95.8 & $\pm$0.9 & 0.949 \\
+ResNet-50 + CBAM & 3 & 80.2 & $\pm$19.3 & -- \\ \hline
 \end{tabular}
 \end{table}
 
@@ -681,27 +845,334 @@ ResNet-50 + SE & 3 & 95.79 & 0.949 & 96.42 \\ \hline
 The results highlight several key findings:
 \begin{itemize}
     \item \textbf{Impact of Depth and Pre-training:} ResNet-50 outperforms AlexNet by a large margin ($\sim$15\%), confirming that deeper architectures with residual connections are better suited for capturing the complex time-frequency patterns in spectrograms.
-    \item \textbf{Effectiveness of Attention:} While SE blocks added a slight improvement in the best-case scenario for ESC-50 (91.56\% vs 90.88\%), the average performance was similar to the baseline ResNet-50. This suggests that for these specific datasets, the global channel re-weighting provided by SE blocks might be redundant given the strong feature extraction of ResNet-50.
-    \item \textbf{Generalization:} The high accuracy on EmoDB ($>$95\%) confirms that the transfer learning approach generalizes well to speech emotion recognition tasks.
+    
+    \item \textbf{Effectiveness of SE Attention:} While SE blocks show competitive performance (88.8\% vs 89.9\% baseline), the average accuracy is slightly lower with higher variance ($\pm$2.4\% vs $\pm$0.9\%). The best individual SE run achieved 91.6\%, suggesting SE can help in some initializations, but doesn't consistently improve over vanilla ResNet-50.
+    
+    \item \textbf{CBAM Instability:} CBAM demonstrated extreme training instability across both datasets. On ESC-50, performance ranged from 63.7\% to 85.1\% (mean: 73.4\% $\pm$10.9\%). On EmoDB, the variance was even more severe: 58.4\% to 95.3\% (mean: 80.2\% $\pm$19.3\%). This 37-point spread on EmoDB indicates that CBAM is highly sensitive to random initialization, with only 1 out of 3 seeds achieving competitive performance.
+    
+    \item \textbf{Why Attention Doesn't Help:} The limited benefit from attention mechanisms suggests that ResNet-50's learned features already capture the discriminative spectral-temporal patterns needed for classification. Channel recalibration (SE) provides minimal gains, while spatial attention (CBAM) actively harms performance, possibly due to overfitting or inappropriate inductive biases for audio data.
+    
+    \item \textbf{Generalization:} The high accuracy on EmoDB ($>$95\%) confirms that the transfer learning approach generalizes well to speech emotion recognition tasks. Interestingly, SE shows the same pattern here: competitive with baseline but with higher variance.
 \end{itemize}
+
+\subsection{Per-Class Performance Analysis}
+
+To understand where the models succeed and fail, we analyzed the per-class performance on ESC-50 using the ResNet-50 baseline (seed 42, 89.4\% accuracy).
+
+\textbf{Best Performing Classes (100\% recall):}
+\begin{itemize}
+    \item Class 6: Hen (perfect classification)
+    \item Class 10: Chainsaw (perfect classification)
+    \item Class 20: Crackling fire (perfect classification)
+    \item Class 24: Helicopter (perfect classification)
+    \item Class 35: Washing machine (perfect classification)
+\end{itemize}
+
+These classes likely have distinctive spectral signatures that are easily separable.
+
+\textbf{Worst Performing Classes ($<$60\% recall):}
+\begin{itemize}
+    \item Class 29: 46.9\% recall (most difficult class)
+    \item Class 28: 59.4\% recall
+    \item Class 33: 59.4\% recall
+\end{itemize}
+
+Analysis of the confusion matrices reveals that these challenging classes often share acoustic similarities with other categories. For example, animal sounds (dog, cat, rooster) are frequently confused due to overlapping frequency characteristics in their vocalizations.
+
+\subsection{Confusion Matrix Visualization}
+
+Figures~\ref{fig:cm_resnet50} through~\ref{fig:cm_cbam} show the confusion matrices for different models on ESC-50. The diagonal elements represent correct classifications, while off-diagonal elements indicate misclassifications.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.75\textwidth]{cm_resnet50.png}
+\caption{Confusion matrix for ResNet-50 baseline on ESC-50 (seed 42, 89.4\% accuracy). Strong diagonal indicates robust classification.}
+\label{fig:cm_resnet50}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.75\textwidth]{cm_se.png}
+\caption{Confusion matrix for ResNet-50+SE on ESC-50 (seed 42, 91.6\% accuracy). Pattern nearly identical to baseline.}
+\label{fig:cm_se}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.75\textwidth]{cm_cbam.png}
+\caption{Confusion matrix for ResNet-50+CBAM on ESC-50 (seed 42, 85.1\% accuracy). Weaker diagonal with increased scatter.}
+\label{fig:cm_cbam}
+\end{figure}
+
+\textbf{Key Observations:}
+\begin{enumerate}
+    \item \textbf{ResNet-50 Baseline:} Strong diagonal with minimal off-diagonal scatter, indicating robust classification across most classes.
+    \item \textbf{ResNet-50+SE:} Nearly identical pattern to baseline, confirming that SE attention provides marginal benefit.
+    \item \textbf{ResNet-50+CBAM (Seed 42):} Weaker diagonal with increased off-diagonal scatter, particularly in the middle classes (15-35), indicating reduced discriminative power despite achieving 85\% accuracy.
+\end{enumerate}
+
+The confusion matrices visually confirm our quantitative findings: SE maintains baseline performance, while CBAM introduces classification errors even in its best-case scenario (seed 42).
+
+\subsection{Cross-Dataset Comparison}
+
+Comparing ESC-50 (50 classes, diverse environmental sounds) to EmoDB (7 classes, controlled speech):
+
+\begin{itemize}
+    \item \textbf{EmoDB} achieves higher accuracy ($>$95\%) due to:
+    \begin{itemize}
+        \item Fewer classes (7 vs 50)
+        \item Controlled recording conditions
+        \item Structured emotional prosody patterns
+    \end{itemize}
+    
+    \item \textbf{ESC-50} is more challenging ($\sim$90\%) due to:
+    \begin{itemize}
+        \item High intra-class variability (e.g., different dog breeds)
+        \item Diverse recording environments
+        \item Acoustic overlap between categories
+    \end{itemize}
+\end{itemize}
+
+This cross-dataset validation demonstrates that the models generalize well across different audio domains, but performance is heavily dependent on dataset complexity and class separability.
+
 
 %%%%%%%%%%%%%%%%%%%%%%
 %%% Planning
-\chapter{Planning and Timeline}
+\chapter{Planning and Schedule}
 
-[To be completed]
+\section{Original Project Plan}
+
+As a stepwise process in Term 1, the project was initially designed to start with a literature review and preprocessing. Then baseline and transfer-learning experiments were to be performed, followed by attention mechanism integration and, lastly, analysis and reporting. This plan offered a high-level design but did not anticipate the work being so iterative and debugging-intensive in experimental deep learning.
+
+\section{Actual Time Plan for the Project (Diary Based)}
+
+This part shows the actual timeline of the execution, reconstructed from the project diary, and points out where work took longer, or where work overlapped, compared to the initial plan.
+
+\subsection*{Phase 1: Preprocessing and Pipeline Setup}
+\textit{Early October -- Late October}
+
+\begin{itemize}
+    \item ESR literature review and ESC-50 data format review.
+    \item Learning Librosa and audio feature extraction.
+    \item Mel and Log-Mel spectrogram pipelines were developed.
+    \item Data augmentation (noise, pitch shift, time stretch) implementation.
+    \item Environment and dependency problem resolution.
+    \item Reproducible preprocessing pipeline ($\sim$8k spectrograms) finalised.
+\end{itemize}
+
+\textbf{Note:} More time was spent here than initially planned because of environment instability and the need to validate preprocessing outputs.
+
+\subsection*{Phase 2: CNN Baseline and Data Validation}
+\textit{Late October -- Mid November}
+
+\begin{itemize}
+    \item Implementation and training of baseline CNN.
+    \item Integration of logging, checkpointing, and evaluation metrics.
+    \item Identification of data leakage due to augmented samples crossing splits.
+    \item Redesign of the dataset splitting strategy in order to group by audio clip.
+    \item Retraining of baseline model on corrected splits.
+\end{itemize}
+
+\textbf{Note:} Fixing data leakage became a necessary prerequisite before continuing with the rest.
+
+\subsection*{Phase 3: Transfer Learning Models}
+\textit{Mid November}
+
+\begin{itemize}
+    \item Transfer learning implementation of AlexNet.
+    \item Transfer learning implementation of ResNet-50.
+    \item Statistically stable multi-seed training (three seeds per model).
+    \item Initial per-class and variance analysis.
+    \item Optimisation of reproducibility setup (fixed seeds, consistent configs).
+\end{itemize}
+
+\subsection*{Phase 4: Attention Mechanisms}
+\textit{End of November -- Early December}
+
+\begin{itemize}
+    \item Insertion of SE attention in ResNet-50.
+    \item Training and assessment on different seeds.
+    \item CBAM implementation and debugging.
+    \item A single CBAM run was completed; others were terminated due to instability.
+    \item Comparison with non-attention controls.
+\end{itemize}
+
+\textbf{Observation:} Attention mechanisms were not presented as a completely isolated step, but were introduced after establishing a strong baseline.
+
+\subsection*{Phase 5: Experiments from Secondary Datasets (EmoDB)}
+\textit{Late November}
+
+\begin{itemize}
+    \item Integration of EmoDB dataset.
+    \item Preprocessing and splitting pipeline adaptation.
+    \item Evaluation with ResNet-50 and SE-augmented models.
+\end{itemize}
+
+\textbf{Observation:} higher accuracy but higher variance compared to ESC-50.
+
+\subsection*{Phase 6: Analysis and Interim Reporting}
+\textit{Early December -- Mid December}
+
+\begin{itemize}
+    \item Aggregation of multi-seed results.
+    \item Generation of confusion matrices and per-class analyses.
+    \item Preparation of tables and figures for the interim report.
+    \item Writing and refinement of the interim submission alongside final experiments.
+\end{itemize}
+
+\section{Summary}
+
+While the original plan assumed a linear progression, in reality there was overlapping experimentation, debugging, and analysis. The adjustments to the timeline mostly occurred to ensure data integrity, reproducibility, and stable baselines before extending the work using attention mechanisms and additional datasets.
 
 %%%%%%%%%%%%%%%%%%%%%%
 %%% Diary
 \chapter{Project Diary}
 
-[To be completed]
+This chapter entails the time history of project implementation, in which the planned progress, as well as the deviations realised during implementation and experimentation, are recorded. The diary also indicates the repetitive and discovery-driven aspect of machine learning research, such as debugging, re-design choices, and partial or discontinued experimental directions where necessary.
+
+\section{September 2025}
+\subsection*{Week 1: Project Introduction and Administration}
+
+\begin{itemize}
+    \item Project scope / hi-tech direction confirmed with supervisor.
+    \item Concurring core objective: comparative assessment of baseline CNNs and transfer learning architectures in audio classification.
+    \item First repository structure created (product/, documents/, .gitignore).
+    \item Institutionalised Git-based version control and reproducibility.
+\end{itemize}
+
+\subsection*{Week 2: Preliminary Research on the Background}
+
+\begin{itemize}
+    \item Summarised background information on neural networks applicable to CNN-based classification.
+    \item Learned concepts and spectrogram representations of audio signal processing.
+    \item Conducted a literature review of earlier studies regarding environmental sound recognition (ESR).
+    \item Researched Librosa, waveform loading, transformation, and visualisation.
+\end{itemize}
+
+\section{October 2025}
+\subsection*{Week 1: Data Checking and Orienting}
+
+\begin{itemize}
+    \item ESC-50 downloaded and integrity of the data checked (2000 clips, 50 classes).
+    \item Metadata compared with audio files.
+    \item Produced verification notebooks for inspection of waveforms and spectrograms.
+    \item Preprocessing: summarised major Librosa utilities to be used later in the pipeline.
+\end{itemize}
+
+\subsection*{Weeks 2--3: Preprocessing Pipeline Development}
+
+\begin{itemize}
+    \item Applied scripts for waveform visualisation and Mel-spectrogram generation.
+    \item Disturbances in the Python environment (problems with Numba/LLVM) were fixed.
+    \item Moved to a new clean virtual environment in an attempt to stabilise the setup.
+    \item Refactored prepared preprocessing code into a modular structure which can be re-used.
+\end{itemize}
+
+\subsection*{Week 4: Augmentation and CNN Preliminary Baseline}
+
+\begin{itemize}
+    \item Completed audio augmentation pipeline (noise injection, pitch changes, time stretch).
+    \item Installed a preliminary CNN model.
+    \item Authentication of input shapes and forward-pass integrity.
+    \item Native TensorBoard logging used to track training dynamics.
+\end{itemize}
+
+\section{November 2025}
+\subsection*{Weeks 1--2: Preparation and Expansion of Data}
+
+\begin{itemize}
+    \item Mel-spectrograms for ESC-50 generated.
+    \item Prepared augmented data (approximately 7,900 spectrograms).
+    \item Initial train/validation splits implemented.
+    \item Initial early CNN training runs conducted.
+\end{itemize}
+
+\subsection*{Week 3: CNN Base Assessment and Limitations}
+
+\begin{itemize}
+    \item Fine-tuned base CNN to convergence.
+    \item Obtained validation accuracy of approximately 44\% on ESC-50.
+    \item Performance ceiling identified with little generalisation.
+    \item Decided that transfer learning was necessary in order to obtain better results.
+\end{itemize}
+
+\subsection*{Week 4: Transfer Learning and Critical Bug Discovery}
+
+\begin{itemize}
+    \item AlexNet implemented with ImageNet pretraining.
+    \item ESC-50 validation accuracy of approximately 74\% achieved.
+    \item Transfer-learning baseline of ResNet-50 implemented.
+    \item Initial test performances were very high (~89\%).
+    \item Major problem identified: data leakage caused by augmentation performed prior to dataset splitting.
+    \item Both training and validation sets contained augmented versions of the same audio clip.
+\end{itemize}
+
+\subsection*{Week 4 (Follow-up): Data Leakage Remediation and Re-runs}
+
+\begin{itemize}
+    \item Recoded dataset splitting algorithm to split by original clip ID.
+    \item Enforced split-before-augmentation policy.
+    \item Regenerated datasets and re-trained baseline and transfer-learning models.
+    \item Established corrected performance using lower yet accurate measures.
+\end{itemize}
+
+\subsection*{Week 5: Mechanisms of Attention (Exploratory Phase)}
+
+\begin{itemize}
+    \item Integrated Squeeze-and-Excitation (SE) blocks into ResNet-50.
+    \item Conducted multi-seed experiments (42, 123, 999).
+    \item Noticed close performance to baseline ResNet-50 with low variance.
+    \item Added CBAM attention modules to ResNet-50.
+    \item Initial CBAM experiments were very unstable across seeds.
+    \item Attention work was considered exploratory due to reproducibility issues.
+\end{itemize}
+
+\subsection*{Week 6: EmoDB Data Mining}
+
+\begin{itemize}
+    \item EmoDB dataset (535 utterances, 7 emotions) downloaded and inspected.
+    \item Introduced speaker-independent train/validation splits.
+    \item Obtained approximately 3,200 augmented spectrograms.
+    \item Assessed ResNet-50 and ResNet-50+SE.
+    \item High accuracy observed with higher variance compared to ESC-50.
+\end{itemize}
+
+\section{December 2025}
+\subsection*{Week 1: Debugging, Consolidation, and Final Experiments}
+
+\begin{itemize}
+    \item CBAM instability investigated in detail.
+    \item Determined frozen attention parameters in the initial ResNet blocks.
+    \item Adjusted layer unfreezing strategy.
+    \item Repeated a limited number of experiments with CBAM.
+    \item Concluded that complete multi-seed CBAM reproducibility was not achievable within the available timeframe.
+    \item Emphasised stability and correctness of baseline and SE outcomes.
+\end{itemize}
+
+\subsection*{Week 2: Analysis, Writing, and Presentation Preparation}
+
+\begin{itemize}
+    \item Combined trustworthy multi-model results.
+    \item Created confusion matrices and per-class performance analyses.
+    \item Automated LaTeX table creation for results reporting.
+    \item Composed interim report chapters (Introduction, Methodology, Implementation, Results).
+    \item Prepared presentation slides containing results and encountered obstacles.
+    \item By the end of the project period (December 6--12, 2025), finalised materials for interim presentation.
+\end{itemize}
+
+\section*{Closing Note}
+
+This diary reflects a non-linear research process, where time was redistributed towards debugging, data integrity, and reproducibility. Several experimental directions (especially CBAM attention) were explored but intentionally limited to ensure the validity and reliability of the reported results.
 
 
 %%%% BIBLIOGRAPHY
 \newpage
 \begin{thebibliography}{99}
 \addcontentsline{toc}{chapter}{Bibliography}
+
+\bibitem{piczak2015esc} Karol J. Piczak. \emph{ESC: Dataset for Environmental Sound Classification}. In Proceedings of the 23rd ACM International Conference on Multimedia, 2015.
+
+\bibitem{burkhardt2005emodb} Felix Burkhardt, Astrid Paeschke, Miriam Rolfes, Walter F. Sendlmeier, and Benjamin Weiss. \emph{A Database of German Emotional Speech}. In Proceedings of Interspeech, 2005.
 
 \bibitem{stevens1937scale} Stanley Smith Stevens, John Volkmann, and Edwin B. Newman. \emph{A Scale for the Measurement of the Psychological Magnitude Pitch}. The Journal of the Acoustical Society of America, 1937.
 
@@ -720,6 +1191,22 @@ The results highlight several key findings:
 \bibitem{hu2018squeeze} Jie Hu, Li Shen, and Gang Sun. \emph{Squeeze-and-Excitation Networks}. In Proceedings of CVPR, 2018.
 
 \bibitem{woo2018cbam} Sanghyun Woo, Jongchan Park, Joon-Young Lee, and In So Kweon. \emph{CBAM: Convolutional Block Attention Module}. In Proceedings of ECCV, 2018.
+
+\bibitem{gemmeke2017audioset} Jort F. Gemmeke et al. \emph{Audio Set: An Ontology and Human-Labeled Dataset for Audio Events}. In Proceedings of ICASSP, 2017.
+
+\bibitem{kong2020panns} Qiuqiang Kong, Yin Cao, Turab Iqbal, Yuxuan Wang, Wenwu Wang, and Mark D. Plumbley. \emph{PANNs: Large-Scale Pretrained Audio Neural Networks for Audio Pattern Recognition}. IEEE/ACM Transactions on Audio, Speech, and Language Processing, 2020.
+
+\bibitem{gong2021ast} Yuan Gong, Yu-An Chung, and James Glass. \emph{AST: Audio Spectrogram Transformer}. In Proceedings of Interspeech, 2021.
+
+\bibitem{purwins2019deep} Hendrik Purwins, Bo Li, Tuomas Virtanen, Jan Schlüter, Shuo-Yiin Chang, and Tara Sainath. \emph{Deep Learning for Audio Signal Processing}. IEEE Journal of Selected Topics in Signal Processing, 2019.
+
+\bibitem{zhang2021attention} Zhichao Zhang, Shugong Xu, Shunqing Zhang, Shan Cao, and Jia Liu. \emph{Attention Based Convolutional Recurrent Neural Network for Environmental Sound Classification}. Neurocomputing, 2021.
+
+\bibitem{salamon2017deep} Justin Salamon and Juan Pablo Bello. \emph{Deep Convolutional Neural Networks and Data Augmentation for Environmental Sound Classification}. IEEE Signal Processing Letters, 2017.
+
+\bibitem{yosinski2014transferable} Jason Yosinski, Jeff Clune, Yoshua Bengio, and Hod Lipson. \emph{How Transferable are Features in Deep Neural Networks?}. In Advances in Neural Information Processing Systems (NIPS), 2014.
+
+\bibitem{mcfee2015librosa} Brian McFee, Colin Raffel, Dawen Liang, Daniel P.W. Ellis, Matt McVicar, Eric Battenberg, and Oriol Nieto. \emph{librosa: Audio and Music Signal Analysis in Python}. In Proceedings of the 14th Python in Science Conference, 2015.
 
 \end{thebibliography}
 \label{endpage}
