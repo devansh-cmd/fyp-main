@@ -46,7 +46,20 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # --- Load ESC-50 label mapping (filename -> category)
-    esc50 = pd.read_csv(args.esc50_csv)
+    csv_path = Path(args.esc50_csv)
+    if not csv_path.exists():
+        # Try finding it in the parent or a 'meta' subfolder if path is slightly off
+        alt_path = csv_path.parent / "meta" / csv_path.name
+        if alt_path.exists():
+            csv_path = alt_path
+        else:
+            alt_path_2 = csv_path.parent / csv_path.name
+            if alt_path_2.exists():
+                csv_path = alt_path_2
+            else:
+                raise FileNotFoundError(f"Could not find ESC-50 CSV at {args.esc50_csv} or {alt_path}")
+
+    esc50 = pd.read_csv(csv_path)
     esc50["base"] = esc50["filename"].str.replace(".wav", "", regex=False)
     base_to_label = dict(zip(esc50["base"], esc50["category"]))
 
