@@ -151,7 +151,8 @@ def process_single_file(wav_path: Path, spec_out: Path) -> List[Path]:
 
 def main() -> None:
     # EmoDB-specific paths
-    PROJECT_ROOT = Path(r"C:\FYP\PROJECT")
+    # Dynamically find project root (3 levels up from this script)
+    PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
     AUDIO_DIR = PROJECT_ROOT / "product" / "audio_preprocessing" / "data" / "EmoDB-wav"
     SPEC_OUT = PROJECT_ROOT / "product" / "audio_preprocessing" / "outputs" / "spectrograms_emodb"
     SPEC_OUT.mkdir(parents=True, exist_ok=True)
