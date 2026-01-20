@@ -13,6 +13,7 @@ Devansh Dev 12-11-2025
 
 import argparse
 import json
+import random
 import time
 from pathlib import Path
 
@@ -94,9 +95,17 @@ def parse_args():  # CLI argument parser
     ap.add_argument("--lr", type=float, default=5e-4)
     ap.add_argument("--weight_decay", type=float, default=1e-2)
     ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--logdir", default="product/artifacts/runs")
     ap.add_argument("--run_name", default="")
     return ap.parse_args()
+
+
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
 
 
 # To plot and log to TensorBoard
@@ -125,6 +134,7 @@ def plot_and_add_figure(
 
 def main():  # Actual main training function
     args = parse_args()
+    set_seed(args.seed)
     root = Path(args.project_root)
     run_root = root / args.logdir
     run_root.mkdir(parents=True, exist_ok=True)
