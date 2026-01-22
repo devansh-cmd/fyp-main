@@ -14,9 +14,6 @@ def make_split_italian(data_dir, output_dir, val_ratio=0.2, seed=42):
     records = []
     
     # Dataset structure:
-    # 15 Young Healthy Control / Subject Name / *.wav
-    # 22 Elderly Healthy Control / Subject Name / *.wav
-    # 28 People with Parkinson's disease / Range / Subject Name / *.wav
     
     for root, dirs, files in os.walk(data_dir):
         for file in files:

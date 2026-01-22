@@ -1,5 +1,32 @@
 ﻿# Project Diary (reverse chronological)
 
+# 2026-01-22 Italian PD Dataset Integration & Framework Preparation
+
+**Summary**
+Successfully integrated the Italian Parkinson's Disease dataset into the unified project pipeline. Generated 831 high-quality Log-Mel spectrograms and established a robust training framework for cross-domain evaluation.
+
+## Improvements Made
+- **Data Preprocessing**:
+  - Implemented `generate_spectrograms_italian.py` using a strictly non-augmented protocol to preserve subtle acoustic pathology.
+  - Processed all 831 files (HC & PD) at 16kHz with 2048/512/128 Mel configuration (~224x224).
+- **Modeling Infrastructure**:
+  - Developed `train_pd_italian.py`, a unified script for ResNet50, SE-Net, and CBAM experiments.
+  - Integrated comprehensive reporting: Accuracy, ROC-AUC, Macro F1, Precision, and Recall.
+  - Automated JSON summary and confusion matrix generation for every run.
+- **Repository Hygiene**:
+  - Removed all legacy references to the PC-GITA dataset to focus purely on the new Italian corpus.
+
+## Technical Notes
+- Fixed `PDDataset` loader to handle irregular filenames (double dots) common in the Italian raw data.
+- Established a `product/artifacts/runs/italian_pd/` structure for standardized result tracking.
+- Pre-runs (Sanity Probes) confirmed stable training dynamics across all three architectures.
+
+## Next Steps
+1. Implement and benchmark the **Coordinate Attention (CA)** module.
+2. Integrate **PhysioNet (Heart Sound)** dataset (Week 3 target).
+3. Begin cross-dataset evaluation protocol design.
+
+
 # 2025-12-16 Final Report Polish & Submission Prep
 
 **Summary**
