@@ -1,5 +1,30 @@
 ﻿# Project Diary (reverse chronological)
 
+# 2026-01-23 PhysioNet 2016 Heart Sound Integration & Attention Modules
+
+**Summary**
+Successfully integrated the PhysioNet 2016 Heart Sound Abnormal Detection dataset. Implemented stratified splitting, specialized spectrogram generation, and established a suite of modular attention blocks (CA, Triplet, Gate).
+
+## Improvements Made
+- **PhysioNet Integration**:
+  - Developed `make_split_physionet.py` to index 3,153 recordings across sources A-F.
+  - Implemented stratified splitting by both source and binary label (Normal vs Abnormal).
+  - Created `generate_spectrograms_physionet.py` with optimized settings for heart sounds (Target SR: 2kHz, 224x224).
+- **Attention Modeling**:
+  - Implemented **Coordinate Attention (CA)** to capture cross-dimension direction-aware information.
+  - Implemented **Triplet Attention** for capturing cross-dimension interactions through rotation.
+  - Implemented **Attention Gate** module for focus-driven feature pruning.
+
+## Technical Notes
+- PCG (Heart Sounds) processing uses a lower sampling rate (2kHz) compared to speech (16kHz) to focus on relevant low-frequency cardiac cycles.
+- Splitting protocol ensures source distribution is balanced between training and validation sets to prevent domain bias.
+
+## Next Steps
+1. Establish ResNet50 baseline on PhysioNet dataset.
+2. Systematic benchmarking of all attention modules (CA, CBAM, Triplet, Gate) across Italian PD and PhysioNet.
+3. Begin preparations for DementiaBank (Week 4 goal).
+
+
 # 2026-01-22 Italian PD Dataset Integration & Framework Preparation
 
 **Summary**
