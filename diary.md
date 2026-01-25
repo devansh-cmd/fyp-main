@@ -1,5 +1,31 @@
 ﻿# Project Diary (reverse chronological)
 
+# 2026-01-25 Modular Model Architecture Refactor
+
+**Summary**
+Refactored the model architecture implementation to be fully modular and backbone-agnostic. Established a unified model factory that can dynamically inject attention modules into various CNN backbones.
+
+## Improvements Made
+- **Modular Modeling**:
+  - Developed `model_builder.py`, a centralized factory for creating attention-augmented models.
+  - Decoupled attention blocks (SE, CBAM, Coordinate, Triplet, Gate) from specific backbones.
+  - Implemented dynamic "plug-and-play" logic to support ResNet and MobileNet variants.
+- **Unified Training Loop**:
+  - Optimized `train_pd_italian.py` to use the new factory.
+  - Simplified training logic by removing backbone-specific boilerplate.
+- **Repository Optimization**:
+  - Cleaned up redundant architecture-specific files (`resnet50_*.py`) to reduce technical debt and ensure singular sources of truth.
+
+## Technical Notes
+- The new architecture uses `nn.Sequential` wrappers to hook attention blocks into existing pre-trained layers without modifying library code.
+- This design allows for rapid benchmarking of different attention-backbone combinations via simple CLI arguments.
+
+## Next Steps
+1. Re-run Italian PD benchmarks using the new modular framework to ensure parity.
+2. Finalize MobileNetV2 hooks for all attention types.
+3. Begin systematic evaluation on the PhysioNet dataset.
+
+
 # 2026-01-23 PhysioNet 2016 Heart Sound Integration & Attention Modules
 
 **Summary**

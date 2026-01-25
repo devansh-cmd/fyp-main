@@ -27,6 +27,9 @@ sys.path.append(str(PROJECT_ROOT / "product" / "models"))
 
 from se_block import SEBlock
 from cbam import CBAM
+from coordinate_attention import CoordinateAttention
+from triplet_attention import TripletAttention
+from attention_gate import SingleInputAttentionGate
 
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
@@ -83,38 +86,24 @@ class PDDataset(Dataset):
         label = self.label_map[row['label']]
         return x, torch.tensor(label, dtype=torch.long)
 
+# Import unified model builder
+sys.path.append(str(PROJECT_ROOT / "product" / "models"))
+from model_builder import build_augmented_model
+
 def build_model(model_type: str, num_classes: int):
     """
-    Builds the requested model architecture.
+    Builds the model using the unified model_builder.
+    Expects model_type like 'resnet50_se' or 'mobilenetv2_ca'.
     """
-    if model_type == "resnet50":
-        model = models.resnet50(weights=ResNet50_Weights.IMAGENET1K_V2)
-    elif model_type == "resnet50_se":
-        model = models.resnet50(weights=ResNet50_Weights.IMAGENET1K_V2)
-        # Add SEBlocks after each layer
-        model.layer1 = nn.Sequential(model.layer1, SEBlock(256))
-        model.layer2 = nn.Sequential(model.layer2, SEBlock(512))
-        model.layer3 = nn.Sequential(model.layer3, SEBlock(1024))
-        model.layer4 = nn.Sequential(model.layer4, SEBlock(2048))
-    elif model_type == "resnet50_cbam":
-        model = models.resnet50(weights=ResNet50_Weights.IMAGENET1K_V2)
-        # Add CBAM after each layer
-        model.layer1 = nn.Sequential(model.layer1, CBAM(256))
-        model.layer2 = nn.Sequential(model.layer2, CBAM(512))
-        model.layer3 = nn.Sequential(model.layer3, CBAM(1024))
-        model.layer4 = nn.Sequential(model.layer4, CBAM(2048))
-    else:
-        raise ValueError(f"Unknown model_type: {model_type}")
-
-    # Replace final FC layer
-    in_feats = model.fc.in_features
-    model.fc = nn.Linear(in_feats, num_classes)
+    parts = model_type.split('_')
+    backbone = parts[0]
+    attention = parts[1] if len(parts) > 1 else None
     
-    return model
+    return build_augmented_model(backbone, attention, num_classes)
 
 def parse_args():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--model_type", default="resnet50", choices=["resnet50", "resnet50_se", "resnet50_cbam"])
+    ap.add_argument("--model_type", default="resnet50", choices=["resnet50", "resnet50_se", "resnet50_cbam", "resnet50_ca", "resnet50_triplet", "resnet50_gate"])
     ap.add_argument("--epochs", type=int, default=10)
     ap.add_argument("--batch_size", type=int, default=32)
     ap.add_argument("--lr", type=float, default=1e-4) # Lower LR for transfer learning

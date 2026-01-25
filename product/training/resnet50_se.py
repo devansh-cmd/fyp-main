@@ -34,7 +34,7 @@ from torchvision.models import ResNet50_Weights
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "models"))
-from se_block import SEBlock
+from resnet50_se import resnet50_se
 
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
@@ -178,17 +178,7 @@ def main():  # Actual main training function
         print("[WARN] Couldn't fetch debug batch:", e)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # model setup - ResNet50 with SE blocks
-    model = models.resnet50(weights=ResNet50_Weights.IMAGENET1K_V2)
-    
-    # Insert SE blocks after each ResNet block
-    model.layer1 = nn.Sequential(model.layer1, SEBlock(256))
-    model.layer2 = nn.Sequential(model.layer2, SEBlock(512))
-    model.layer3 = nn.Sequential(model.layer3, SEBlock(1024))
-    model.layer4 = nn.Sequential(model.layer4, SEBlock(2048))
-    
-    in_feats = model.fc.in_features
-    model.fc = nn.Linear(in_feats, num_classes)
+    model = resnet50_se(num_classes)
 
     for param in model.parameters():  # Freeze all initially
         param.requires_grad = False
