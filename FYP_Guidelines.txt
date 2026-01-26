@@ -1,0 +1,160 @@
+A final project report is approximately 15,000 words and must include a word count. It is acceptable to have other material in appendixes.
+
+The section on professional issues should be about 1,000 words.
+
+Rationale: 10 marks
+Percentage	Description
+0%–39%	Problem statement or Introduction or Motivation missing or severely underdeveloped. Absence of focus. Tasks unclear or confused.
+40%–49%	Marginal focus. Relevance of topic explained; problem statement poorly developed.
+50%–59%	Good relevant introduction. Some shortcomings in clarity of purpose and associated objectives.
+60%–69%	Clear Motivation and well-written focused introduction that explains the structure of the report and the tasks to be done.
+70%–100%	Clear statement of problem and associated objectives. Persuasive and comprehensive rationale. Some tasks clearly above second year level.
+Literature Review and Background Reading: 10 marks
+Percentage	Description
+0%–39%	No attempt at critical comment; Serious gaps and omissions in literature.
+40%–49%	Little attempt at critical comment. Large gaps and omissions.
+50%–59%	Fair knowledge. Some gaps and omissions. Some attempt at critical comment.
+60%–69%	Sound knowledge of background area. Some critical review. Good understanding.
+70%–100%	Full critical review of literature relevant to study. Comprehensive knowledge
+Contents and Knowledge: 20 marks
+Percentage	Description
+0%–39%	No evidence of understanding of the project area. Confused conceptual thinking. Poor description of the Software Engineering process
+40%–49%	Little evidence of understanding of the project area. Conceptual framework incomplete. Inappropriate or poorly described Software Engineering processes.
+50%–59%	Evidence of understanding with clear explanations. Adequate coverage. Conceptual framework well developed. Nice clear description of the Software Engineering methodology used.
+60%–69%	Good knowledgeable account of the project as titled. Ample coverage of the subject matter in sufficient technical detail. Clear explanation of Software Engineering techniques with motivation.
+70%–100%	Excellent understanding and insight. Conceptual framework underpins study. Expert account of topic. Well thought through Software Engineering content.
+Technical decision making: 20 marks
+Percentage	Description
+0%–39%	There is no evidence of thought behind choices made.
+40%–49%	Design Decisions and choice of algorithms justified.
+50%–59%	Alternatives considered for important technical decisions such as the use of patterns, algorithms or architecture.
+60%–69%	Clear presentation of technical decisions suggesting that a careful approach has been taken.
+70%–100%	Technical decisions have been made and presented in way that demonstrates excellent understanding.
+Critical analysis and discussion: 20 marks
+Percentage	Description
+0%–39%	Weak and unacceptable analysis. Inadequate use of evidence for discussion. No critical evaluation of results.
+40%–49%	Limited or logically inconsistent analysis. Superficial critical evaluation of results or value of evidence.
+50%–59%	Appropriate critical analysis but limited. Clear presentation of findings. Good analysis of the project process.
+60%–69%	Clear presentation of findings. Competent analysis. Evidence of ability to evaluate results. Conclusions justified appropriately.
+70%–100%	High level critical analysis of the process and any deliverables. Clear understanding of the quality of the work. Nice conclusions.
+Structure and presentation: 15 marks
+Percentage	Description
+0%–39%	Unacceptable layout in terms of structure and logical argument. Inappropriate use of English. Serious deficiencies in presentation.
+40%–49%	Poor layout in terms of structure and logical argument. Poor literary style and deficiencies in presentation.
+50%–59%	Generally good layout and clear literary style. Mainly appropriate presentation. Relevant use of chapter and section structure. Some appropriate figures or tables.
+60%–69%	Correct, clear English. Clear and competent expression. Consistent layout of the project report. Clear overall structure. Good use of figures.
+70%–100%	Excellent layout. Conforms to all technical specifications. Lucid style of expression in English. Appropriate and innovative presentation.
+Bibliography and Citations: 5 marks
+Percentage	Description
+0%–39%	No bibliography
+40%–49%	Bibliography present but poorly formatted or cited
+50%–59%	Clear well written bibliography. Some citations.
+60%–69%	Well formatted bibliography. Citations at correct points in text.
+70%–100%	Correct reference to sources and inclusion of a full bibliography.
+
+
+Marks awarded by the project supervisor and second marker for the quality of the end product and the candidate's total technical achievement.
+
+In the unlikely event that the project does not involve the creation of a significant piece of software then an appropriate scheme will be used to allocate an end product grade to other forms of deliverable such as hardware.
+
+If there is no evidence of frequent updates to your department GitLab repository of program code then a mark of zero will be awarded for your end product.
+
+Does it work? Is it stable?
+
+Is the software usable? Is the interface appropriate for the application (a compiler might require more technical skills to run than an e-commerce site)?
+
+Does the code and system structure follow the design?
+
+How complete is the functionality with respect to the requirements?
+
+Is the coding clean and well documented?
+
+Does the GitLab repository reflect the use of good software engineering principles including appropriate use of branches/tags?
+
+Does the product require techniques, tools, theory or concepts which are clearly above second year level?
+
+Does the product use complex new technologies/platforms or require the study of a significant body of literature from disparate sources to complete?
+
+Code Quality: 10 marks
+Percentage	Description
+0%–39%	Code may not even be readable
+40%–69%	Code meets a clean standard - possibly Checkstyle
+70%–100%	Beautiful code, nicely commented, clearly structured
+Structure and Design: 15 marks
+Percentage	Description
+0%–39%	Code may not even be broken up according to functionality
+40%–69%	Clear evidence of a design process. UML and design patterns used
+70%–100%	Design process shows refactoring. Evidence of careful use of appropriate data structures.
+Functionality: 10 marks
+Percentage	Description
+0%–39%	Code may not even work as expected or not possible to see code running using supplied instructions.
+40%–69%	Code has all functionality as specified in the original project specification.
+70%–100%	Functionality significantly exceeds original specification. Clear and effective instructions, both for usage and installation.
+Usability: 5 marks
+Percentage	Description
+0%–39%	User interface unclear missing, or inconsistent
+40%–69%	User interface effective and appropriate. Code works well in its designed environment (resizes or switches orientation or deals properly with life cycle)
+70%–100%	Clear evidence of user interface design and thought about the user experience. Some attention on accessibility, or other enhancements
+Stability: 10 marks
+Percentage	Description
+0%–39%	Code has no documentation or overall structure is very weak
+40%–69%	Code has good documentation and includes clear use of regression testing
+70%–100%	Excellent SE. Clear evidence of all appropriate processes including the use of branches and merging in a revision control system and a good test strategy
+Technical Expertise: 30 marks
+Percentage	Description
+0%–39%	Project as delivered requires no final year expertise
+40%–69%	Project requires techniques, tools, theory or concepts which are clearly above second year level
+70%–100%	Some tools, theory or techniques employed show evidence of mastery at a high level
+Complexity: 20 marks
+Percentage	Description
+0%–39%	Code or results are very simple or do not represent what would normally be expected for this project
+40%–69%	The project as delivered required learning of a significant amount of material, or the use of complex technologies
+70%–100%	The project involved a deep understanding of several new areas of work and this is demonstrated in a successful implementation or clear and professional presentation of theory
+
+You should upload a brief video about your project online.
+
+The video does not need to be publicly available, but our markers should have access with a URL
+The length of video should be 5–10 minutes.
+Percentage	Description
+0%–25%	No video, or very short video was submitted
+26%–39%	Basic video. No description in the video is provided
+40%–59%	Intermediate video. Demonstrates minimum number of features of the project.
+60%–69%	Good video. Explains some features and technologies used in the project.
+70%–85%	Very Good Video. The student clearly understood the project and has demonstrated all the features implemented so far and explained the expected features of the project. Clear evidence of commitment to excellent performance on the project.
+86%–100%	As Very Good. The student clearly knew more than experts in the department about (some aspects of) the project and its context.
+
+Marks awarded by the supervisor for the ability of the student to plan and organise their project as a professional. This score reflects the students ability to recognise and follow appropriate professional behaviour.
+
+If there is no evidence of frequent, reflective updates to your work diary then a mark of zero will be awarded for your professionalism.
+
+You are evaluated on:
+
+the ability to attend supervisory meetings;
+
+the ability to alter their project plan and identify priorities as they arise;
+
+the ability to keep an organised project diary;
+
+the ability to maintain a consistently high level of effort throughout the project;
+
+an assessment of whether the student can work independently or requires constant supervisory intervention;
+
+communicate well, understanding relevant professional issues, and maintain a good professional working attitude towards the project
+
+Percentage	Description
+0%–25%	Student did not undertake any planning, and little to no effort was spent on the project.
+26%–39%	The student showed little if any attempt at organisation. Despite prompting by supervisor the student's effort was poor.
+40%–59%	The student showed some organisational skills, and the level of effort in the project was generally adequate. Marks in the lower range are awarded if the student required regular prompting.
+60%–69%	The project was well organised and a significant amount of effort was put into the project by the student at during the project.
+70%–85%	The project was well organised. The behaviour of the student achieved a high standard of professionalism.
+86%–100%	The project was very clearly organised, taking into account wider professional issues, and the student behaved throughout in a professional manner.
+
+
+Percentage	Description
+0%–39%	No real attempt to describe any professional issues
+40%–49%	Professional issues addressed but poorly thought out and related to the project
+50%–59%	Professional issues discussed that are shown to be relevant to the project
+60%–69%	Clear discussion of professional issues. Well written and related to project material.
+70%–100%	Thoughtful discussion of professional issues and how they have affected the project process.
+
+
