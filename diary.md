@@ -1,5 +1,30 @@
 ﻿# Project Diary (reverse chronological)
 
+# 2026-01-26 Establishing 'Gold Standard' Anchors & Unified Metrics
+
+**Summary**
+Formalized a rigorous experimental protocol by establishing "Gold Standard" ResNet-50 anchors across all audio domains. Enhanced the unified training engine to ensure high-resolution statistical comparability for the final research narrative.
+
+## Improvements Made
+- **Experimental Design**:
+  - Defined the **Primary Anchor** protocol: plain ResNet-50, ImageNet-pretrained, fine-tuning only the classifier and Layer 4.
+  - Established a 3-seed statistical requirement (42, 123, 999) for all baseline reporting to ensure clinical reproducibility.
+- **Unified Training Engine (`train_unified.py`)**:
+  - Implemented automated calculation of **Macro F1-Score** and **One-vs-Rest ROC-AUC** for all tasks.
+  - Standardized the output artifact structure: every run now saves a visual `confusion_matrix.png` and a detailed `best_classification_report.json`.
+- **Data Pipeline Serialization**:
+  - Developed `finalize_training_csvs.py` to create direct-to-spectrogram mapping CSVs (`*_png.csv`), drastically reducing loading overhead during massive batch runs.
+
+## Technical Notes
+- Early results on the Italian PD anchor show 0.992 AUC with near-zero variance across seeds, indicating a saturated backbone performance for this specific task.
+- This creates a critical research "Pivot": identifying where plain CNNs struggle (e.g., PhysioNet or ESC-50) so attention modules can demonstrate tangible clinical value.
+
+## Next Steps
+1. Complete the 12-run anchor batch (4 datasets x 3 seeds).
+2. Begin Systematic Attention evaluation (ResNet-50 + Coordinate Attention) against these anchors.
+3. Compare "Baseline Ceiling" across general vs. medical audio.
+
+
 # 2026-01-25 Modular Model Architecture Refactor
 
 **Summary**
