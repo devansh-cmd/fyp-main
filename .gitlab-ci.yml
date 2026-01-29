@@ -1,75 +1,63 @@
-image: python:3.12-slim
+image: "python:3.12-slim"
 
 stages:
   - setup
-  - lint
   - test
   - audit
   - package
 
 variables:
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
 
 cache:
   key: "${CI_COMMIT_REF_SLUG}"
   paths:
     - .cache/pip
 
-setup_job:
-  stage: setup
-  script:
-    - python --version
+.base_job:
+  before_script:
     - python -m venv venv
     - . venv/bin/activate
     - python -m pip install -U pip
+
+setup_job:
+  extends: .base_job
+  stage: setup
+  script:
     - python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
     - python -m pip install -r requirements.txt
     - python -m pip install ruff black mypy pytest pytest-cov
-  artifacts:
-    paths:
-      - venv/
-    expire_in: 1 week
 
 lint_job:
-  stage: lint
-  dependencies:
-    - setup_job
+  extends: .base_job
+  stage: test
   script:
-    - . venv/bin/activate
+    - python -m pip install ruff black mypy
     - ruff check . --exclude "*.ipynb"
-    - black --check . --exclude '\.ipynb$'
+    - black --check . --exclude "\.ipynb$"
     - mypy product || true
 
 test_job:
+  extends: .base_job
   stage: test
-  dependencies:
-    - setup_job
   script:
-    - . venv/bin/activate
+    - python -m pip install pytest pytest-cov torch torchvision
     - pytest -q --disable-warnings --maxfail=1
 
 audit_job:
+  extends: .base_job
   stage: audit
-  dependencies:
-    - setup_job
   script:
-    - . venv/bin/activate
+    - python -m pip install pandas
     - python product/scripts/filter_anchor_csvs.py
-    - >
-      python -c "import pandas as pd, sys, re;
-      clip=lambda p: re.sub(r'_(orig|noisy|pitchUp\d+|stretch\d+\.\d+)$','',p.split('/')[-1].split('\\\\')[-1].split('.')[0]);
-      t=pd.read_csv('product/artifacts/splits/train_no_aug.csv');
-      v=pd.read_csv('product/artifacts/splits/val_no_aug.csv');
-      overlap=set(t['filepath'].apply(clip)) & set(v['filepath'].apply(clip));
-      print(f'Overlap={len(overlap)}');
-      sys.exit(1 if overlap else 0)"
+    - python product/scripts/audit_leakage.py
 
 package_job:
+  extends: .base_job
   stage: package
-  dependencies:
-    - setup_job
   script:
-    - . venv/bin/activate
+    - python -m pip install torch torchvision pandas PIL matplotlib
     - python product/training/train_unified.py --dataset emodb --model_type resnet50 --epochs 1 --batch_size 8 --train_csv product/artifacts/splits/train_emodb_no_aug.csv --val_csv product/artifacts/splits/val_emodb_no_aug.csv --run_name ci_smoke_test
   artifacts:
     paths:
