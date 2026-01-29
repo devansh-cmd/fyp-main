@@ -1,4 +1,4 @@
-﻿image: python:3.12-slim
+image: python:3.12-slim
 
 stages:
   - setup
@@ -6,89 +6,71 @@ stages:
   - test
   - audit
   - package
-    
+
 variables:
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
 
 cache:
-  key: ${CI_COMMIT_REF_SLUG}
+  key: "${CI_COMMIT_REF_SLUG}"
   paths:
-    - venv/
     - .cache/pip
 
-setup:
+setup_job:
   stage: setup
   script:
     - python --version
     - python -m venv venv
-    - source venv/bin/activate
+    - . venv/bin/activate
     - python -m pip install -U pip
     - python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
     - python -m pip install -r requirements.txt
     - python -m pip install ruff black mypy pytest pytest-cov
   artifacts:
     paths:
-      - product/artifacts/splits/
+      - venv/
     expire_in: 1 week
 
-lint:
+lint_job:
   stage: lint
+  dependencies:
+    - setup_job
   script:
-    - source venv/bin/activate
+    - . venv/bin/activate
     - ruff check . --exclude "*.ipynb"
-    - black --check . --exclude "\.ipynb$"
+    - black --check . --exclude '\.ipynb$'
     - mypy product || true
 
-test:
+test_job:
   stage: test
+  dependencies:
+    - setup_job
   script:
-    - source venv/bin/activate
+    - . venv/bin/activate
     - pytest -q --disable-warnings --maxfail=1
 
-audit:
+audit_job:
   stage: audit
+  dependencies:
+    - setup_job
   script:
-    - source venv/bin/activate
-    - |
-      python - <<'PY'
-      from pathlib import Path
-      import pandas as pd, re, sys
+    - . venv/bin/activate
+    - python product/scripts/filter_anchor_csvs.py
+    - >
+      python -c "import pandas as pd, sys, re;
+      clip=lambda p: re.sub(r'_(orig|noisy|pitchUp\d+|stretch\d+\.\d+)$','',p.split('/')[-1].split('\\\\')[-1].split('.')[0]);
+      t=pd.read_csv('product/artifacts/splits/train_no_aug.csv');
+      v=pd.read_csv('product/artifacts/splits/val_no_aug.csv');
+      overlap=set(t['filepath'].apply(clip)) & set(v['filepath'].apply(clip));
+      print(f'Overlap={len(overlap)}');
+      sys.exit(1 if overlap else 0)"
 
-      def clip_id(p):
-          name = Path(p).stem
-          return re.sub(r'_(orig|noisy|pitchUp\d+|stretch\d+\.\d+)$', '', name)
-
-      train = pd.read_csv("product/artifacts/splits/train.csv")
-      val = pd.read_csv("product/artifacts/splits/val_no_aug.csv")
-
-      # We check both the general ESC-50 and EmoDB splits
-      # Note: PhysioNet and Italian PD are already subject-independent
-      
-      def check_leakage(train_csv, val_csv):
-          ti = set(pd.read_csv(train_csv)["filepath"].map(clip_id))
-          vi = set(pd.read_csv(val_csv)["filepath"].map(clip_id))
-          return ti & vi
-
-      overlap_esc = check_leakage("product/artifacts/splits/train_no_aug.csv", "product/artifacts/splits/val_no_aug.csv")
-      overlap_emo = check_leakage("product/artifacts/splits/train_emodb_no_aug.csv", "product/artifacts/splits/val_emodb_no_aug.csv")
-      
-      print(f"Overlap ESC-50 IDs: {len(overlap_esc)}")
-      print(f"Overlap EmoDB IDs: {len(overlap_emo)}")
-      
-      sys.exit(1 if (overlap_esc or overlap_emo) else 0)
-      PY
-
-package:
+package_job:
   stage: package
+  dependencies:
+    - setup_job
   script:
-    - source venv/bin/activate
-    - python product/training/train_unified.py \
-        --dataset emodb \
-        --model_type resnet50 \
-        --epochs 1 --batch_size 8 \
-        --train_csv product/artifacts/splits/train_emodb_no_aug.csv \
-        --val_csv product/artifacts/splits/val_emodb_no_aug.csv \
-        --run_name ci_smoke_test
+    - . venv/bin/activate
+    - python product/training/train_unified.py --dataset emodb --model_type resnet50 --epochs 1 --batch_size 8 --train_csv product/artifacts/splits/train_emodb_no_aug.csv --val_csv product/artifacts/splits/val_emodb_no_aug.csv --run_name ci_smoke_test
   artifacts:
     paths:
       - product/artifacts/runs/emodb/ci_smoke_test/*.json
