@@ -59,30 +59,38 @@ audit:
           return re.sub(r'_(orig|noisy|pitchUp\d+|stretch\d+\.\d+)$', '', name)
 
       train = pd.read_csv("product/artifacts/splits/train.csv")
-      val = pd.read_csv("product/artifacts/splits/val.csv")
+      val = pd.read_csv("product/artifacts/splits/val_no_aug.csv")
 
-      ti = set(train["filepath"].map(clip_id))
-      vi = set(val["filepath"].map(clip_id))
-      overlap = ti & vi
+      # We check both the general ESC-50 and EmoDB splits
+      # Note: PhysioNet and Italian PD are already subject-independent
+      
+      def check_leakage(train_csv, val_csv):
+          ti = set(pd.read_csv(train_csv)["filepath"].map(clip_id))
+          vi = set(pd.read_csv(val_csv)["filepath"].map(clip_id))
+          return ti & vi
 
-      print(f"Overlap IDs: {len(overlap)}")
-      sys.exit(1 if overlap else 0)
+      overlap_esc = check_leakage("product/artifacts/splits/train_no_aug.csv", "product/artifacts/splits/val_no_aug.csv")
+      overlap_emo = check_leakage("product/artifacts/splits/train_emodb_no_aug.csv", "product/artifacts/splits/val_emodb_no_aug.csv")
+      
+      print(f"Overlap ESC-50 IDs: {len(overlap_esc)}")
+      print(f"Overlap EmoDB IDs: {len(overlap_emo)}")
+      
+      sys.exit(1 if (overlap_esc or overlap_emo) else 0)
       PY
 
 package:
   stage: package
   script:
     - source venv/bin/activate
-    - python -m product.training.train_baseline \
-        --project_root . \
-        --epochs 1 --batch_size 8 --img_size 224 \
-        --lr 5e-4 --weight_decay 1e-2 \
-        --train_csv product/artifacts/splits/mini_train.csv \
-        --val_csv product/artifacts/splits/mini_val.csv \
-        --logdir ci_runs
+    - python product/training/train_unified.py \
+        --dataset emodb \
+        --model_type resnet50 \
+        --epochs 1 --batch_size 8 \
+        --train_csv product/artifacts/splits/train_emodb_no_aug.csv \
+        --val_csv product/artifacts/splits/val_emodb_no_aug.csv \
+        --run_name ci_smoke_test
   artifacts:
     paths:
-      - ci_runs/metrics.jsonl
-      - ci_runs/*.json
-      - ci_runs/*.png
+      - product/artifacts/runs/emodb/ci_smoke_test/*.json
+      - product/artifacts/runs/emodb/ci_smoke_test/*.png
     expire_in: 1 week
