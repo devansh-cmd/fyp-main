@@ -1,8 +1,6 @@
-import os
 import pandas as pd
 from pathlib import Path
 from sklearn.model_selection import train_test_split
-import sys
 
 def make_split_physionet(project_root: Path, val_ratio: float = 0.2, seed: int = 42):
     """
@@ -16,7 +14,7 @@ def make_split_physionet(project_root: Path, val_ratio: float = 0.2, seed: int =
     sources = ['a', 'b', 'c', 'd', 'e', 'f']
     all_records = []
 
-    print(f"Indexing PhysioNet 2016 sources...")
+    print("Indexing PhysioNet 2016 sources...")
 
     for src in sources:
         src_folder_name = f"training-{src}"

@@ -106,7 +106,7 @@ def main():
     df_train[["filepath", "label"]].to_csv(train_csv, index=False)
     df_val[["filepath", "label"]].to_csv(val_csv, index=False)
 
-    print(f"\nSaved:")
+    print("\nSaved:")
     print(f"  {train_csv}")
     print(f"  {val_csv}")
     print("\nDone!")

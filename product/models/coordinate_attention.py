@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 class h_sigmoid(nn.Module):
     def __init__(self, inplace=True):

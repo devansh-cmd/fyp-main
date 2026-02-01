@@ -1,11 +1,10 @@
-import argparse
 import json
 import random
-import time
-import os
 import sys
 from pathlib import Path
 
+import argparse
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
@@ -14,28 +13,52 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, roc_auc_score
+from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score
 from PIL import Image
-from torchvision import models
-from torchvision.models import ResNet50_Weights
 
 # Add project root to sys.path for model imports
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent.parent
-sys.path.append(str(PROJECT_ROOT / "product" / "models"))
+sys.path.append(str(PROJECT_ROOT / "product" / "models"))  # noqa: E402
 
-from model_builder import build_augmented_model
+from model_builder import build_augmented_model  # noqa: E402
 
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
+
+def get_definitive_label_map(dataset_name):
+    """Static mapping to ensure classes never swap between seeds."""
+    # Static mappings to ensure Positive (Disease/Event) class is always at index 1 for ROC-AUC
+    classes = {
+        "emodb": ["anger", "boredom", "disgust", "fear", "happiness", "neutral", "sadness"],
+        "italian_pd": ["health", "parkinson"],  # Index 0: Health, Index 1: Parkinson
+        "physionet": ["normal", "abnormal"],    # Index 0: Normal, Index 1: Abnormal
+        "esc50": sorted([
+            "airplane", "breathing", "brushing_teeth", "can_opening", "car_horn",
+            "cat", "chainsaw", "chirping_birds", "church_bells", "clapping",
+            "clock_alarm", "clock_tick", "coughing", "cow", "crackling_fire",
+            "crickets", "crow", "crying_baby", "dog", "door_wood_creaks",
+            "door_wood_knock", "drinking_sipping", "engine", "fireworks",
+            "footsteps", "frog", "glass_breaking", "hand_saw", "helicopter",
+            "hen", "insects", "keyboard_typing", "laughing", "mouse_click",
+            "pig", "pouring_water", "rain", "rooster", "sea_waves", "sheep",
+            "siren", "sneezing", "snoring", "thunderstorm", "toilet_flush",
+            "train", "vacuum_cleaner", "washing_machine", "water_drops", "wind"
+        ])
+    }
+    lst = classes.get(dataset_name.lower())
+    if not lst: return None
+    # Use the order prescribed in the lists above (not sorted alphabetically)
+    return {lab: i for i, lab in enumerate(lst)}
 
 class UnifiedDataset(Dataset):
     """
     Standardized Dataset for all domains.
     Expects CSV with 'path' (or 'filepath') and 'label' columns.
     """
-    def __init__(self, csv_path: Path, img_size: int = 224, label_map: dict = None):
+    def __init__(self, csv_path: Path, dataset_name: str, img_size: int = 224, label_map: dict = None):
         self.df = pd.read_csv(csv_path)
+        self.dataset_name = dataset_name
         self.img_size = img_size
         
         # Determine path column
@@ -50,10 +73,12 @@ class UnifiedDataset(Dataset):
         if label_map:
             self.label_map = label_map
         else:
-            # Auto-infer classes and sort
-            unique_labels = sorted(self.df['label'].unique())
-            self.label_map = {lab: i for i, lab in enumerate(unique_labels)}
-            print(f"Auto-mapped labels: {self.label_map}")
+            # Always use definitive mapping for scientific consistency
+            self.label_map = get_definitive_label_map(self.dataset_name)
+            if not self.label_map:
+                 unique_labels = sorted(self.df['label'].unique())
+                 self.label_map = {lab: i for i, lab in enumerate(unique_labels)}
+            print(f"Using definitive label mapping for {self.dataset_name}: {self.label_map}")
         
     def __len__(self):
         return len(self.df)
@@ -103,6 +128,8 @@ def parse_args():
     ap.add_argument("--lr", type=float, default=1e-4) # Standard for pathology
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--run_name", default="")
+    ap.add_argument("--train_csv", default=None, help="Optional override for training CSV path")
+    ap.add_argument("--val_csv", default=None, help="Optional override for validation CSV path")
     return ap.parse_args()
 
 def set_seed(seed):
@@ -144,8 +171,8 @@ def main():
     # We should have CSVs that point to the .png files for training.
     
     config = DS_CONFIG[args.dataset]
-    train_csv = PROJECT_ROOT / config["train"]
-    val_csv = PROJECT_ROOT / config["val"]
+    train_csv = Path(args.train_csv) if args.train_csv else (PROJECT_ROOT / config["train"])
+    val_csv = Path(args.val_csv) if args.val_csv else (PROJECT_ROOT / config["val"])
     num_classes = config["num_classes"]
     
     run_name = args.run_name if args.run_name else f"{args.dataset}_{args.model_type}_s{args.seed}"
@@ -155,8 +182,8 @@ def main():
     print(f"--- Unified Training: {args.dataset} | {args.model_type} | Seed {args.seed} ---")
     
     # Setup Dataset/Loader
-    train_ds = UnifiedDataset(train_csv)
-    val_ds = UnifiedDataset(val_csv, label_map=train_ds.label_map)
+    train_ds = UnifiedDataset(train_csv, dataset_name=args.dataset)
+    val_ds = UnifiedDataset(val_csv, dataset_name=args.dataset, label_map=train_ds.label_map)
     
     train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=4)
     val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False, num_workers=4)
@@ -279,7 +306,6 @@ def main():
     
     # Save Final Confusion Matrix
     cm = confusion_matrix(y_true, y_pred)
-    import matplotlib.pyplot as plt
     fig, ax = plt.subplots(figsize=(8, 8))
     ax.imshow(cm, cmap='Blues')
     ax.set_title(f"Confusion Matrix: {args.dataset} {args.model_type}")

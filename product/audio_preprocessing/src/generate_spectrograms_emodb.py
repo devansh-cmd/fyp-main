@@ -3,10 +3,7 @@ import os
 os.environ["NUMBA_DISABLE_JIT"] = "1"  # Fixes the LLVM/Numba overflow bug
 from pathlib import Path
 from typing import List
-import re
-
 from audio_utils import (
-    get_project_paths,
     load_audio,
     compute_logmel,
     save_logmel_png,
@@ -164,7 +161,7 @@ def main() -> None:
         return
 
     print(f"Found {total_wavs} WAV files in EmoDB dataset")
-    print(f"Generating 6 spectrograms per file (1 orig + 5 augmentations)")
+    print("Generating 6 spectrograms per file (1 orig + 5 augmentations)")
     print(f"Expected total: {total_wavs * 6} PNG files\n")
 
     processed = 0

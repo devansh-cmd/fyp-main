@@ -3,37 +3,44 @@ from torchvision import models
 from torchvision.models import (
     ResNet50_Weights, 
     MobileNet_V2_Weights,
-    ResNet18_Weights,
-    EfficientNet_B0_Weights
+    ResNet18_Weights
 )
 
 # Import individual attention blocks
+# Using robust imports for Windows multiprocessing/spawn compatibility
 try:
-    from .se_block import SEBlock
-    from .cbam import CBAM
-    from .coordinate_attention import CoordinateAttention
-    from .triplet_attention import TripletAttention
-    from .attention_gate import SingleInputAttentionGate
-except ImportError:
-    # Handle direct script execution or different import contexts
     from se_block import SEBlock
     from cbam import CBAM
     from coordinate_attention import CoordinateAttention
     from triplet_attention import TripletAttention
     from attention_gate import SingleInputAttentionGate
+except ImportError:
+    try:
+        from .se_block import SEBlock
+        from .cbam import CBAM
+        from .coordinate_attention import CoordinateAttention
+        from .triplet_attention import TripletAttention
+        from .attention_gate import SingleInputAttentionGate
+    except ImportError:
+        # Fallback for diverse execution contexts
+        import sys
+        import os
+        sys.path.append(os.path.dirname(__file__))
+        from se_block import SEBlock
+        from cbam import CBAM
+        from coordinate_attention import CoordinateAttention
+        from triplet_attention import TripletAttention
+        from attention_gate import SingleInputAttentionGate
 
 def attach_attention_to_resnet(model, attention_type):
     """
-    Hooks attention blocks into the ResNet architecture at the end of each stage.
+    Hooks attention blocks into the ResNet architecture.
+    Standard Strategy: Inject attention at the end of EVERY residual block.
     """
     if not attention_type:
         return model
     
     attention_type = attention_type.lower()
-    
-    # Map attention types to their constructor and output channel sizes for ResNet stages
-    # Channels for ResNet50: layer1: 256, layer2: 512, layer3: 1024, layer4: 2048
-    # Channels for ResNet18: layer1: 64, layer2: 128, layer3: 256, layer4: 512
     
     def get_block(in_channels):
         if attention_type == 'se':
@@ -49,25 +56,25 @@ def attach_attention_to_resnet(model, attention_type):
         else:
             raise ValueError(f"Unknown attention type: {attention_type}")
 
-    # Inspect model to determine channel sizes
-    # We look at the last child of each layer
-    c1 = model.layer1[-1].conv3.out_channels if hasattr(model.layer1[-1], 'conv3') else model.layer1[-1].conv2.out_channels
-    c2 = model.layer2[-1].conv3.out_channels if hasattr(model.layer2[-1], 'conv3') else model.layer2[-1].conv2.out_channels
-    c3 = model.layer3[-1].conv3.out_channels if hasattr(model.layer3[-1], 'conv3') else model.layer3[-1].conv2.out_channels
-    c4 = model.layer4[-1].conv3.out_channels if hasattr(model.layer4[-1], 'conv3') else model.layer4[-1].conv2.out_channels
-
-    model.layer1 = nn.Sequential(model.layer1, get_block(c1))
-    model.layer2 = nn.Sequential(model.layer2, get_block(c2))
-    model.layer3 = nn.Sequential(model.layer3, get_block(c3))
-    model.layer4 = nn.Sequential(model.layer4, get_block(c4))
+    # Injection logic: Wrap every block in a stage
+    for layer_name in ['layer1', 'layer2', 'layer3', 'layer4']:
+        layer = getattr(model, layer_name)
+        new_blocks = []
+        for block in layer:
+            if hasattr(block, 'conv3'):
+                c = block.conv3.out_channels
+            else:
+                c = block.conv2.out_channels
+            
+            new_blocks.append(nn.Sequential(block, get_block(c)))
+        
+        setattr(model, layer_name, nn.Sequential(*new_blocks))
     
     return model
 
 def attach_attention_to_mobilenet(model, attention_type):
     """
     Hooks attention blocks into MobileNetV2 architecture.
-    In MobileNetV2, we typically inject after the point-wise (1x1) convolution of the bottleneck.
-    For simplicity, we'll attach to the end of selected feature stages.
     """
     if not attention_type:
         return model
@@ -75,17 +82,19 @@ def attach_attention_to_mobilenet(model, attention_type):
     attention_type = attention_type.lower()
     
     def get_block(in_channels):
-        if attention_type == 'se': return SEBlock(in_channels)
-        if attention_type == 'cbam': return CBAM(in_channels)
-        if attention_type == 'ca': return CoordinateAttention(in_channels, in_channels)
-        if attention_type == 'triplet': return TripletAttention()
-        if attention_type == 'gate': return SingleInputAttentionGate(in_channels)
+        if attention_type == 'se':
+            return SEBlock(in_channels)
+        if attention_type == 'cbam':
+            return CBAM(in_channels)
+        if attention_type == 'ca':
+            return CoordinateAttention(in_channels, in_channels)
+        if attention_type == 'triplet':
+            return TripletAttention()
+        if attention_type == 'gate':
+            return SingleInputAttentionGate(in_channels)
         return None
 
-    # MobileNetV2 features is a Sequential. We can wrap it or inject inside.
-    # We'll attach to the final feature maps before GAP
     last_channels = model.last_channel
-    # Wrap the entire feature extractor with the attention block at the end
     model.features = nn.Sequential(model.features, get_block(last_channels))
     
     return model

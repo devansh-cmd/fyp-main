@@ -1,4 +1,3 @@
-import os
 import pandas as pd
 from pathlib import Path
 from tqdm import tqdm
@@ -10,7 +9,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent.parent.parent
 sys.path.append(str(SCRIPT_DIR))
 
-from audio_utils import load_audio, compute_logmel, save_logmel_png
+from audio_utils import load_audio, compute_logmel, save_logmel_png  # noqa: E402
 
 def process_file(wav_path: Path, spec_out: Path, target_sr: int = 2000):
     """
@@ -66,7 +65,7 @@ def main():
         if process_file(wav_path, SPEC_OUT, target_sr=2000):
             success_count += 1
 
-    print(f"\n--- PhysioNet Processing Complete ---")
+    print("\n--- PhysioNet Processing Complete ---")
     print(f"Successfully Generated: {success_count} / {len(all_files)}")
     print(f"Spectrograms saved to: {SPEC_OUT}")
 

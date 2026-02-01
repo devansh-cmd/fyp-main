@@ -1,8 +1,6 @@
 import argparse
 import json
 import random
-import time
-import os
 import sys
 from pathlib import Path
 
@@ -14,22 +12,14 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, roc_auc_score
+from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score
 from PIL import Image
-from torchvision import models
-from torchvision.models import ResNet50_Weights
 
 # Add project root to sys.path for model imports
 # Assumes script is in product/training/
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent.parent
-sys.path.append(str(PROJECT_ROOT / "product" / "models"))
-
-from se_block import SEBlock
-from cbam import CBAM
-from coordinate_attention import CoordinateAttention
-from triplet_attention import TripletAttention
-from attention_gate import SingleInputAttentionGate
+sys.path.append(str(PROJECT_ROOT / "product" / "models"))  # noqa: E402
 
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
@@ -88,7 +78,7 @@ class PDDataset(Dataset):
 
 # Import unified model builder
 sys.path.append(str(PROJECT_ROOT / "product" / "models"))
-from model_builder import build_augmented_model
+from model_builder import build_augmented_model  # noqa: E402
 
 def build_model(model_type: str, num_classes: int):
     """

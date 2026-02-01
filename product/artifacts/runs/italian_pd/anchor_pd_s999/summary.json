@@ -1,0 +1,14 @@
+{
+  "best_val_acc": 0.9594594594594594,
+  "final_macro_f1": 0.9374030734526999,
+  "final_auc": 0.9908102025506377,
+  "config": {
+    "dataset": "italian_pd",
+    "model_type": "resnet50",
+    "epochs": 30,
+    "batch_size": 32,
+    "lr": 0.0001,
+    "seed": 999,
+    "run_name": "anchor_pd_s999"
+  }
+}

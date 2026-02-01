@@ -58,7 +58,7 @@ def main():
     df_val = pd.read_csv(val_csv)
     all_files = pd.concat([df_train, df_val])
     
-    print(f"--- Italian PD Spectrogram Generation ---")
+    print("--- Italian PD Spectrogram Generation ---")
     print(f"Source: {DATA_DIR}")
     print(f"Output: {SPEC_OUT}")
     print(f"Total files to process: {len(all_files)}")
@@ -81,7 +81,7 @@ def main():
             success_count += 1
         processed_count += 1
 
-    print(f"\n--- Processing Complete ---")
+    print("\n--- Processing Complete ---")
     print(f"Total Attempted: {processed_count}")
     print(f"Successfully Generated: {success_count}")
     print(f"Spectrograms saved to: {SPEC_OUT}")
