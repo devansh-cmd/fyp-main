@@ -29,16 +29,19 @@ def load_all_results():
             # Determine dataset
             dataset = config.get('dataset', 'Unknown')
             if dataset == 'Unknown':
-                # Fallback to path parts
-                path_parts = Path(filepath).parts
-                if 'esc50' in filepath.lower(): dataset = 'ESC-50'
-                elif 'emodb' in filepath.lower(): dataset = 'EmoDB'
-                elif 'italian' in filepath.lower(): dataset = 'Italian PD'
-                elif 'physionet' in filepath.lower(): dataset = 'PhysioNet'
+                if 'esc50' in filepath.lower():
+                    dataset = 'ESC-50'
+                elif 'emodb' in filepath.lower():
+                    dataset = 'EmoDB'
+                elif 'italian' in filepath.lower():
+                    dataset = 'Italian PD'
+                elif 'physionet' in filepath.lower():
+                    dataset = 'PhysioNet'
             
             # Determine model type
             model = config.get('model_type', 'Unknown')
-            if model == 'resnet50': model = 'ResNet50'
+            if model == 'resnet50':
+                model = 'ResNet50'
             
             # Extract seed
             seed = config.get('seed')

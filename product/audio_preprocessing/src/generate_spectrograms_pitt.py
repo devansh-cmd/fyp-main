@@ -92,8 +92,8 @@ def main():
     df_val = pd.read_csv(val_csv)
     
     print("--- Pitt Corpus Rigorous Processing ---")
-    print(f"Policy: Train=2[orig,noisy15db] | Val=1[orig]")
-    print(f"Naming: [subject]_[file_id]_[start]_[type].png")
+    print("Policy: Train=2[orig,noisy15db] | Val=1[orig]")
+    print("Naming: [subject]_[file_id]_[start]_[type].png")
     
     SPEC_OUT.mkdir(parents=True, exist_ok=True)
     

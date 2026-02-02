@@ -2,6 +2,7 @@ import argparse
 import json
 import random
 import sys
+import time
 from pathlib import Path
 
 import numpy as np
@@ -12,7 +13,7 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, roc_auc_score
 from PIL import Image
 
 # Add project root to sys.path for model imports

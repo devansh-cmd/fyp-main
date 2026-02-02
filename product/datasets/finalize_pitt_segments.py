@@ -1,4 +1,3 @@
-import os
 import pandas as pd
 from pathlib import Path
 
@@ -58,7 +57,7 @@ def finalize_pitt_segments(project_root: Path):
     df_train_seg.to_csv(split_dir / "train_pitt_segments.csv", index=False)
     df_val_seg.to_csv(split_dir / "val_pitt_segments.csv", index=False)
     
-    print(f"Finalized Segments:")
+    print("Finalized Segments:")
     print(f"  Train: {len(df_train_seg)} images")
     print(f"  Val:   {len(df_val_seg)} images")
     print(f"CSVs saved to {split_dir}")

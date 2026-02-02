@@ -48,7 +48,8 @@ def get_definitive_label_map(dataset_name):
         ])
     }
     lst = classes.get(dataset_name.lower())
-    if not lst: return None
+    if not lst:
+        return None
     # Use the order prescribed in the lists above (not sorted alphabetically)
     return {lab: i for i, lab in enumerate(lst)}
 
