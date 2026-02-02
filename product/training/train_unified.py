@@ -33,6 +33,7 @@ def get_definitive_label_map(dataset_name):
         "emodb": ["anger", "boredom", "disgust", "fear", "happiness", "neutral", "sadness"],
         "italian_pd": ["health", "parkinson"],  # Index 0: Health, Index 1: Parkinson
         "physionet": ["normal", "abnormal"],    # Index 0: Normal, Index 1: Abnormal
+        "pitt": ["control", "dementia"],        # Index 0: Control, Index 1: Dementia
         "esc50": sorted([
             "airplane", "breathing", "brushing_teeth", "can_opening", "car_horn",
             "cat", "chainsaw", "chirping_birds", "church_bells", "clapping",
