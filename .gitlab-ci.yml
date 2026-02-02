@@ -34,8 +34,8 @@ lint_job:
   stage: test
   script:
     - python -m pip install ruff black mypy
-    - ruff check . --exclude "*.ipynb"
-    - black --check . --exclude "\.ipynb$"
+    - ruff check . --exclude "*.ipynb" --extend-exclude "venv"
+    - black --check . --exclude "venv/|\.ipynb$"
     - mypy product || true
 
 test_job:
