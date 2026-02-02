@@ -1,7 +1,7 @@
 import pytest
 import torch
 from pathlib import Path
-from product.training.train_unified import get_label_map, UnifiedDataset
+from product.training.train_unified import get_definitive_label_map, UnifiedDataset
 
 def test_torch_available():
     """Verify that PyTorch is correctly installed."""
@@ -9,12 +9,12 @@ def test_torch_available():
 
 def test_label_map_pitt():
     """Verify that the Pitt label map is correctly established."""
-    label_map = get_label_map("pitt")
+    label_map = get_definitive_label_map("pitt")
     assert label_map == {"control": 0, "dementia": 1}
 
 def test_label_map_physionet():
     """Verify that the PhysioNet label map is correctly established."""
-    label_map = get_label_map("physionet")
+    label_map = get_definitive_label_map("physionet")
     assert label_map == {"normal": 0, "abnormal": 1}
 
 def test_dataset_instantiation():
