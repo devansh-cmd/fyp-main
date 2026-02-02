@@ -1,0 +1,8 @@
+{
+    "dataset": "pitt_corpus",
+    "seed": 42,
+    "files": {
+        "train_pitt.csv": "72cce3938b3655efad74390e46a8d72b866c6356e1fca1fcec3f547535f2ffd1",
+        "val_pitt.csv": "e633f4dd8886ac3263bb6bed1d9f8dc627b9248f7c558d2572f44d09b07687ed"
+    }
+}
