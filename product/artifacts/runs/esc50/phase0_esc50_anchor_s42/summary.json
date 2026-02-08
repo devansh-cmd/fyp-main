@@ -1,0 +1,16 @@
+{
+  "best_val_acc": 0.7525,
+  "final_macro_f1": 0.741288324162937,
+  "final_auc": 0.9859119897959183,
+  "config": {
+    "dataset": "esc50",
+    "model_type": "resnet50",
+    "epochs": 15,
+    "batch_size": 32,
+    "lr": 0.0001,
+    "seed": 42,
+    "run_name": "phase0_esc50_anchor_s42",
+    "train_csv": "product/artifacts/splits/train_no_aug.csv",
+    "val_csv": "product/artifacts/splits/val_no_aug.csv"
+  }
+}

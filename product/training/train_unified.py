@@ -53,6 +53,10 @@ def get_definitive_label_map(dataset_name):
     # Use the order prescribed in the lists above (not sorted alphabetically)
     return {lab: i for i, lab in enumerate(lst)}
 
+def is_integer_label(val):
+    """Check if a label is already an integer or numpy integer."""
+    return isinstance(val, (int, np.integer)) or (isinstance(val, str) and val.isdigit())
+
 class UnifiedDataset(Dataset):
     """
     Standardized Dataset for all domains.
@@ -99,14 +103,13 @@ class UnifiedDataset(Dataset):
         # or we fix the paths here. Let's make it flexible.
         p = Path(wav_rel_path)
         if not p.is_absolute():
-            p = PROJECT_ROOT / p
+            # Try raw path first
+            full_path = PROJECT_ROOT / p
+            if not full_path.exists():
+                # Fallback: some Pitt paths are missing 'product/' prefix
+                full_path = PROJECT_ROOT / "product" / p
+            p = full_path
             
-        # Fallback to _orig.png if pointing to .wav
-        if p.suffix == '.wav':
-             # Need to find where the spectrogram actually is...
-             # This is a bit messy. Let's assume the CSV provides the correct path for now.
-             pass
-
         if not p.exists():
             raise FileNotFoundError(f"File not found: {p}")
 
@@ -118,12 +121,19 @@ class UnifiedDataset(Dataset):
         std = torch.tensor(IMAGENET_STD).view(3, 1, 1)
         x = (x - mean) / std
 
-        label = self.label_map[row['label']]
+        # Handle mapping: use index directly if it's already an integer, 
+        # otherwise look it up in the label_map.
+        raw_label = row['label']
+        if is_integer_label(raw_label):
+            label = int(raw_label)
+        else:
+            label = self.label_map[raw_label]
+
         return x, torch.tensor(label, dtype=torch.long)
 
 def parse_args():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--dataset", required=True, choices=["esc50", "emodb", "italian_pd", "physionet"])
+    ap.add_argument("--dataset", required=True, choices=["esc50", "emodb", "italian_pd", "physionet", "pitt"])
     ap.add_argument("--model_type", default="resnet50", help="e.g. resnet50, resnet50_se, resnet50_ca")
     ap.add_argument("--epochs", type=int, default=30)
     ap.add_argument("--batch_size", type=int, default=32)
@@ -164,6 +174,11 @@ def main():
         "physionet": {
             "train": "product/artifacts/splits/train_physionet_png.csv",
             "val": "product/artifacts/splits/val_physionet_png.csv",
+            "num_classes": 2
+        },
+        "pitt": {
+            "train": "product/artifacts/splits/train_pitt_segments.csv",
+            "val": "product/artifacts/splits/val_pitt_segments.csv",
             "num_classes": 2
         }
     }

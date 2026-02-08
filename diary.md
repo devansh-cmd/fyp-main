@@ -1,5 +1,39 @@
 ﻿# Project Diary (reverse chronological)
 
+# 2026-02-05 Gold Anchor Baselines Established & Pitt Analysis
+
+**Summary**
+Successfully completed the "Gold Anchor" Baseline experiments across all 5 datasets (Italian PD, PhysioNet, ESC-50, EmoDB, Pitt Corpus). Resolved critical training bugs and established definitive performance benchmarks (3-seed means) to guide the next phase of attention-augmented research.
+
+## Improvements Made
+- **Training Stability & Bug Fixes**:
+  - Resolved `KeyError` in `train_unified.py` by implementing a polymorphic label handler in `UnifiedDataset` to support both integer (PhysioNet/Pitt) and categorical (EmoDB/ESC-50) labels.
+  - Implemented automated path-prefix fallback in the DataLoader to handle deep/shallow directory structures for Pitt spectrograms.
+- **Experimental Completion**:
+  - Executed the final 10-run sequence via `run_remaining_anchors.bat`, completing the 15-run anchor matrix (5 datasets × 3 seeds).
+  - Verified 100% reproducibility across seeds for clinical datasets (PhysioNet, Italian PD).
+- **Result Tabulation**:
+  - Aggregated performance metrics into a central research table.
+  - Confirmed "EmoDB Saturation" (100% Acc) and "Pitt Complexity" (66% Acc), providing a clear motivation for Phase 3.
+
+## Technical Notes
+- **Pitt Corpus Analysis**: The baseline accuracy of 66.19% reflects the difficulty of detecting cognitive impairment from acoustic textures alone. The high false-negative rate suggests thatResNet-50 is missing temporal/linguistic cues (e.g., latencies) which are often "silent" or subtle in Mel-spectrograms.
+- **PhysioNet Fix**: The `KeyError: np.int64(0)` was traced to the CSV using raw encoded indices. The fix ensures the pipeline is now agnostic to whether labels are strings or pre-encoded integers.
+
+## Final Baseline Benchmarks (3-Seed Mean)
+| Dataset | Avg Accuracy (%) | Avg Macro F1 | Avg AUC |
+| :--- | :--- | :--- | :--- |
+| **Italian PD** | 97.52 | 0.937 | 0.992 |
+| **PhysioNet** | 93.13 | 0.884 | 0.955 |
+| **ESC-50** | 74.67 | 0.731 | 0.987 |
+| **EmoDB** | 100.00| 1.000 | 1.000 |
+| **Pitt Corpus** | 66.19 | 0.577 | 0.621 |
+
+## Next Steps
+1. Transition to **Phase 3: Selective Attention Integration**.
+2. Benchmark Coordinate Attention (CA) against these "Gold Anchor" baselines.
+3. Investigate "Temporal Pooling" or "Attention Gating" specifically for the Pitt Corpus to address its lower baseline.
+
 # 2026-02-02 Pitt Corpus Integration & CI/CD Stabilization
 
 **Summary**

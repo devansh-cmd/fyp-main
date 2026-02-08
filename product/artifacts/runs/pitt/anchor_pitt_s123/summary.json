@@ -1,0 +1,16 @@
+{
+  "best_val_acc": 0.6555023923444976,
+  "final_macro_f1": 0.5919429066897886,
+  "final_auc": 0.6141563334248148,
+  "config": {
+    "dataset": "pitt",
+    "model_type": "resnet50",
+    "epochs": 15,
+    "batch_size": 32,
+    "lr": 0.0001,
+    "seed": 123,
+    "run_name": "anchor_pitt_s123",
+    "train_csv": "product/artifacts/splits/train_pitt_segments.csv",
+    "val_csv": "product/artifacts/splits/val_pitt_segments.csv"
+  }
+}

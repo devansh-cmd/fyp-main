@@ -1,0 +1,16 @@
+{
+  "best_val_acc": 0.9255150554675119,
+  "final_macro_f1": 0.8775162995695316,
+  "final_auc": 0.9609597885822396,
+  "config": {
+    "dataset": "physionet",
+    "model_type": "resnet50",
+    "epochs": 15,
+    "batch_size": 32,
+    "lr": 0.0001,
+    "seed": 999,
+    "run_name": "anchor_phys_s999",
+    "train_csv": "product/artifacts/splits/train_physionet_png.csv",
+    "val_csv": "product/artifacts/splits/val_physionet_png.csv"
+  }
+}
