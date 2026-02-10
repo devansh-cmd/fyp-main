@@ -1,0 +1,21 @@
+{
+  "best_macro_f1": 0.5917285748280033,
+  "final_macro_f1": 0.5917285748280033,
+  "final_auc": 0.9748082748724488,
+  "final_control_recall": 0.5625,
+  "config": {
+    "dataset": "esc50",
+    "model_type": "resnet50",
+    "epochs": 30,
+    "batch_size": 32,
+    "lr": 5e-06,
+    "weight_decay": 0.1,
+    "unfreeze_at": 0,
+    "weighted_loss": true,
+    "dropout": 0.8,
+    "seed": 123,
+    "run_name": "",
+    "train_csv": null,
+    "val_csv": null
+  }
+}

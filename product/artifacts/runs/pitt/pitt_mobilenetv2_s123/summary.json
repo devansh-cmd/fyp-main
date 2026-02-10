@@ -1,0 +1,21 @@
+{
+  "best_macro_f1": 0.6140350877192983,
+  "final_macro_f1": 0.5960321657154319,
+  "final_auc": 0.6209924902073302,
+  "final_control_recall": 0.5302013422818792,
+  "config": {
+    "dataset": "pitt",
+    "model_type": "mobilenetv2",
+    "epochs": 30,
+    "batch_size": 32,
+    "lr": 2e-05,
+    "weight_decay": 0.1,
+    "unfreeze_at": 0,
+    "weighted_loss": true,
+    "dropout": 0.6,
+    "seed": 123,
+    "run_name": "",
+    "train_csv": null,
+    "val_csv": null
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "best_val_acc": 0.9175911251980983,
+  "final_macro_f1": 0.8594028520499108,
+  "final_auc": 0.9539325505270428,
+  "config": {
+    "dataset": "physionet",
+    "model_type": "mobilenetv2",
+    "epochs": 30,
+    "batch_size": 32,
+    "lr": 0.0001,
+    "seed": 42,
+    "run_name": "",
+    "train_csv": null,
+    "val_csv": null
+  }
+}

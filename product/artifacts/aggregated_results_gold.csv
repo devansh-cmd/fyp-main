@@ -1,8 +1,0 @@
-,,Val_Accuracy,Val_Accuracy,Val_Accuracy,Precision,Precision,Recall,Recall,Macro_F1,Macro_F1,AUC,AUC
-,,mean,std,count,mean,std,mean,std,mean,std,mean,std
-Dataset,Model,,,,,,,,,,,
-EMODB,ResNet50,100.0,0.0,3,1.0,0.0,1.0,0.0,1.0,0.0,1.0,0.0
-ESC50,ResNet50,74.667,0.52,3,0.758,0.004,0.747,0.005,0.731,0.012,0.987,0.001
-ITALIAN_PD,ResNet50,97.523,1.7,3,0.319,0.552,0.32,0.555,0.312,0.541,0.992,0.005
-PHYSIONET,ResNet50,91.046,4.198,4,0.87,0.067,0.863,0.053,0.857,0.053,0.932,0.046
-PITT,ResNet50,65.61,1.301,4,0.615,0.024,0.601,0.033,0.569,0.023,0.625,0.013

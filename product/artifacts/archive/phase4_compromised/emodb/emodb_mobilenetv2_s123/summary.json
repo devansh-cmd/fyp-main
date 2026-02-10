@@ -1,0 +1,16 @@
+{
+  "best_val_acc": 0.9532710280373832,
+  "final_macro_f1": 0.9286547526544734,
+  "final_auc": 0.9972350398399359,
+  "config": {
+    "dataset": "emodb",
+    "model_type": "mobilenetv2",
+    "epochs": 30,
+    "batch_size": 32,
+    "lr": 0.0001,
+    "seed": 123,
+    "run_name": "",
+    "train_csv": null,
+    "val_csv": null
+  }
+}

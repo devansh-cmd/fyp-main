@@ -1,0 +1,16 @@
+{
+  "best_val_acc": 0.84625,
+  "final_macro_f1": 0.8286466625457258,
+  "final_auc": 0.9927873883928572,
+  "config": {
+    "dataset": "esc50",
+    "model_type": "mobilenetv2",
+    "epochs": 30,
+    "batch_size": 32,
+    "lr": 0.0001,
+    "seed": 999,
+    "run_name": "",
+    "train_csv": null,
+    "val_csv": null
+  }
+}
