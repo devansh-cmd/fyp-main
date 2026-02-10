@@ -14,6 +14,8 @@ try:
     from coordinate_attention import CoordinateAttention
     from triplet_attention import TripletAttention
     from attention_gate import SingleInputAttentionGate
+    from mobilenet_v2 import get_mobilenet_v2
+    from hybrid_net import get_hybrid_model
 except ImportError:
     try:
         from .se_block import SEBlock
@@ -21,6 +23,8 @@ except ImportError:
         from .coordinate_attention import CoordinateAttention
         from .triplet_attention import TripletAttention
         from .attention_gate import SingleInputAttentionGate
+        from .mobilenet_v2 import get_mobilenet_v2
+        from .hybrid_net import get_hybrid_model
     except ImportError:
         # Fallback for diverse execution contexts
         import sys
@@ -31,6 +35,8 @@ except ImportError:
         from coordinate_attention import CoordinateAttention
         from triplet_attention import TripletAttention
         from attention_gate import SingleInputAttentionGate
+        from mobilenet_v2 import get_mobilenet_v2
+        from hybrid_net import get_hybrid_model
 
 def attach_attention_to_resnet(model, attention_type):
     """
@@ -99,7 +105,7 @@ def attach_attention_to_mobilenet(model, attention_type):
     
     return model
 
-def build_augmented_model(backbone_name, attention_type, num_classes):
+def build_augmented_model(backbone_name, attention_type, num_classes, dropout=0.5):
     """
     Primary factory function to create any backbone + attention combination.
     """
@@ -108,17 +114,33 @@ def build_augmented_model(backbone_name, attention_type, num_classes):
     if backbone_name == 'resnet50':
         model = models.resnet50(weights=ResNet50_Weights.IMAGENET1K_V2)
         model = attach_attention_to_resnet(model, attention_type)
-        model.fc = nn.Linear(model.fc.in_features, num_classes)
+        # Standardize ResNet classifier with dropout for regularization
+        model.fc = nn.Sequential(
+            nn.Dropout(p=dropout),
+            nn.Linear(model.fc.in_features, num_classes)
+        )
         
     elif backbone_name == 'resnet18':
         model = models.resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
         model = attach_attention_to_resnet(model, attention_type)
-        model.fc = nn.Linear(model.fc.in_features, num_classes)
+        model.fc = nn.Sequential(
+            nn.Dropout(p=dropout),
+            nn.Linear(model.fc.in_features, num_classes)
+        )
         
     elif backbone_name == 'mobilenetv2':
-        model = models.mobilenet_v2(weights=MobileNet_V2_Weights.DEFAULT)
-        model = attach_attention_to_mobilenet(model, attention_type)
-        model.classifier[1] = nn.Linear(model.last_channel, num_classes)
+        if attention_type:
+            model = models.mobilenet_v2(weights=MobileNet_V2_Weights.DEFAULT)
+            model = attach_attention_to_mobilenet(model, attention_type)
+            model.classifier = nn.Sequential(
+                nn.Dropout(p=dropout),
+                nn.Linear(model.last_channel, num_classes)
+            )
+        else:
+            model = get_mobilenet_v2(num_classes=num_classes, dropout=dropout)
+        
+    elif backbone_name == 'hybrid':
+        model = get_hybrid_model(num_classes=num_classes, dropout=dropout)
         
     else:
         raise ValueError(f"Backbone {backbone_name} not supported by the factory yet.")

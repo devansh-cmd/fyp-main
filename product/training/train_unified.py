@@ -31,7 +31,7 @@ def get_definitive_label_map(dataset_name):
     # Static mappings to ensure Positive (Disease/Event) class is always at index 1 for ROC-AUC
     classes = {
         "emodb": ["anger", "boredom", "disgust", "fear", "happiness", "neutral", "sadness"],
-        "italian_pd": ["health", "parkinson"],  # Index 0: Health, Index 1: Parkinson
+        "italian_pd": ["HC", "PD"],  # Index 0: Health (HC), Index 1: Parkinson (PD)
         "physionet": ["normal", "abnormal"],    # Index 0: Normal, Index 1: Abnormal
         "pitt": ["control", "dementia"],        # Index 0: Control, Index 1: Dementia
         "esc50": sorted([
@@ -138,6 +138,10 @@ def parse_args():
     ap.add_argument("--epochs", type=int, default=30)
     ap.add_argument("--batch_size", type=int, default=32)
     ap.add_argument("--lr", type=float, default=1e-4) # Standard for pathology
+    ap.add_argument("--weight_decay", type=float, default=1e-2)
+    ap.add_argument("--unfreeze_at", type=int, default=0, help="Epoch at which to unfreeze backbone deep layers")
+    ap.add_argument("--weighted_loss", action="store_true", help="Enable class weighting to handle imbalance")
+    ap.add_argument("--dropout", type=float, default=0.5, help="Dropout rate for the classifier head")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--run_name", default="")
     ap.add_argument("--train_csv", default=None, help="Optional override for training CSV path")
@@ -211,18 +215,44 @@ def main():
     parts = args.model_type.split('_')
     backbone = parts[0]
     attention = parts[1] if len(parts) > 1 else None
-    model = build_augmented_model(backbone, attention, num_classes)
+    model = build_augmented_model(backbone, attention, num_classes, dropout=args.dropout)
+    model = model.to(device)
     
-    # Protocol: Transfer Learning (Unfreeze Layer 4 + Head)
+    def unfreeze_backbones(model, model_type):
+        """Dynamic unfreezing logic for late features."""
+        if model_type == 'hybrid':
+            # Unfreeze ResNet branch deep layers
+            if hasattr(model, 'layer4'):
+                for param in model.layer4.parameters():
+                    param.requires_grad = True
+            # Unfreeze MobileNet branch deep layers
+            if hasattr(model, 'features'):
+                for i in range(14, len(model.features)):
+                    for param in model.features[i].parameters():
+                        param.requires_grad = True
+        elif hasattr(model, 'layer4'):
+            for param in model.layer4.parameters():
+                param.requires_grad = True
+        elif hasattr(model, 'features'):
+            for i in range(14, len(model.features)):
+                for param in model.features[i].parameters():
+                    param.requires_grad = True
+        elif hasattr(model, 'model') and hasattr(model.model, 'features'):
+             for i in range(14, len(model.model.features)):
+                for param in model.model.features[i].parameters():
+                    param.requires_grad = True
+        print(">>> Dynamic Unfreeze Executed: Late Features are now trainable.")
+
+    # Protocol: Transfer Learning Initial State
     for param in model.parameters():
         param.requires_grad = False
     
-    # Unfreeze Layer 4
-    if hasattr(model, 'layer4'):
-        for param in model.layer4.parameters():
+    # Always unfreeze head/gate
+    if hasattr(model, 'alpha'):
+        model.alpha.requires_grad = True
+        for param in model.gate_bn.parameters():
             param.requires_grad = True
     
-    # Unfreeze Head
     if hasattr(model, 'fc'):
         for param in model.fc.parameters():
             param.requires_grad = True
@@ -230,15 +260,41 @@ def main():
         for param in model.classifier.parameters():
             param.requires_grad = True
             
-    model = model.to(device)
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, weight_decay=1e-2)
+    # Initial Unfreeze if no warm-up requested
+    if args.unfreeze_at == 0:
+        unfreeze_backbones(model, args.model_type)
+        
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"Model initialized with {trainable_params:,} trainable parameters.")
+            
+    # Calculate Class Weights for Imbalanced Datasets (e.g. Pitt)
+    criterion_weight = None
+    if args.weighted_loss:
+        labels = train_ds.df['label'].values
+        # Handle both string and int labels
+        if not is_integer_label(labels[0]):
+            labels = [train_ds.label_map[l] for l in labels]
+        
+        class_counts = np.bincount(labels)
+        total_samples = len(labels)
+        # Weight = Total / (Num_Classes * Class_Count)
+        weights = total_samples / (len(class_counts) * class_counts)
+        criterion_weight = torch.tensor(weights, dtype=torch.float32).to(device)
+        print(f"Applying Class Weights: {weights} (Targeting Class 0 Failure)")
+
+    criterion = nn.CrossEntropyLoss(weight=criterion_weight)
+    optimizer = optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, weight_decay=args.weight_decay)
     
     writer = SummaryWriter(str(LOG_DIR))
-    history = {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []}
-    best_val_acc = 0.0
+    history = {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": [], "macro_f1": []}
+    best_macro_f1 = 0.0
     
     for epoch in range(1, args.epochs + 1):
+        if epoch == args.unfreeze_at + 1 and args.unfreeze_at > 0:
+            unfreeze_backbones(model, args.model_type)
+            # Re-init optimizer to include newly unfrozen parameters
+            optimizer = optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, weight_decay=args.weight_decay)
+            
         model.train()
         train_loss, train_correct, seen = 0.0, 0, 0
         for xb, yb in train_loader:
@@ -276,48 +332,55 @@ def main():
         y_probs = np.concatenate(all_probs)
         y_pred = np.argmax(y_probs, axis=1)
         
-        # --- Clinical & Statistical Metrics ---
-        # 1. Macro F1 (Balance check across classes)
+        # --- Bias-Correction Metrics ---
         rep = classification_report(y_true, y_pred, output_dict=True, zero_division=0)
         macro_f1 = rep.get("macro avg", {}).get("f1-score", 0.0)
         
-        # 2. ROC-AUC (One-vs-Rest Macro for Multiclass, standard for Binary)
+        # Monitor Minority Class (Control) Recall - Priority for Bias Correction
+        # In most medical tasks, Class 0 is Control, Class 1 is Pathology
+        control_recall = rep.get("0", {}).get("recall", 0.0)
+        
+        # 2. ROC-AUC
         try:
             if num_classes == 2:
                 auc = roc_auc_score(y_true, y_probs[:, 1])
             else:
                 auc = roc_auc_score(y_true, y_probs, multi_class='ovr', average='macro')
         except Exception as e:
-            print(f"[WARN] ROC-AUC calculation failed: {e}")
             auc = 0.0
         
-        print(f"Epoch {epoch:2d} | Train Acc: {t_acc:.3f} | Val Acc: {val_acc:.3f} | Macro F1: {macro_f1:.3f} | AUC: {auc:.3f}")
+        print(f"Epoch {epoch:2d} | Train Acc: {t_acc:.3f} | Val Acc: {val_acc:.3f} | Macro F1: {macro_f1:.3f} | C-Recall: {control_recall:.3f} | AUC: {auc:.3f}")
         
         writer.add_scalar("Loss/Train", t_loss, epoch)
         writer.add_scalar("Loss/Val", val_loss, epoch)
         writer.add_scalar("Accuracy/Val", val_acc, epoch)
         writer.add_scalar("F1/Val_Macro", macro_f1, epoch)
+        writer.add_scalar("Recall/Control", control_recall, epoch)
         writer.add_scalar("AUC/Val", auc, epoch)
         
         history["train_loss"].append(t_loss)
         history["val_loss"].append(val_loss)
         history["train_acc"].append(t_acc)
         history["val_acc"].append(val_acc)
+        history["macro_f1"].append(macro_f1)
         
-        if val_acc > best_val_acc:
-            best_val_acc = val_acc
+        # Selection Criteria: Macro F1 (Unbiased toward majority class)
+        if macro_f1 > best_macro_f1:
+            best_macro_f1 = macro_f1
+            LOG_DIR.mkdir(parents=True, exist_ok=True) # Ensure dir exists before save
             torch.save(model.state_dict(), LOG_DIR / "best_model.pt")
-            # Save the best report
             with open(LOG_DIR / "best_classification_report.json", "w") as f:
                 json.dump(rep, f, indent=2)
 
     # Final Summary Save
     summary = {
-        "best_val_acc": float(best_val_acc),
+        "best_macro_f1": float(best_macro_f1),
         "final_macro_f1": float(macro_f1),
         "final_auc": float(auc),
+        "final_control_recall": float(control_recall),
         "config": vars(args)
     }
+    LOG_DIR.mkdir(parents=True, exist_ok=True) # Ensure dir exists before summary save
     with open(LOG_DIR / "summary.json", "w") as f:
         json.dump(summary, f, indent=2)
     
@@ -329,7 +392,7 @@ def main():
     plt.savefig(LOG_DIR / "confusion_matrix.png")
     plt.close()
 
-    print(f"Done. Best Acc: {best_val_acc:.4f} | Final AUC: {auc:.4f}")
+    print(f"Done. Best Macro F1: {best_macro_f1:.4f} | Final AUC: {auc:.4f} | C-Recall: {control_recall:.4f}")
     writer.close()
 
 if __name__ == "__main__":

@@ -51,8 +51,9 @@ def load_all_results():
             
             # Extract metrics from summary
             acc = data.get('best_val_acc') or data.get('final_val_acc') or data.get('val_acc', 0)
-            f1 = data.get('macro_f1') or data.get('final_macro_f1') or data.get('final_f1', 0)
+            f1 = data.get('best_macro_f1') or data.get('final_macro_f1') or data.get('macro_f1', 0)
             auc = data.get('final_auc') or data.get('best_auc', 0)
+            c_recall = data.get('final_control_recall') or 0.0
             
             prec, recall = 0.0, 0.0
             
@@ -78,6 +79,7 @@ def load_all_results():
                 'Recall': recall,
                 'Macro_F1': f1,
                 'AUC': auc,
+                'ControlRecall': c_recall,
                 'Run': config.get('run_name', run_dir.name)
             })
             
@@ -93,7 +95,8 @@ def aggregate_by_model(df):
         'Precision': ['mean', 'std'],
         'Recall': ['mean', 'std'],
         'Macro_F1': ['mean', 'std'],
-        'AUC': ['mean', 'std']
+        'AUC': ['mean', 'std'],
+        'ControlRecall': ['mean', 'std']
     }).round(3)
     
     return grouped
@@ -109,7 +112,7 @@ def create_latex_table(df):
         print(f"\n\\textbf{{{dataset}}}\n")
         print("\\begin{tabular}{lcccccc}")
         print("\\hline")
-        print("Model & Val Acc (\\%) & Prec & Recall & Macro-F1 & AUC & Runs \\\\")
+        print("Model & Val Acc (\\%) & Macro-F1 & AUC & C-Recall & Runs \\\\")
         print("\\hline")
         
         for model in subset['Model'].unique():
@@ -127,10 +130,9 @@ def create_latex_table(df):
             count = len(model_data)
             
             print(f"{model} & {acc_mean:.1f} $\\pm$ {acc_std:.1f} & "
-                  f"{prec_mean:.3f} $\\pm$ {prec_std:.3f} & "
-                  f"{recall_mean:.3f} $\\pm$ {recall_std:.3f} & "
                   f"{f1_mean:.3f} $\\pm$ {f1_std:.3f} & "
-                  f"{auc_mean:.3f} $\\pm$ {auc_std:.3f} & {count} \\\\")
+                  f"{auc_mean:.3f} $\\pm$ {auc_std:.3f} & "
+                  f"{model_data['ControlRecall'].mean():.3f} & {count} \\\\")
         
         print("\\hline")
         print("\\end{tabular}\n")
