@@ -1,5 +1,105 @@
 ﻿# Project Diary (reverse chronological)
 
+# 2026-02-09 The "Golden Baseline" Calibration (Audit & Pivot)
+**Summary**
+Audit of the second "True Anchor" run on the Pitt Corpus (using the 5e-6/0.8 dropout protocol) revealed a transition from catastrophic overfitting to legitimate Underfitting. Training accuracy hit a hard ceiling at 59%, failing to capture the complexity of the speech signal. Initiated the "Golden Baseline" Calibration to find the optimal capacity point for ResNet50 and MobileNetV2.
+
+**The Problem: The Regularization Pendulum**
+- **Initial State**: LR 1e-4, No Dropout -> Overfitting (99% Train, 66% Val).
+- **Secondary State**: LR 5e-6, 0.8 Dropout -> Underfitting (59% Train, 55% Val).
+- **The Target**: We need the "Golden Middle"—a protocol that allows the model to learn deep semantic features without drifting into sample memorization.
+
+**Technical Refinements (Pitt Corpus Optimization)**
+- **LR 2e-5 (Acceleration)**: Shifted the learning rate back up to 2e-5 to allow the gradient descent process to escape the 59% accuracy plateau.
+- **Dropout 0.6 (Capacity Buffer)**: Dialed back the dropout from 0.8 to 0.6. This allows 40% more neurons to participate in the feature mapping, providing the capacity needed for clinical speech nuances.
+- **WD 0.1 (Memorization Guard)**: Maintained the high weight decay (0.1) as a strictly standardized pressure against non-linear memorization.
+- **Standardized Goal**: Target 75-80% Training Accuracy by Epoch 15 with a <10% Generalization Gap.
+
+**Archiving "Bogus" Experiments**
+- **Deprecated Sets**: Moved `aggregated_results.csv` and `all_results.csv` (dated Feb 2) to a dedicated archive. These runs used non-standardized splitting and lacked the Bias-Correction Protocol.
+- **Underfit Quarantine**: Archived the recent Phase-4/5 "experimental drift" CSVs. These confirmed that while 0.8 dropout is theoretically sound for high-SNR data, it is computationally "blind" to the subtle clinical markers in DementiaBank speech.
+- **Purity Lock**: The active `product/artifacts/runs/` and `logs/` directories are now at 0ms data age, ready for the Golden Baseline.
+
+**Verification command**: 
+`python product/training/train_unified.py --dataset pitt --model_type resnet50 --seed 42 --epochs 30 --lr 2e-5 --weight_decay 0.1 --dropout 0.6 --weighted_loss --run_name stabilized_anchor_pitt`
+
+# 2026-02-09 The "Anti-Overfitting" Protocol (Post-Audit)
+**Summary**
+Audit of the first "True Anchor" run (ResNet50) on the Pitt Corpus revealed catastrophic overfitting (99.4% Train Accuracy by Epoch 10). While weighted loss fixed the bias, the model capacity was too large for the sample size. Deployed the "Anti-Overfitting" Protocol to stable the Golden Anchors.
+
+**Technical Refinements**
+- **Precision LR**: Dropped to `5e-6` to prevent gradient vibrations.
+- **Aggressive WD**: Increased to `0.1` to enforce feature simplification.
+- **Anchor Dropout**: Increased to `0.8` (up from default/none) in the classifier head.
+- **Hybrid Support**: Updated `train_unified.py` to support dynamic `--dropout` for all backbones.
+
+# 2026-02-09 The Bias-Correction Protocol - Establishing True Golden Anchors
+
+**Summary**
+Critical audit of preliminary baseline results (ResNet50 & MobileNetV2) on the Pitt Corpus revealed a "Biased Plateau". While accuracy appeared stable (~67%), the models exhibited extreme "laziness"—failing to identify 54% of healthy controls (Class 0 failure) and showing poor discriminative power (AUC 0.61). Initiated the Bias-Correction Protocol to establish legitimate, clinically-sound research anchors.
+
+## The Discovery: The Biased Plateau
+- **The Accuracy Trap**: Overall accuracy was inflated by the class imbalance in the DementiaBank dataset. The models were effectively "guessing" the majority class (Dementia) to achieve high scores.
+- **Class 0 Failure**: Recall for healthy speakers was <46%, which is clinically unacceptable for a detection task.
+- **Low AUC**: An AUC of 0.61 confirms that the preliminary baselines had almost zero discriminative power, rendering them useless for comparison against Hybrid models.
+
+## The Bias-Correction Protocol
+1. **Weighted Loss (The "Bias-Killer")**:
+   - Updated `train_unified.py` with a `--weighted_loss` flag.
+   - Implemented dynamic class weight calculation: `Weight = Total / (Num_Classes * Class_Count)`.
+   - This prevents the model from ignoring the minority class by penalizing "Control" misclassifications more heavily ($W[0] > W[1]$).
+2. **True Golden Anchor Matrix**:
+   - Committed to a full re-run of all baseline experiments (ResNet50 & MobileNetV2) across the **3-seed matrix** (42, 123, 999).
+   - Pivoted the reporting priority to **Macro F1** and **ROC-AUC** to decouple performance from class distribution.
+
+## Technical Notes
+- The weighted loss effectively forces the training engine to optimize for the *intersection* of precision and recall for both classes, not just the raw accuracy of the dominant class.
+- This creates a significantly higher "bar" for the Hybrid Ensemble and future attention models to clear.
+
+## Next Steps
+1. Create and execute `run_true_anchors.bat`.
+2. Aggregate "True Anchor" results to establish the definitive baseline.
+3. Quantify the "Bias-Killer" effect by comparing new AUC/F1 against the preliminary sets.
+
+# 2026-02-09 Architectural Pivot: Hybrid Ensemble Integration
+
+**Summary**
+Completed the MobileNetV2 benchmarking sprint (15/15 runs) and successfully transitioned to the Hybrid Ensemble. Shifted from standalone backbones to a "Hybrid Specialist" architecture (ResNet50 + MobileNetV2) using Gated Fusion. Implemented clinical-grade optimizations including dynamic backbone unfreezing and enhanced regularization to prevent feature memorization on low-SNR medical datasets.
+
+## Improvements Made
+- **Standalone MobileNetV2 Benchmarking**:
+  - Successfully executed all 15 MobileNetV2 seeds across 5 datasets.
+  - Documented a major performance breakthrough on ESC-50 (+10.4% lead over ResNet50).
+  - Established performance parity on medical audio (Pitt, PhysioNet) with 10x fewer parameters.
+- **Architectural Shift (Hybrid Ensemble)**:
+  - Designed and implemented `HybridNet` with a **Learnable Gated Fusion** mechanism ($\alpha$-gate).
+  - Implemented scale alignment via Batch Normalization to prevent ResNet (2048-dim) from dominating MobileNet (1280-dim).
+  - Increased MLP Dropout to **0.7** to force more robust feature selection.
+- **Training Engine Refinements**:
+  - Implemented **Dynamic Unfreezing (Warm-Up)**: Specialists remain frozen for the first 10 epochs to establish the fusion signal before fine-tuning backbones.
+  - Integrated configurable **Weight Decay** and a clinical-standard **LR of 1e-5** to stabilize cardiac and speech pathology detection.
+- **Experimental Automation**:
+  - Developed `run_benchmarks_all.bat` for the Hybrid 15-run sequence.
+  - Resolved `KeyError` in Italian PD via definitive label standardization.
+
+## Technical Notes
+- **Gated Fusion Rationale**: Unlike naive concatenation, the learnable sigmoid gate ($\alpha$) allows the model to "prune" irrelevant spectral dimensions. This is vital for the Pitt Corpus, where cognitive signals are often masked by ambient noise.
+- **The "Dominance" Fix**: Early sanity probes showed 92% training accuracy within 4 epochs (overfitting). The 10-epoch warm-up and high weight decay ($5 \times 10^{-2}$) were implemented to force the model to find generalizable patterns instead of memorizing backbone-specific artifacts.
+
+## Final Benchmarking Comparison (Backbone Baseline)
+| Dataset | ResNet50 Acc (%) | MobileNetV2 Acc (%) | Delta |
+| :--- | :--- | :--- | :--- |
+| **ESC-50** | 74.67 | 85.06 | **+10.39** |
+| **Italian PD** | 97.52 | 99.32 | **+1.80** |
+| **Pitt Corpus**| 66.19 | 66.83 | **+0.64** |
+| **PhysioNet** | 93.13 | 91.97 | -1.16 |
+| **EmoDB** | 100.00| 94.39 | -5.61 |
+
+## Next Steps
+1. Execute the master benchmarking script (3-seed hybrid matrix).
+2. Evaluate if the gated fusion breaks the 67% accuracy ceiling on the Pitt Corpus.
+3. Document alpha-vector weights to interpret which specialist (ResNet vs MobileNet) is favored per dataset.
+
 # 2026-02-05 Gold Anchor Baselines Established & Pitt Analysis
 
 **Summary**
@@ -14,7 +114,7 @@ Successfully completed the "Gold Anchor" Baseline experiments across all 5 datas
   - Verified 100% reproducibility across seeds for clinical datasets (PhysioNet, Italian PD).
 - **Result Tabulation**:
   - Aggregated performance metrics into a central research table.
-  - Confirmed "EmoDB Saturation" (100% Acc) and "Pitt Complexity" (66% Acc), providing a clear motivation for Phase 3.
+  - Confirmed "EmoDB Saturation" (100% Acc) and "Pitt Complexity" (66% Acc), providing a clear motivation for Selective Attention Research.
 
 ## Technical Notes
 - **Pitt Corpus Analysis**: The baseline accuracy of 66.19% reflects the difficulty of detecting cognitive impairment from acoustic textures alone. The high false-negative rate suggests thatResNet-50 is missing temporal/linguistic cues (e.g., latencies) which are often "silent" or subtle in Mel-spectrograms.
@@ -30,7 +130,7 @@ Successfully completed the "Gold Anchor" Baseline experiments across all 5 datas
 | **Pitt Corpus** | 66.19 | 0.577 | 0.621 |
 
 ## Next Steps
-1. Transition to **Phase 3: Selective Attention Integration**.
+1. Transition to **Selective Attention Integration**.
 2. Benchmark Coordinate Attention (CA) against these "Gold Anchor" baselines.
 3. Investigate "Temporal Pooling" or "Attention Gating" specifically for the Pitt Corpus to address its lower baseline.
 
@@ -58,7 +158,7 @@ Integrated the DementiaBank Pitt Corpus with extreme clinical rigor, ensuring su
 ## Next Steps
 1. Execute the 10-run sequence via `run_remaining_anchors.bat`.
 2. Aggregate all 3-seed mean ± std results for the definitive baseline table.
-3. Transition to Phase 4: SOTA push using Coordinate Attention (CA) modules.
+3. Transition to SOTA push using Coordinate Attention (CA) modules.
 
 
 # 2026-01-26 Establishing 'Gold Standard' Anchors & Unified Metrics
