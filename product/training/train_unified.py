@@ -143,6 +143,7 @@ def parse_args():
     ap.add_argument("--weighted_loss", action="store_true", help="Enable class weighting to handle imbalance")
     ap.add_argument("--dropout", type=float, default=0.5, help="Dropout rate for the classifier head")
     ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--fold", type=int, default=None, help="K-Fold index (0-4). If set, uses fold-indexed CSVs.")
     ap.add_argument("--run_name", default="")
     ap.add_argument("--train_csv", default=None, help="Optional override for training CSV path")
     ap.add_argument("--val_csv", default=None, help="Optional override for validation CSV path")
@@ -159,44 +160,47 @@ def main():
     set_seed(args.seed)
     
     # Dataset Definitions
+    # When --fold is set, use fold-indexed CSVs; otherwise fall back to legacy single-split CSVs.
+    fold_suffix = f"_fold{args.fold}" if args.fold is not None else ""
+    
     DS_CONFIG = {
         "esc50": {
-            "train": "product/artifacts/splits/train.csv", # Assuming standard split
-            "val": "product/artifacts/splits/val.csv",
+            "train": f"product/artifacts/splits/train{fold_suffix}.csv",
+            "val": f"product/artifacts/splits/val{fold_suffix}.csv",
             "num_classes": 50
         },
         "emodb": {
-            "train": "product/artifacts/splits/train_emodb.csv",
-            "val": "product/artifacts/splits/val_emodb.csv",
+            "train": f"product/artifacts/splits/train_emodb{fold_suffix}.csv",
+            "val": f"product/artifacts/splits/val_emodb{fold_suffix}.csv",
             "num_classes": 7
         },
         "italian_pd": {
-            "train": "product/artifacts/splits/train_italian_png.csv",
-            "val": "product/artifacts/splits/val_italian_png.csv",
+            "train": f"product/artifacts/splits/train_italian{fold_suffix}.csv" if args.fold is not None else "product/artifacts/splits/train_italian_png.csv",
+            "val": f"product/artifacts/splits/val_italian{fold_suffix}.csv" if args.fold is not None else "product/artifacts/splits/val_italian_png.csv",
             "num_classes": 2
         },
         "physionet": {
-            "train": "product/artifacts/splits/train_physionet_png.csv",
-            "val": "product/artifacts/splits/val_physionet_png.csv",
+            "train": f"product/artifacts/splits/train_physionet{fold_suffix}.csv" if args.fold is not None else "product/artifacts/splits/train_physionet_png.csv",
+            "val": f"product/artifacts/splits/val_physionet{fold_suffix}.csv" if args.fold is not None else "product/artifacts/splits/val_physionet_png.csv",
             "num_classes": 2
         },
         "pitt": {
-            "train": "product/artifacts/splits/train_pitt_segments.csv",
-            "val": "product/artifacts/splits/val_pitt_segments.csv",
+            "train": f"product/artifacts/splits/train_pitt{fold_suffix}.csv" if args.fold is not None else "product/artifacts/splits/train_pitt_segments.csv",
+            "val": f"product/artifacts/splits/val_pitt{fold_suffix}.csv" if args.fold is not None else "product/artifacts/splits/val_pitt_segments.csv",
             "num_classes": 2
         }
     }
-    
-    # Ensure CSVs exist or create them if we only have .wav ones
-    # Note: Medical CSVs currently point to .wav files.
-    # We should have CSVs that point to the .png files for training.
     
     config = DS_CONFIG[args.dataset]
     train_csv = Path(args.train_csv) if args.train_csv else (PROJECT_ROOT / config["train"])
     val_csv = Path(args.val_csv) if args.val_csv else (PROJECT_ROOT / config["val"])
     num_classes = config["num_classes"]
     
-    run_name = args.run_name if args.run_name else f"{args.dataset}_{args.model_type}_s{args.seed}"
+    # Include fold in run_name for directory isolation
+    if args.fold is not None:
+        run_name = args.run_name if args.run_name else f"{args.dataset}_{args.model_type}_fold{args.fold}"
+    else:
+        run_name = args.run_name if args.run_name else f"{args.dataset}_{args.model_type}_s{args.seed}"
     LOG_DIR = PROJECT_ROOT / "product" / "artifacts" / "runs" / args.dataset / run_name
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     
