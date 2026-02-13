@@ -1,6 +1,6 @@
 import pandas as pd
 from pathlib import Path
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedGroupKFold
 import re
 import hashlib
 import json
@@ -29,6 +29,67 @@ def get_file_hash(filepath: Path):
         for byte_block in iter(lambda: f.read(4096), b""):
             sha256_hash.update(byte_block)
     return sha256_hash.hexdigest()
+
+
+
+def _build_pitt_dataframe(project_root: Path):
+    """Shared helper: scan Pitt Corpus and return a DataFrame."""
+    base_dir = (
+        project_root / "product" / "audio_preprocessing" / "data" / "English Pitt Corpus"
+    )
+    categories = {"cookie_control": 0, "dementia_control": 1}
+    all_records = []
+    for folder_name, label in categories.items():
+        folder_path = base_dir / folder_name
+        if not folder_path.exists():
+            continue
+        for ext in ["*.wav", "*.mp3"]:
+            for wav_path in folder_path.glob(ext):
+                subject_id = extract_subject_id(wav_path.name)
+                if not subject_id:
+                    continue
+                file_id = generate_file_id(wav_path, project_root)
+                all_records.append({
+                    "file_id": file_id,
+                    "filepath": str(wav_path.resolve()),
+                    "filename": wav_path.name,
+                    "subject_id": subject_id,
+                    "label": label,
+                })
+    return pd.DataFrame(all_records)
+
+
+def make_kfold_split_pitt(project_root: Path, n_folds: int = 5, seed: int = 42):
+    """Generate K-Fold splits using StratifiedGroupKFold (subject-independent)."""
+    project_root = Path(project_root)
+    split_out_dir = project_root / "product" / "artifacts" / "splits"
+    split_out_dir.mkdir(parents=True, exist_ok=True)
+
+    df = _build_pitt_dataframe(project_root)
+    if df.empty:
+        print("Error: No records found!")
+        return
+
+    print(f"Total files found: {len(df)}")
+
+    sgkf = StratifiedGroupKFold(n_splits=n_folds, shuffle=True, random_state=seed)
+    labels = df["label"].values
+    groups = df["subject_id"].values
+
+    for fold, (train_idx, val_idx) in enumerate(sgkf.split(df, labels, groups)):
+        train_df = df.iloc[train_idx]
+        val_df = df.iloc[val_idx]
+
+        # Leakage verification
+        train_subs = set(train_df["subject_id"])
+        val_subs = set(val_df["subject_id"])
+        assert len(train_subs & val_subs) == 0, f"Fold {fold}: Subject leakage detected!"
+
+        train_df.to_csv(split_out_dir / f"train_pitt_fold{fold}.csv", index=False)
+        val_df.to_csv(split_out_dir / f"val_pitt_fold{fold}.csv", index=False)
+        print(f"  Fold {fold}: Train={len(train_df)} ({len(train_subs)} subjects) | Val={len(val_df)} ({len(val_subs)} subjects)")
+
+    print(f"Saved {n_folds} fold splits to {split_out_dir}")
 
 
 def make_split_pitt(project_root: Path, val_ratio: float = 0.2, seed: int = 42):

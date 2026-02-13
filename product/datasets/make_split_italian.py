@@ -1,8 +1,72 @@
 import pandas as pd
+import numpy as np
 import os
 from pathlib import Path
 import random
 import re
+from sklearn.model_selection import StratifiedGroupKFold
+
+
+def _build_italian_dataframe(data_dir):
+    """Shared helper: scan the Italian PD directory and return a DataFrame."""
+    data_dir = Path(data_dir)
+    records = []
+    for root, dirs, files in os.walk(data_dir):
+        for file in files:
+            if file.lower().endswith('.wav'):
+                file_path = Path(root) / file
+                label = None
+                if "28 People with Parkinson's disease" in str(file_path):
+                    label = "PD"
+                elif "Healthy Control" in str(file_path):
+                    label = "HC"
+                if not label:
+                    continue
+                subject_id = file_path.parent.name
+                match = re.match(r'^([a-zA-Z]+[0-9]?)', file)
+                task = match.group(1) if match else "unknown"
+                records.append({
+                    "filename": file,
+                    "path": str(file_path.relative_to(data_dir.parent.parent.parent)),
+                    "subject_id": subject_id,
+                    "label": label,
+                    "task": task
+                })
+    return pd.DataFrame(records)
+
+
+def make_kfold_split_italian(data_dir, output_dir, n_folds=5, seed=42):
+    """Generate K-Fold splits using StratifiedGroupKFold (subject-independent)."""
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    df = _build_italian_dataframe(data_dir)
+    print(f"Total files found: {len(df)}")
+
+    subjects = df[["subject_id", "label"]].drop_duplicates()
+    print(f"PD Subjects: {len(subjects[subjects['label'] == 'PD'])}")
+    print(f"HC Subjects: {len(subjects[subjects['label'] == 'HC'])}")
+
+    # Use StratifiedGroupKFold: stratify by label, group by subject_id
+    sgkf = StratifiedGroupKFold(n_splits=n_folds, shuffle=True, random_state=seed)
+    labels = df["label"].values
+    groups = df["subject_id"].values
+
+    for fold, (train_idx, val_idx) in enumerate(sgkf.split(df, labels, groups)):
+        train_df = df.iloc[train_idx]
+        val_df = df.iloc[val_idx]
+
+        # Leakage verification
+        train_subs = set(train_df["subject_id"])
+        val_subs = set(val_df["subject_id"])
+        assert len(train_subs & val_subs) == 0, f"Fold {fold}: Subject leakage detected!"
+
+        train_df.to_csv(output_dir / f"train_italian_fold{fold}.csv", index=False)
+        val_df.to_csv(output_dir / f"val_italian_fold{fold}.csv", index=False)
+        print(f"  Fold {fold}: Train={len(train_df)} ({len(train_subs)} subjects) | Val={len(val_df)} ({len(val_subs)} subjects)")
+
+    print(f"Saved {n_folds} fold splits to {output_dir}")
+
 
 def make_split_italian(data_dir, output_dir, val_ratio=0.2, seed=42):
     random.seed(seed)

@@ -1,7 +1,7 @@
 # product/datasets/make_split_emodb.py
 from pathlib import Path
 import pandas as pd
-from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.model_selection import StratifiedShuffleSplit, StratifiedKFold
 import argparse
 import re
 
@@ -51,6 +51,53 @@ def parse_emotion_from_filename(base: str) -> str:
         return "unknown"
     emotion_code = base[5]  # 6th character (0-indexed position 5)
     return EMOTION_MAP.get(emotion_code, "unknown")
+
+
+def _build_emodb_dataframe(spec_dir: Path):
+    """Shared helper: scan EmoDB spectrograms and return a DataFrame."""
+    files, bases, labels = [], [], []
+    for p in spec_dir.rglob("*.png"):
+        base = clip_base_from_png_path(p)
+        label = parse_emotion_from_filename(base)
+        if label == "unknown":
+            continue
+        files.append(str(p.resolve()))
+        bases.append(base)
+        labels.append(label)
+    return pd.DataFrame({"filepath": files, "clip_id": bases, "label": labels})
+
+
+def make_kfold_split_emodb(spec_dir, out_dir, n_folds=5, seed=42):
+    """Generate K-Fold splits at clip level using StratifiedKFold."""
+    spec_dir = Path(spec_dir)
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    df = _build_emodb_dataframe(spec_dir)
+    print(f"Found {len(df)} PNG files")
+
+    # Get unique clips
+    unique_clips = df[["clip_id", "label"]].drop_duplicates()
+    print(f"Unique clips: {len(unique_clips)}")
+
+    skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=seed)
+
+    for fold, (train_idx, val_idx) in enumerate(skf.split(unique_clips["clip_id"], unique_clips["label"])):
+        train_clips_set = set(unique_clips.iloc[train_idx]["clip_id"])
+        val_clips_set = set(unique_clips.iloc[val_idx]["clip_id"])
+
+        df_train = df[df["clip_id"].isin(train_clips_set)]
+        df_val = df[df["clip_id"].isin(val_clips_set)]
+
+        # Leakage check
+        overlap = set(df_train["clip_id"]) & set(df_val["clip_id"])
+        assert len(overlap) == 0, f"Fold {fold}: Clip leakage detected!"
+
+        df_train[["filepath", "label"]].to_csv(out_dir / f"train_emodb_fold{fold}.csv", index=False)
+        df_val[["filepath", "label"]].to_csv(out_dir / f"val_emodb_fold{fold}.csv", index=False)
+        print(f"  Fold {fold}: Train={len(df_train)} ({len(train_clips_set)} clips) | Val={len(df_val)} ({len(val_clips_set)} clips)")
+
+    print(f"Saved {n_folds} fold splits to {out_dir}")
 
 
 def main():

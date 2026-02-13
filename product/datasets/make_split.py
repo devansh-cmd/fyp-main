@@ -1,7 +1,7 @@
 # product/datasets/make_split.py
 from pathlib import Path
 import pandas as pd
-from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.model_selection import StratifiedShuffleSplit, StratifiedKFold
 import argparse
 import re
 
@@ -37,6 +37,67 @@ def clip_base_from_png_path(png_path: Path) -> str:
     stem = AUG_SUFFIX.sub("", stem)
     # also handle any accidental double underscores etc.
     return stem.split("_")[0]
+
+
+def _build_esc50_dataframe(spec_dir: Path, esc50_csv: Path):
+    """Shared helper: scan ESC-50 spectrograms and return a DataFrame with clip_id and label."""
+    esc50 = pd.read_csv(esc50_csv)
+    esc50["base"] = esc50["filename"].str.replace(".wav", "", regex=False)
+    base_to_label = dict(zip(esc50["base"], esc50["category"]))
+
+    files, bases, labels = [], [], []
+    for p in spec_dir.rglob("*.png"):
+        base = clip_base_from_png_path(p)
+        label = base_to_label.get(base)
+        if label is None:
+            continue
+        files.append(str(p.resolve()))
+        bases.append(base)
+        labels.append(label)
+
+    df = pd.DataFrame({"filepath": files, "clip_id": bases, "label": labels}).drop_duplicates()
+    return df
+
+
+def make_kfold_split_esc50(spec_dir, esc50_csv, out_dir, n_folds=5, seed=42):
+    """Generate K-Fold splits at clip level using StratifiedKFold."""
+    spec_dir = Path(spec_dir)
+    esc50_csv = Path(esc50_csv)
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    df = _build_esc50_dataframe(spec_dir, esc50_csv)
+    if df.empty:
+        raise SystemExit(f"No PNGs found under {spec_dir}. Check path/names.")
+
+    # Build clip-level table for stratification
+    clip_tbl = (
+        df.groupby("clip_id")
+        .agg(label=("label", "first"), n_png=("filepath", "count"))
+        .reset_index()
+    )
+    print(f"Total PNGs: {len(df)} | Clips: {len(clip_tbl)}")
+
+    skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=seed)
+
+    for fold, (train_idx, val_idx) in enumerate(skf.split(clip_tbl["clip_id"], clip_tbl["label"])):
+        train_clips = set(clip_tbl.iloc[train_idx]["clip_id"].tolist())
+        val_clips = set(clip_tbl.iloc[val_idx]["clip_id"].tolist())
+
+        train_df = df[df["clip_id"].isin(train_clips)].copy()
+        val_df = df[df["clip_id"].isin(val_clips)].copy()
+
+        # Leakage check
+        overlap = set(train_df["clip_id"]) & set(val_df["clip_id"])
+        assert len(overlap) == 0, f"Fold {fold}: Clip leakage detected!"
+
+        keep = ["filepath", "label"]
+        train_df[keep].sort_values("filepath").to_csv(out_dir / f"train_fold{fold}.csv", index=False)
+        val_df[keep].sort_values("filepath").to_csv(out_dir / f"val_fold{fold}.csv", index=False)
+        print(f"  Fold {fold}: Train={len(train_df)} ({len(train_clips)} clips) | Val={len(val_df)} ({len(val_clips)} clips)")
+
+    print(f"Saved {n_folds} fold splits to {out_dir}")
+
 
 
 def main():
