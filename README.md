@@ -1,206 +1,206 @@
-﻿# Final Year Project — Audio Classification
+﻿# Final Year Project — Audio Classification with Attention-Augmented CNNs
 
-This repository contains code and experiments for an audio classification project based on the **ESC-50** dataset.  
-It includes preprocessing scripts, dataset handling, model definitions, and training workflows for reproducible benchmarking.
+Multi-domain audio classification system benchmarking CNN architectures with attention mechanisms (SE, CBAM) across **5 diverse datasets** spanning environmental sounds, speech emotion, and clinical speech pathology.
 
 ---
 
 ## Project Overview
 
-The system classifies environmental sounds using log-mel spectrograms and convolutional neural networks (CNNs).  
-The pipeline converts raw audio into spectrogram images, splits them into train/validation sets, and trains a baseline CNN model.
+The system classifies audio signals using log-mel spectrograms and transfer-learning CNNs.  
+It evaluates **3 model architectures** across **5 datasets** using **Stratified 5-Fold Cross-Validation**, producing publication-grade Mean ± Std metrics.
 
----
+### Datasets
+
+| Dataset | Domain | Classes | Samples | Splitting Strategy |
+|---------|--------|---------|---------|-------------------|
+| **ESC-50** | Environmental Sound | 50 | 8,000 spectrograms | Clip-level `StratifiedKFold` |
+| **EmoDB** | Speech Emotion | 7 | 3,210 spectrograms | Clip-level `StratifiedKFold` |
+| **Italian PD** | Parkinson's Disease | 2 (PD/HC) | 831 spectrograms | Subject-grouped `StratifiedGroupKFold` |
+| **Pitt Corpus** | Alzheimer's/Dementia | 2 (AD/Control) | 3,836 segments | Subject-grouped `StratifiedGroupKFold` |
+| **PhysioNet 2016** | Heart Sound | 2 (Normal/Abnormal) | 3,153 records | Source+label `StratifiedKFold` |
+
+### Models
+- **ResNet-50** — ImageNet-pretrained backbone with custom classifier head
+- **MobileNetV2** — Lightweight efficiency baseline
+- **HybridNet** — Custom attention-augmented architecture
+
+### Evaluation: 5-Fold Cross-Validation
+
+```
+┌────────────────────────────────────────────────────────┐
+│          Stratified Grouped 5-Fold CV                  │
+│                                                        │
+│  Fold 0:  ████████████████████ │▒▒▒▒▒│                │
+│  Fold 1:  ████████████████│▒▒▒▒▒│████                 │
+│  Fold 2:  ████████████│▒▒▒▒▒│████████                 │
+│  Fold 3:  ████████│▒▒▒▒▒│████████████                 │
+│  Fold 4:  │▒▒▒▒▒│████████████████████                 │
+│                                                        │
+│  ████ = Train    ▒▒▒▒▒ = Validation                   │
+│                                                        │
+│  ✓ Zero subject leakage (clinical datasets)            │
+│  ✓ Every subject validated exactly once                │
+│  ✓ Stratified by diagnosis label                       │
+│  ✓ Results: Mean ± Std across 5 folds                  │
+│                                                        │
+│  Experiment Matrix: 5 datasets × 3 models × 5 folds   │
+│                   = 75 training runs                    │
+└────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## Data Setup
 
-Since the datasets are excluded from this repository (as per submission guidelines), please follow these steps to set up the data:
+Since datasets are excluded from this repository, please set up the following:
 
-1.  **ESC-50 Dataset**: 
-    - Download from: [ESC-50 GitHub](https://github.com/karolpiczak/ESC-50)
-    - Place the `audio/` folder and `meta/esc50.csv` into:
-      `product/audio_preprocessing/data/ESC-50/`
-2.  **EmoDB (Berlin Emotional Speech Database)**:
-    - Download from: [EmoDB Kaggle (mirror)](https://www.kaggle.com/piyushagni5/berlin-database-of-emotional-speech-emodb)
-    - Place the `.wav` files **directly** into (do not include a sub-folder):
-      `product/audio_preprocessing/data/EmoDB-wav/`
+1.  **ESC-50**: Download from [ESC-50 GitHub](https://github.com/karolpiczak/ESC-50)
+    - Place `audio/` and `meta/esc50.csv` into: `product/audio_preprocessing/data/ESC-50/`
+2.  **EmoDB**: Download from [EmoDB Kaggle](https://www.kaggle.com/piyushagni5/berlin-database-of-emotional-speech-emodb)
+    - Place `.wav` files directly into: `product/audio_preprocessing/data/EmoDB-wav/`
+3.  **Italian PD**: Place the dataset into: `product/audio_preprocessing/data/Italian Parkinson's Voice and speech/`
+4.  **Pitt Corpus**: Place cookie-theft recordings into: `product/audio_preprocessing/data/English Pitt Corpus/`
+5.  **PhysioNet 2016**: Place heart sound databases into: `product/audio_preprocessing/data/physionet.org/`
 
 ---
 
 ## Repository Structure
 
+```
 product/
-│
 ├── audio_preprocessing/
-│   ├── data/ESC-50/audio/         # Raw ESC-50 WAV files
-│   ├── src/                       # Preprocessing scripts
-│   │   ├── audio_utils.py         # Common I/O and augmentation functions
-│   │   ├── generate_spectrograms.py
-│   │   └── augment_audio.py
-│   └── outputs/spectrograms/      # Generated spectrogram PNGs
+│   ├── data/                          # Raw audio datasets (excluded from repo)
+│   ├── src/                           # Spectrogram generation scripts
+│   │   ├── audio_utils.py             # Common I/O and augmentation functions
+│   │   ├── generate_spectrograms.py   # ESC-50 spectrogram generation
+│   │   └── augment_audio.py           # Audio augmentation pipeline
+│   └── outputs/                       # Generated spectrogram PNGs
+│       ├── spectrograms/              # ESC-50
+│       ├── spectrograms_emodb/        # EmoDB
+│       ├── spectrograms_italian/      # Italian PD
+│       ├── spectrograms_pitt/         # Pitt Corpus
+│       └── spectrograms_physionet/    # PhysioNet
 │
 ├── datasets/
-│   ├── make_split.py              # Creates train/val CSVs (ESC-50)
-│   ├── make_split_emodb.py        # Creates train/val CSVs (EmoDB)
-│   └── esc50_png_dataset.py       # PyTorch Dataset for spectrograms
+│   ├── make_split.py                  # ESC-50 splits (single + K-Fold)
+│   ├── make_split_emodb.py            # EmoDB splits
+│   ├── make_split_italian.py          # Italian PD splits (subject-grouped)
+│   ├── make_split_pitt.py             # Pitt Corpus splits (subject-grouped)
+│   ├── make_split_physionet.py        # PhysioNet splits
+│   └── esc50_png_dataset.py           # PyTorch Dataset for spectrograms
 │
 ├── models/
-│   ├── baseline_cnn.py            # Baseline CNN architecture
-│   ├── cbam.py                    # Convolutional Block Attention Module (Reusable)
-│   ├── se_block.py                # Squeeze-and-Excitation Block (Reusable)
+│   ├── baseline_cnn.py                # Baseline CNN architecture
+│   ├── cbam.py                        # CBAM attention module
+│   ├── se_block.py                    # Squeeze-and-Excitation module
 │   └── __init__.py
 │
 ├── training/
-│   ├── train_baseline.py          # Baseline training script
-│   ├── resnet50_se.py             # ResNet-50 + SE training script
-│   ├── resnet50_cbam.py           # ResNet-50 + CBAM training script
-│   ├── Resnet50_t1.py             # Standard ResNet-50 training script
-│   ├── alexnet_t1.py              # AlexNet training script
-│   └── aggregate_seeds.py         # Results aggregation tool
+│   └── train_unified.py               # Unified training pipeline (all datasets + K-Fold)
 │
 └── artifacts/
-    ├── splits/                    # train.csv / val.csv
-    └── runs/                      # Model checkpoints, logs, TensorBoard data
+    ├── splits/                        # Train/Val CSVs (single-split + fold-indexed)
+    └── runs/                          # Model checkpoints, logs, summaries
+
+scripts/
+├── generate_kfold_splits.py           # Generate all 50 fold CSV files
+├── aggregate_kfold_results.py         # Compute Mean ± Std from fold results
+├── run_kfold_experiments.bat          # Run full 75-experiment matrix
+└── verify_leakage.py                  # Data leakage verification tool
 ```
-
-## Advanced Targets
-
-- **CBAM & SE Blocks:** Native implementation of attention mechanisms for audio feature refinement.
-- **Data Leakage Resolution:** Stratified splitting based on source file metadata to prevent class pollution.
-- **Aggregation Logic:** Multiple seed runs with statistical aggregation.
-
-## System Architecture
-
-The codebase follows a modular design:
-- `models/`: Architecture definitions.
-- `training/`: Training and validation loops.
-- `datasets/`: Data loading and preprocessing.
-
-
-## Workflow Summary
-
-1. **Generate Spectrograms**
-
-   Convert the raw audio into log-mel PNGs. This is required once per dataset.
-
-   **For ESC-50:**
-   ```powershell
-   python product/audio_preprocessing/src/generate_spectrograms.py
-   ```
-
-   **For EmoDB:**
-   ```powershell
-   python product/audio_preprocessing/src/generate_spectrograms_emodb.py
-   ```
-
-2. **Run Batch Experiments (The "One-Click" Way)**
-
-   Instead of running individual training commands, use these scripts. They will automatically handle the **train/val splitting** (preventing data leakage) and then run all experiments sequentially.
-
-   - **ESC-50 Suite**: Run `run_all_experiments.bat`
-     *(Trains ResNet-50 with/without SE and CBAM across 3 seeds)*
-
-   - **EmoDB Suite**: Run `run_emodb_experiments.bat`
-     *(Validates system robustness on Speech Emotion Recognition)*
-
-*Note: For granular control, individual training scripts in `product/training/` can still be run manually using the commands detailed in the sections below.*
 
 ---
 
-## Granular Control (Manual Execution)
+## Workflow
 
-For detailed evaluation of specific components or custom hyperparameter testing, you can run the internal scripts directly.
+### 1. Generate Spectrograms (once per dataset)
 
-### 1. Manual Dataset Splitting
-Use these to re-generate splits with different ratios or seeds.
-- **ESC-50**:
-  ```powershell
-  python product/datasets/make_split.py --val_ratio 0.1 --seed 123
-  ```
-- **EmoDB**:
-  ```powershell
-  python product/datasets/make_split_emodb.py --spec_dir product/audio_preprocessing/outputs/spectrograms_emodb --out_dir product/artifacts/splits
-  ```
-
-### 2. Manual Model Training
-All training scripts support standardized arguments (`--epochs`, `--batch_size`, `--lr`, `--seed`).
-- **Baseline CNN**: 
-  ```powershell
-  python -m product.training.train_baseline --epochs 10 --batch_size 32
-  ```
-- **ResNet-50 + Attention (SE)**:
-  ```powershell
-  python -m product.training.resnet50_se --lr 1e-3 --run_name custom_test
-  ```
-
-### 3. Cross-Dataset Testing
-To train any architecture on EmoDB instead of the default ESC-50, override the CSV paths:
 ```powershell
-python -m product.training.resnet50_cbam `
-  --train_csv product/artifacts/splits/train_emodb.csv `
-  --val_csv product/artifacts/splits/val_emodb.csv
+python product/audio_preprocessing/src/generate_spectrograms.py           # ESC-50
+python product/audio_preprocessing/src/generate_spectrograms_emodb.py     # EmoDB
+python product/audio_preprocessing/src/generate_spectrograms_italian.py   # Italian PD
+python product/audio_preprocessing/src/generate_spectrograms_pitt.py      # Pitt Corpus
+python product/audio_preprocessing/src/generate_spectrograms_physionet.py # PhysioNet
 ```
 
----
+### 2. Generate K-Fold Splits
 
-## 🚀 Marker's Quick Start (Batch Verification)
+```powershell
+python scripts/generate_kfold_splits.py --n_folds 5 --seed 42
+```
 
-Once the data is set up and spectrograms are generated, use these "one-click" scripts to verify the core results:
+This creates **50 CSV files** (5 datasets × 5 folds × train/val), all pointing to `.png` spectrogram paths.
 
-1.  **ESC-50 Validation (Attention Models)**: 
-    Run `run_all_experiments.bat` to execute the full test suite for ResNet-50 with SE and CBAM modules across 3 random seeds.
-2.  **EmoDB Cross-Dataset Validation**: 
-    Run `run_emodb_experiments.bat` to verify the system's robustness on a different domain (Speech Emotion Recognition).
+### 3. Run Experiments
 
-*The results will be logged to `product/artifacts/runs/` and can be aggregated using `python -m product.training.aggregate_seeds`.*
+**Full 75-run matrix (automated):**
+```powershell
+scripts\run_kfold_experiments.bat
+```
+
+**Single fold (manual):**
+```powershell
+python product/training/train_unified.py --dataset italian_pd --model_type resnet50 --fold 0 --epochs 30
+```
+
+**Legacy single-split mode (backward compatible):**
+```powershell
+python product/training/train_unified.py --dataset esc50 --model_type resnet50 --seed 42 --epochs 30
+```
+
+### 4. Aggregate Results
+
+```powershell
+python scripts/aggregate_kfold_results.py --n_folds 5
+```
+
+Outputs a Mean ± Std table in CSV and LaTeX format.
 
 ---
 
 ## Key Conventions
 
-- **Paths** — handled through `pathlib.Path` and helper functions in `audio_utils.py`. Avoid hardcoding paths.  
-- **File naming** — spectrogram PNGs follow `<base>_orig.png`, `_noisy.png`, `_pitchUp2.png`, `_stretch0.9.png`.  
-- **Audio loading** — uses `librosa.load(..., sr=None)` to preserve the original sampling rate.  
-- **Augmentation** — implemented at the audio level (noise, pitch shift, time stretch) before spectrogram conversion.  
-- **Logging** — TensorBoard logs stored in `runs/`, model checkpoints saved under `product/artifacts/runs/`.
+- **Paths** — handled via `pathlib.Path`. Avoid hardcoding.
+- **File naming** — spectrogram PNGs: `<base>_orig.png`, `_noisy.png`, `_pitchUp2.png`, `_stretch0.9.png`.
+- **Augmentation** — applied at the audio level before spectrogram conversion.
+- **Subject independence** — clinical datasets (Italian PD, Pitt) split by `subject_id` to guarantee zero leakage.
+- **Logging** — TensorBoard logs and model checkpoints saved under `product/artifacts/runs/`.
 
 ---
 
 ## Output Locations
 
 | Artifact | Path |
-|-----------|------|
-| Spectrogram images | `product/audio_preprocessing/outputs/spectrograms/` |
-| Augmented WAVs | `product/audio_preprocessing/data/augmented_wav/` |
-| Train/Val splits | `product/artifacts/splits/` |
+|----------|------|
+| Spectrogram images | `product/audio_preprocessing/outputs/spectrograms*/` |
+| Train/Val split CSVs | `product/artifacts/splits/` |
+| K-Fold CSVs | `product/artifacts/splits/*_fold{0-4}.csv` |
 | Model checkpoints & logs | `product/artifacts/runs/` |
+| Aggregated results | `product/artifacts/kfold_results.csv` |
+
+---
+
+## Environment Setup
+
+```bash
+python -m venv .venv
+.\.venv\Scripts\activate
+pip install -U pip
+pip install numpy scipy librosa soundfile matplotlib pandas scikit-learn torch torchvision tensorboard pillow
+```
 
 ---
 
 ## Troubleshooting
 
-- If imports fail in VS Code/Pylance, ensure the correct Python interpreter is selected and dependencies installed:  
+- If imports fail, ensure the correct Python interpreter is selected and dependencies installed:
   ```bash
   pip install -r requirements.txt
   ```
-- For `NameError` or missing imports in notebooks, verify `import os` or use `pathlib` consistently.
-- To inspect training progress:  
+- To inspect training progress:
   ```bash
-  tensorboard --logdir runs/
+  tensorboard --logdir product/artifacts/runs/
   ```
-
----
-
-## Environment Setup (example)
-
-```bash
-python -m venv .venv
-.\.venv\Scriptsctivate
-pip install -U pip
-pip install numpy scipy librosa soundfile matplotlib pandas scikit-learn torch torchvision tensorboard pillow
-```
 
 ---
 
