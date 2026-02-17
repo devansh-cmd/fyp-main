@@ -1,0 +1,22 @@
+{
+  "best_macro_f1": 0.8857898857898858,
+  "final_macro_f1": 0.8720359894077997,
+  "final_auc": 0.9382225873189729,
+  "final_control_recall": 0.9417670682730924,
+  "config": {
+    "dataset": "physionet",
+    "model_type": "mobilenetv2",
+    "epochs": 30,
+    "batch_size": 32,
+    "lr": 0.0001,
+    "weight_decay": 0.01,
+    "unfreeze_at": 0,
+    "weighted_loss": false,
+    "dropout": 0.5,
+    "seed": 42,
+    "fold": 3,
+    "run_name": "",
+    "train_csv": null,
+    "val_csv": null
+  }
+}

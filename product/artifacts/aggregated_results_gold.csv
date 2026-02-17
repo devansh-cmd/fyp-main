@@ -1,0 +1,10 @@
+,,Val_Accuracy,Val_Accuracy,Val_Accuracy,Precision,Precision,Recall,Recall,Macro_F1,Macro_F1,AUC,AUC,ControlRecall,ControlRecall
+,,mean,std,count,mean,std,mean,std,mean,std,mean,std,mean,std
+Dataset,Model,,,,,,,,,,,,,
+ESC50,ResNet50,0.0,,1,0.843,,0.831,,0.827,,0.992,,0.812,
+ESC50,mobilenetv2,0.0,0.0,3,0.859,0.0,0.851,0.001,0.849,0.001,0.994,0.001,0.615,0.018
+ITALIAN_PD,ResNet50,0.0,0.0,3,0.97,0.011,0.97,0.01,0.97,0.011,0.991,0.004,0.961,0.024
+ITALIAN_PD,hybrid,0.0,0.0,3,0.973,0.012,0.972,0.012,0.972,0.012,0.995,0.002,0.969,0.007
+ITALIAN_PD,mobilenetv2,0.0,0.0,3,0.992,0.005,0.99,0.003,0.991,0.004,0.992,0.002,0.996,0.007
+PITT,ResNet50,0.0,0.0,3,0.599,0.008,0.607,0.008,0.596,0.011,0.624,0.01,0.586,0.017
+PITT,mobilenetv2,0.0,0.0,2,0.587,0.012,0.595,0.012,0.577,0.008,0.638,0.005,0.644,0.019

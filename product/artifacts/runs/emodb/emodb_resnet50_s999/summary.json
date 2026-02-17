@@ -1,0 +1,22 @@
+{
+  "best_macro_f1": 0.9864490212315318,
+  "final_macro_f1": 0.9694800723300597,
+  "final_auc": 0.9992721904213182,
+  "final_control_recall": 0.9871794871794872,
+  "config": {
+    "dataset": "emodb",
+    "model_type": "resnet50",
+    "epochs": 30,
+    "batch_size": 32,
+    "lr": 0.0001,
+    "weight_decay": 0.01,
+    "unfreeze_at": 0,
+    "weighted_loss": true,
+    "dropout": 0.5,
+    "seed": 999,
+    "fold": null,
+    "run_name": "",
+    "train_csv": null,
+    "val_csv": null
+  }
+}

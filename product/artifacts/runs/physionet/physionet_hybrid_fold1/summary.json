@@ -1,0 +1,22 @@
+{
+  "best_macro_f1": 0.878200376787424,
+  "final_macro_f1": 0.8586198066705076,
+  "final_auc": 0.9492627406228415,
+  "final_control_recall": 0.96579476861167,
+  "config": {
+    "dataset": "physionet",
+    "model_type": "hybrid",
+    "epochs": 30,
+    "batch_size": 32,
+    "lr": 0.0001,
+    "weight_decay": 0.01,
+    "unfreeze_at": 0,
+    "weighted_loss": false,
+    "dropout": 0.5,
+    "seed": 42,
+    "fold": 1,
+    "run_name": "",
+    "train_csv": null,
+    "val_csv": null
+  }
+}

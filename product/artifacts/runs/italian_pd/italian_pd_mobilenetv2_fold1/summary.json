@@ -1,0 +1,22 @@
+{
+  "best_macro_f1": 0.993709696562092,
+  "final_macro_f1": 0.993709696562092,
+  "final_auc": 1.0,
+  "final_control_recall": 0.9873417721518988,
+  "config": {
+    "dataset": "italian_pd",
+    "model_type": "mobilenetv2",
+    "epochs": 30,
+    "batch_size": 32,
+    "lr": 0.0001,
+    "weight_decay": 0.01,
+    "unfreeze_at": 0,
+    "weighted_loss": false,
+    "dropout": 0.5,
+    "seed": 42,
+    "fold": 1,
+    "run_name": "",
+    "train_csv": null,
+    "val_csv": null
+  }
+}

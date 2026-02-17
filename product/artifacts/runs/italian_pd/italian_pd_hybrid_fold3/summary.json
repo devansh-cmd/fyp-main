@@ -1,0 +1,22 @@
+{
+  "best_macro_f1": 0.7969635997805011,
+  "final_macro_f1": 0.7831501831501831,
+  "final_auc": 0.8853150787696925,
+  "final_control_recall": 0.627906976744186,
+  "config": {
+    "dataset": "italian_pd",
+    "model_type": "hybrid",
+    "epochs": 30,
+    "batch_size": 32,
+    "lr": 0.0001,
+    "weight_decay": 0.01,
+    "unfreeze_at": 0,
+    "weighted_loss": false,
+    "dropout": 0.5,
+    "seed": 42,
+    "fold": 3,
+    "run_name": "",
+    "train_csv": null,
+    "val_csv": null
+  }
+}

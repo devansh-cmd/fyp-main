@@ -1,0 +1,22 @@
+{
+  "best_macro_f1": 0.8864381623002313,
+  "final_macro_f1": 0.8618023933072116,
+  "final_auc": 0.9489016672751613,
+  "final_control_recall": 0.9397590361445783,
+  "config": {
+    "dataset": "physionet",
+    "model_type": "resnet50",
+    "epochs": 30,
+    "batch_size": 32,
+    "lr": 0.0001,
+    "weight_decay": 0.01,
+    "unfreeze_at": 0,
+    "weighted_loss": false,
+    "dropout": 0.5,
+    "seed": 42,
+    "fold": 4,
+    "run_name": "",
+    "train_csv": null,
+    "val_csv": null
+  }
+}
