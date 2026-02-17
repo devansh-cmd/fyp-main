@@ -1,5 +1,85 @@
 ﻿# Project Diary (reverse chronological)
-# Project- Status: **K-FOLD CV IMPLEMENTED (Ready for 75-Run Matrix).**
+# Project- Status: **K-FOLD CV IN PROGRESS — 30/75 Runs Complete. Pitt Protocol Fixed.**
+
+# 2026-02-17 K-Fold Results Analysis & Pitt Protocol Fix
+
+**Summary**
+Conducted interim results analysis on the 3 completed datasets (Italian PD, PhysioNet, EmoDB) while Pitt and ESC-50 k-fold runs execute. Discovered and fixed a critical hyperparameter mismatch in the Pitt k-fold script. Identified a scientifically valuable finding regarding Italian PD Fold 3 performance degradation.
+
+## Completed Results (Aggregated Metrics)
+
+### Italian PD — 5-Fold Cross-Validation
+| Model | Best Macro F1 | AUC | Control Recall |
+|:---|:---:|:---:|:---:|
+| ResNet50 | 0.926 ± 0.053 | 0.976 ± 0.019 | 0.866 ± 0.117 |
+| MobileNetV2 | 0.930 ± 0.081 | 0.983 ± 0.019 | 0.898 ± 0.160 |
+| HybridNet | 0.922 ± 0.076 | 0.969 ± 0.048 | 0.853 ± 0.130 |
+
+### PhysioNet — 5-Fold Cross-Validation
+| Model | Best Macro F1 | AUC | Control Recall |
+|:---|:---:|:---:|:---:|
+| ResNet50 | 0.889 ± 0.013 | 0.943 ± 0.012 | 0.956 ± 0.012 |
+| MobileNetV2 | 0.884 ± 0.008 | 0.935 ± 0.006 | 0.945 ± 0.019 |
+| **HybridNet** | **0.891 ± 0.011** | **0.956 ± 0.012** | **0.967 ± 0.005** |
+
+### EmoDB — 3-Seed Evaluation (Seeds 42, 123, 999)
+| Model | Best Macro F1 | AUC | Control Recall |
+|:---|:---:|:---:|:---:|
+| ResNet50 | 0.984 ± 0.003 | 0.999 ± 0.000 | 0.996 ± 0.007 |
+| MobileNetV2 | 0.925 ± 0.040 | 0.993 ± 0.007 | 0.987 ± 0.013 |
+| **HybridNet** | **0.985 ± 0.002** | **1.000 ± 0.000** | 0.994 ± 0.011 |
+
+## Key Findings
+
+1. **HybridNet is the overall best model** — best or tied-best on PhysioNet (all 3 metrics) and EmoDB (F1, AUC), competitive on Italian PD. The gated fusion mechanism successfully combines ResNet and MobileNet strengths.
+2. **PhysioNet is the most stable dataset** — all standard deviations below 2%. HybridNet's control recall variance of just 0.005 is excellent for clinical reliability.
+3. **MobileNetV2 shows highest variance** — particularly on EmoDB (±4% F1) and Italian PD (±8%), suggesting sensitivity to data partitions. Seed 123 on EmoDB produced a notably weak result (F1=0.882).
+
+## Critical Fix: Pitt K-Fold Hyperparameters
+
+**Problem**: The `kfold_pitt.bat` script was running with default hyperparameters (lr=1e-4, dropout=0.5, weight_decay=0.01, unfreeze_at=0) instead of the validated Phase 3 "Clinical Guard" protocol. This produced catastrophic overfitting: **99.5% train accuracy, 63% val accuracy, and control recall oscillating between 35–50%** — essentially random on the minority class.
+
+**Root Cause**: When the k-fold scripts were created, the Pitt-specific regularization parameters were not carried over from `run_pitt.bat`.
+
+**Fix Applied**:
+| Parameter | Before (broken) | After (fixed) |
+|:---|:---:|:---:|
+| Learning Rate | 1e-4 | **1e-5** |
+| Dropout | 0.5 | **0.7** |
+| Weight Decay | 0.01 | **0.1** |
+| Unfreeze At | 0 | **10** |
+
+The broken `pitt_resnet50_fold0` results were deleted and the script was corrected. The remaining datasets (Italian PD, PhysioNet, EmoDB, ESC-50) are confirmed unaffected — their default parameters either match Phase 3 or produce strong, non-overfitting results.
+
+## Scientific Finding: Italian PD Fold 3 Degradation
+
+All three models exhibited consistent performance degradation on Fold 3:
+
+| Fold | ResNet50 F1 | MobileNetV2 F1 | HybridNet F1 |
+|:---:|:---:|:---:|:---:|
+| 0 | 0.950 | 0.983 | 0.978 |
+| 1 | 0.981 | 0.994 | 0.975 |
+| 2 | 0.957 | 0.965 | 0.957 |
+| **3** | **0.851** | **0.797** | **0.797** |
+| 4 | 0.892 | 0.910 | 0.904 |
+
+**Investigation**: Fold 3's validation set has the most skewed class distribution (58.1% HC vs 41.9% PD), while its training set is PD-dominant (375 PD vs 308 HC). This mismatch causes all models to over-predict PD, crashing control recall to 0.62–0.66.
+
+**Why this matters**: The consistency of the drop across all architectures confirms the difficulty is in the data partition, not an architectural weakness. This is a key argument for k-fold cross-validation over single-split evaluation — it exposes exactly this kind of sensitivity to partition composition in small clinical datasets.
+
+**Zero data leakage was confirmed** across all 5 folds (0 subject overlap between train and val).
+
+## Run Status
+| Dataset | Type | Completed | Status |
+|:---|:---|:---:|:---|
+| Italian PD | K-Fold | 15/15 | ✅ Done |
+| PhysioNet | K-Fold | 15/15 | ✅ Done |
+| EmoDB | Seed-based | 9/9 | ✅ Done |
+| Pitt | K-Fold | 0/15 | 🔄 Restarting (protocol fixed) |
+| ESC-50 | K-Fold | 0/15 | ⏳ Queued |
+
+*Status*: **39/75 runs complete. Pitt restarting with corrected protocol. ESC-50 queued.**
+
 
 # 2026-02-13 Stratified K-Fold Cross-Validation Implementation
 **Summary**
