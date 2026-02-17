@@ -1,4 +1,5 @@
 @echo off
+cd /d %~dp0\..\..
 REM ============================================================
 REM  K-Fold Cross-Validation Experiment Matrix
 REM  5 Datasets x 3 Models x 5 Folds = 75 Runs
@@ -48,7 +49,7 @@ echo ============================================================
 echo  All 75 runs complete. Aggregating results...
 echo ============================================================
 
-%PYTHON% scripts\aggregate_kfold_results.py --n_folds 5
+%PYTHON% product\scripts\aggregate_kfold_results.py --n_folds 5
 
 echo.
 echo Done! Results saved to product\artifacts\kfold_results.csv
