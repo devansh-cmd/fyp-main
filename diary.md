@@ -72,11 +72,11 @@ All three models exhibited consistent performance degradation on Fold 3:
 ## Run Status
 | Dataset | Type | Completed | Status |
 |:---|:---|:---:|:---|
-| Italian PD | K-Fold | 15/15 | ✅ Done |
-| PhysioNet | K-Fold | 15/15 | ✅ Done |
-| EmoDB | Seed-based | 9/9 | ✅ Done |
-| Pitt | K-Fold | 0/15 | 🔄 Restarting (protocol fixed) |
-| ESC-50 | K-Fold | 0/15 | ⏳ Queued |
+| Italian PD | K-Fold | 15/15 | Done |
+| PhysioNet | K-Fold | 15/15 | Done |
+| EmoDB | Seed-based | 9/9 | Done |
+| Pitt | K-Fold | 0/15 | Restarting (protocol fixed) |
+| ESC-50 | K-Fold | 0/15 | Queued |
 
 *Status*: **39/75 runs complete. Pitt restarting with corrected protocol. ESC-50 queued.**
 
