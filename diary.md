@@ -1,5 +1,5 @@
 ﻿# Project Diary (reverse chronological)
-# Project- Status: **K-FOLD CV IN PROGRESS — 30/75 Runs Complete. Pitt Protocol Fixed.**
+# Project- Status: **K-FOLD CV IN PROGRESS — 55/75 Runs Complete. Pitt Done.**
 
 # 2026-02-17 K-Fold Results Analysis & Pitt Protocol Fix
 
@@ -74,11 +74,20 @@ All three models exhibited consistent performance degradation on Fold 3:
 |:---|:---|:---:|:---|
 | Italian PD | K-Fold | 15/15 | Done |
 | PhysioNet | K-Fold | 15/15 | Done |
-| EmoDB | Seed-based | 9/9 | Done |
-| Pitt | K-Fold | 0/15 | Restarting (protocol fixed) |
-| ESC-50 | K-Fold | 0/15 | Queued |
+| Pitt | K-Fold | 15/15 | Done (Colab) |
+| ESC-50 | K-Fold | 10/15 | HybridNet pending |
+| EmoDB | K-Fold | 0/15 | Pending |
 
-*Status*: **39/75 runs complete. Pitt restarting with corrected protocol. ESC-50 queued.**
+*Status*: **55/75 runs complete. Running remaining 20 locally.**
+
+
+# 2026-02-19 Integrated Colab Runs & Finishing K-Fold
+**Summary**
+Successfully integrated accelerated k-fold results from Google Colab for Pitt and ESC-50.
+- **Pitt Corpus**: Completed all 15 runs. Standard and MobileNetV2 (~62% F1) significantly outperform chance, validating the Phase 3 protocol fix.
+- **ESC-50**: Completed 10/15 runs (ResNet50 & MobileNetV2).
+- **Remaining Work**: 20 runs (ESC-50 Hybrid + all EmoDB) are now executing via Kaggle (`kfold_kaggle.ipynb`).
+*Note: Colab notebooks were removed after successful integration to declutter the repository.*
 
 
 # 2026-02-13 Stratified K-Fold Cross-Validation Implementation
