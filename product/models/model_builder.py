@@ -105,6 +105,23 @@ def attach_attention_to_mobilenet(model, attention_type):
     
     return model
 
+def _get_attention_block(attention_type, in_channels):
+    """Helper to create an attention block by type string."""
+    attention_type = attention_type.lower()
+    if attention_type == 'se':
+        return SEBlock(in_channels)
+    elif attention_type == 'cbam':
+        return CBAM(in_channels)
+    elif attention_type == 'ca':
+        return CoordinateAttention(in_channels, in_channels)
+    elif attention_type == 'triplet':
+        return TripletAttention()
+    elif attention_type == 'gate':
+        return SingleInputAttentionGate(in_channels)
+    else:
+        raise ValueError(f"Unknown attention type: {attention_type}")
+
+
 def build_augmented_model(backbone_name, attention_type, num_classes, dropout=0.5):
     """
     Primary factory function to create any backbone + attention combination.
@@ -141,8 +158,21 @@ def build_augmented_model(backbone_name, attention_type, num_classes, dropout=0.
         
     elif backbone_name == 'hybrid':
         model = get_hybrid_model(num_classes=num_classes, dropout=dropout)
+        # If attention requested, inject into both branches of HybridNet
+        if attention_type:
+            # ResNet branch: wrap layer4 blocks with attention
+            layer4 = model.layer4
+            new_blocks = []
+            for block in layer4:
+                c = block.conv3.out_channels if hasattr(block, 'conv3') else block.conv2.out_channels
+                new_blocks.append(nn.Sequential(block, _get_attention_block(attention_type, c)))
+            model.layer4 = nn.Sequential(*new_blocks)
+            # MobileNet branch: append attention after features
+            mob_channels = 1280  # MobileNetV2 output channels
+            model.features = nn.Sequential(model.features, _get_attention_block(attention_type, mob_channels))
         
     else:
         raise ValueError(f"Backbone {backbone_name} not supported by the factory yet.")
         
     return model
+

@@ -32,6 +32,7 @@ def get_definitive_label_map(dataset_name):
     classes = {
         "emodb": ["anger", "boredom", "disgust", "fear", "happiness", "neutral", "sadness"],
         "italian_pd": ["HC", "PD"],  # Index 0: Health (HC), Index 1: Parkinson (PD)
+        "pcgita": ["HC", "PD"],       # Index 0: Health (HC), Index 1: Parkinson (PD)
         "physionet": ["normal", "abnormal"],    # Index 0: Normal, Index 1: Abnormal
         "pitt": ["control", "dementia"],        # Index 0: Control, Index 1: Dementia
         "esc50": sorted([
@@ -133,7 +134,7 @@ class UnifiedDataset(Dataset):
 
 def parse_args():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--dataset", required=True, choices=["esc50", "emodb", "italian_pd", "physionet", "pitt"])
+    ap.add_argument("--dataset", required=True, choices=["esc50", "emodb", "italian_pd", "pcgita", "physionet", "pitt"])
     ap.add_argument("--model_type", default="resnet50", help="e.g. resnet50, resnet50_se, resnet50_ca")
     ap.add_argument("--epochs", type=int, default=30)
     ap.add_argument("--batch_size", type=int, default=32)
@@ -187,6 +188,11 @@ def main():
         "pitt": {
             "train": f"product/artifacts/splits/train_pitt{fold_suffix}.csv" if args.fold is not None else "product/artifacts/splits/train_pitt_segments.csv",
             "val": f"product/artifacts/splits/val_pitt{fold_suffix}.csv" if args.fold is not None else "product/artifacts/splits/val_pitt_segments.csv",
+            "num_classes": 2
+        },
+        "pcgita": {
+            "train": f"product/artifacts/splits/train_pcgita_fold{args.fold}.csv" if args.fold is not None else "product/artifacts/splits/train_pcgita_fold0.csv",
+            "val": f"product/artifacts/splits/val_pcgita_fold{args.fold}.csv" if args.fold is not None else "product/artifacts/splits/val_pcgita_fold0.csv",
             "num_classes": 2
         }
     }
