@@ -1,5 +1,54 @@
 ﻿# Project Diary (reverse chronological)
-# Project- Status: **K-FOLD CV IN PROGRESS — 55/75 Runs Complete. Pitt Done.**
+# Project- Status: **PHASE 3 IN PROGRESS — PC-GITA Integrated. Attention Runs Next.**
+
+# 2026-02-24 PC-GITA DDK Dataset Integration
+
+**Summary**
+Integrated the PC-GITA (Colombian Spanish) Parkinson's Disease dataset as a 6th dataset, focusing on **DDK (Diadochokinetic) analysis** — the clinical gold standard for motor speech assessment in PD. This enables a **cross-lingual PD comparison** alongside the Italian PD corpus.
+
+**Dataset Structure:**
+- **Source**: PC-GITA corpus (Universidad de Antioquia, Colombia), 44.1kHz WAVs
+- **Task**: Combined DDK analysis (6 sub-tasks: ka-ka-ka, pa-pa-pa, ta-ta-ta, pakata, pataka, petaka)
+- **Files**: 600 WAVs (300 HC, 300 PD) — perfectly balanced
+- **Subjects**: 51 HC, 50 PD (101 total unique speakers)
+- **Supervisor Approval**: Dr Li confirmed DDK combined approach (2026-02-23)
+
+**Pipeline Built:**
+1. `generate_spectrograms_pcgita.py` — 600/600 Log-Mel spectrograms generated at 16kHz/2048 n_fft/128 mels
+2. `make_split_pcgita.py` — Speaker-independent `StratifiedGroupKFold` (5-fold), zero leakage verified
+3. `train_unified.py` — Added `pcgita` dataset config (label map, CLI choices, DS_CONFIG)
+4. `kfold_pcgita.bat` — Execution script for 15 K-Fold runs (3 models × 5 folds)
+
+**Verification:**
+- Smoke test passed: pcgita / ResNet50 / Fold 0 / 1 epoch → Macro F1: 0.506, AUC: 0.663
+- Zero subject leakage confirmed across all 5 folds
+- Fold sizes: ~480 train (~81 subjects) / ~120 val (~20 subjects) per fold
+
+*Status*: **Ready for 15-run K-Fold execution.**
+
+
+# 2026-02-23 Phase 2 (K-Fold Baselines) Complete & Kaggle Results Aggregated
+
+**Summary**
+The final 20 Kaggle runs (ESC-50 HybridNet, EmoDB ResNet/MobileNet/HybridNet) have been successfully extracted and merged into `product/artifacts/runs/`. This marks the formal completion of the 75-run K-Fold validation matrix.
+
+## The Complete K-Fold Experimental Matrix (75/75 Runs)
+All metrics reflect the **Macro F1 Score (Mean ± Standard Deviation)** across 5 Folds.
+
+| Dataset | Objective | ResNet-50 (Base) | MobileNetV2 | HybridNet | Winning Model |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **EmoDB** | Emotion (7-Class) | 0.942 ± 0.017 | 0.856 ± 0.035 | **0.976 ± 0.006** | **HybridNet** 🏆 |
+| **ESC-50** | Envir. Noise (50-Class)| 0.835 ± 0.014 | 0.826 ± 0.027 | **0.923 ± 0.006** | **HybridNet** 🏆 |
+| **PhysioNet** | Heart Sounds (Abnormal) | 0.889 ± 0.013 | 0.884 ± 0.008 | **0.891 ± 0.011** | **HybridNet** 🏆 |
+| **Pitt** | Dementia / Cognition | 0.615 ± 0.008 | **0.627 ± 0.015** | **0.627 ± 0.024** | **HybridNet / MobileNet (Tie)** |
+| **Italian PD** | Parkinson's Disease | **0.916 ± 0.046** | 0.911 ± 0.063 | 0.908 ± 0.061 | **ResNet-50** |
+
+## Key Insights
+1. **HybridNet Excellence:** The `alpha-gate` fusion approach decisively solved the ESC-50 class overlap problem (jumping from ~83% to 92.3%) and dominated EmoDB, proving the architectural pivot was highly successful for general and emotional audio.
+2. **Clinical Viability:** HybridNet remained highly competitive on medical audio, tying for best on the noise-heavy Pitt Corpus and winning on PhysioNet. 
+3. **Phase 3 Viability:** EmoDB and ESC-50 are statistically saturated. The remaining headroom for Deep Attention Mechanisms exist primarily in isolating pathology from noisy audio (Pitt Corpus, Italian PD, PhysioNet).
+
+*Status*: **Ready for Phase 3: Spatial and Channel Attention.**
 
 # 2026-02-17 K-Fold Results Analysis & Pitt Protocol Fix
 
