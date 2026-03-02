@@ -1,0 +1,23 @@
+{
+  "best_macro_f1": 0.5949089313144613,
+  "final_macro_f1": 0.5949089313144613,
+  "final_auc": 0.6451065891472867,
+  "final_control_recall": 0.4418604651162791,
+  "config": {
+    "dataset": "italian_pd",
+    "model_type": "resnet50_ca",
+    "epochs": 5,
+    "batch_size": 32,
+    "lr": 5e-05,
+    "weight_decay": 0.01,
+    "unfreeze_at": 7,
+    "weighted_loss": true,
+    "dropout": 0.5,
+    "seed": 42,
+    "fold": 0,
+    "run_name": "",
+    "train_csv": null,
+    "val_csv": null,
+    "drop_last": false
+  }
+}

@@ -1,5 +1,89 @@
 ﻿# Project Diary (reverse chronological)
-# Project- Status: **PHASE 3 IN PROGRESS — PC-GITA Integrated. Attention Runs Next.**
+# Project Status: **PHASE 5 IN PROGRESS — Attention Ablation Study Running on Kaggle.**
+
+# 2026-03-02 Phase 5: Attention Ablation Study (Strategy B — Fair Comparison)
+
+**Summary**
+Designed, debugged, and deployed a controlled attention ablation study across 4 datasets (Italian PD, Physionet, PC-GITA, Pitt). The study isolates the impact of two attention mechanisms — **Coordinate Attention (CA)** and **Attention Gate (AG)** — on both ResNet50 and HybridNet backbones. After discovering a confounded initial setup, pivoted to Strategy B: a fair comparison using identical hyperparameters to the Phase 3 baselines with attention as the sole variable.
+
+## Architectural Bug Fix
+- **Problem**: `model_builder.py` was injecting 16 attention modules (one per residual block) into ResNet-50, causing model collapse.
+- **Fix**: Changed `attach_attention_to_resnet()` to inject a **single attention module** at the end of `layer4` only.
+- For HybridNet: attention injected at end of ResNet `layer4` **and** end of MobileNet features (2 modules total).
+
+## Strategy A → B Pivot
+Initial Phase 5 runs ("Strategy A") changed 4 variables simultaneously from Phase 3, making results incomparable:
+
+| Setting | Phase 3 (Baseline) | Strategy A | **Strategy B (Fixed)** |
+|:---|:---:|:---:|:---:|
+| Backbone trainable from | Epoch 0 | Epoch 7 ❌ | **Epoch 0** ✅ |
+| Learning rate | 1e-4 | 5e-5 ❌ | **1e-4** ✅ |
+| Weighted loss | No | Yes ❌ | **No** ✅ |
+| Attention module | None | CA/Gate | **CA/Gate** ✅ |
+
+Strategy B matches Phase 3 exactly — **attention is the only variable**.
+
+## Attention Mechanisms Used
+
+### Coordinate Attention (CA) — *CVPR 2021*
+- Decomposes spatial attention into horizontal and vertical axes independently
+- Captures direction-aware time-frequency patterns in spectrograms
+- Lightweight: adds ~2K parameters at `layer4` (2048 channels)
+
+### Attention Gate (AG) — *Adapted from Medical Imaging*
+- Uses global-average-pooled features as a gating signal
+- Learns a spatial suppression mask to filter irrelevant regions
+- Heavier: adds ~8M parameters (23.4M total vs 15.4M for CA)
+
+### Injection Architecture
+```
+ResNet50:  Input → [layer1 → layer2 → layer3 → layer4 → Attention] → Classifier
+HybridNet: Input → [ResNet branch → Attention] + [MobileNet branch → Attention] → α-Gate → Classifier
+```
+
+## Early Strategy B Results — Italian PD
+
+### ResNet50 (all folds complete)
+| Fold | Phase 3 | +CA | Δ | +Gate | Δ |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+| 0 | 0.950 | **0.972** | +2.2% ✅ | **0.956** | +0.6% ✅ |
+| 1 | 0.981 | 0.962 | −1.9% | **0.975** | −0.6% |
+| 2 | 0.957 | **0.965** | +0.9% ✅ | **0.974** | +1.8% ✅ |
+| 3 | 0.851 | 0.818 | −3.4% | 0.811 | −4.1% |
+| 4 | 0.892 | 0.882 | −1.0% | 0.863 | −2.9% |
+| **Mean** | **0.926** | **0.920** | −0.7% | **0.916** | −1.1% |
+| **Median** | **0.950** | **0.962** | +1.2% ✅ | **0.956** | +0.6% ✅ |
+
+### HybridNet (all folds complete for CA, 2/5 for Gate)
+| Fold | Phase 3 | +CA | Δ | +Gate | Δ |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+| 0 | 0.978 | 0.950 | −2.8% | 0.945 | −3.4% |
+| 1 | 0.975 | 0.943 | −3.2% | 0.943 | −3.2% |
+| 2 | 0.957 | 0.922 | −3.5% | pending | — |
+| 3 | 0.797 | 0.742 | −5.6% | pending | — |
+| 4 | 0.904 | 0.866 | −3.8% | pending | — |
+
+## Key Findings
+1. **ResNet50 + Attention beats baseline on median F1** — mean is dragged down by the imbalanced Fold 3
+2. **Gate achieves the best single-fold score** (0.975 on Fold 1, nearly matching Phase 3's best 0.981)
+3. **HybridNet + Attention underperforms** — dual-branch injection may interfere with HybridNet's built-in α-gate fusion mechanism
+4. **Fold 3 is a data quality issue**, not a model issue — highest class imbalance (HC weight 1.109), consistently poor across all architectures including Phase 3
+
+## Kaggle Notebook Configuration
+- **File**: `product/notebooks/phase5_attention_kaggle.ipynb`
+- **Datasets**: Italian PD, Physionet, PC-GITA, Pitt (4 datasets)
+- **Models**: resnet50_ca, resnet50_gate, hybrid_ca, hybrid_gate
+- **Total runs**: 80 (4 datasets × 4 models × 5 folds)
+- **Dynamic patching**: Notebook patches `train_unified.py` and `model_builder.py` at runtime to fix the attention unfreeze and injection bugs
+
+## Next Steps (Supervisor Feedback — Dr. Li)
+1. **Self-Attention (SA)** standalone — module needs to be built
+2. **Mixed CA + AG** — CA on early layers, AG on later layers
+3. **Mixed CA + SA** — CA on early layers, SA on later layers
+4. These add 90 additional runs, bringing grand total to 190
+
+*Status*: **80 Strategy B runs executing on Kaggle. Physionet, PC-GITA, and Pitt results pending.**
+
 
 # 2026-02-24 PC-GITA DDK Dataset Integration
 

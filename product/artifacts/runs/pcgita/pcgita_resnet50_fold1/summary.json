@@ -1,0 +1,22 @@
+{
+  "best_macro_f1": 0.7303532259284472,
+  "final_macro_f1": 0.6923018117880897,
+  "final_auc": 0.7718181818181818,
+  "final_control_recall": 0.8363636363636363,
+  "config": {
+    "dataset": "pcgita",
+    "model_type": "resnet50",
+    "epochs": 30,
+    "batch_size": 32,
+    "lr": 5e-05,
+    "weight_decay": 0.01,
+    "unfreeze_at": 0,
+    "weighted_loss": false,
+    "dropout": 0.5,
+    "seed": 42,
+    "fold": 1,
+    "run_name": "",
+    "train_csv": null,
+    "val_csv": null
+  }
+}

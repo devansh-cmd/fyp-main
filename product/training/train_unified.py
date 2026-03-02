@@ -148,6 +148,7 @@ def parse_args():
     ap.add_argument("--run_name", default="")
     ap.add_argument("--train_csv", default=None, help="Optional override for training CSV path")
     ap.add_argument("--val_csv", default=None, help="Optional override for validation CSV path")
+    ap.add_argument("--drop_last", action="store_true", help="Drop last incomplete batch (prevents BatchNorm crash with batch_size=1)")
     return ap.parse_args()
 
 def set_seed(seed):
@@ -216,7 +217,7 @@ def main():
     train_ds = UnifiedDataset(train_csv, dataset_name=args.dataset)
     val_ds = UnifiedDataset(val_csv, dataset_name=args.dataset, label_map=train_ds.label_map)
     
-    train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=4)
+    train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=4, drop_last=True)
     val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False, num_workers=4)
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -256,10 +257,26 @@ def main():
     # Protocol: Transfer Learning Initial State
     for param in model.parameters():
         param.requires_grad = False
-    
-    # Always unfreeze head/gate
+        
+    # Always unfreeze head/gate and injected attention modules
+    # Using string matching to avoid Kaggle ImportError issues with dynamic paths
+    attention_class_names = (
+        'SEBlock', 'CBAM', 'CoordinateAttention', 
+        'TripletAttention', 'SingleInputAttentionGate', 'AttentionGate'
+    )
+    unfrozen_attention_count = 0
+    for module in model.modules():
+        mod_name = module.__class__.__name__
+        if mod_name in attention_class_names:
+            unfrozen_attention_count += 1
+            for param in module.parameters():
+                param.requires_grad = True
+
+    print(f"DEBUG: Unfrozen {unfrozen_attention_count} attention modules.")
+
     if hasattr(model, 'alpha'):
         model.alpha.requires_grad = True
+    if hasattr(model, 'gate_bn'):
         for param in model.gate_bn.parameters():
             param.requires_grad = True
     

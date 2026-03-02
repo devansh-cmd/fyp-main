@@ -62,19 +62,16 @@ def attach_attention_to_resnet(model, attention_type):
         else:
             raise ValueError(f"Unknown attention type: {attention_type}")
 
-    # Injection logic: Wrap every block in a stage
-    for layer_name in ['layer1', 'layer2', 'layer3', 'layer4']:
-        layer = getattr(model, layer_name)
-        new_blocks = []
-        for block in layer:
-            if hasattr(block, 'conv3'):
-                c = block.conv3.out_channels
-            else:
-                c = block.conv2.out_channels
-            
-            new_blocks.append(nn.Sequential(block, get_block(c)))
+    # Injection logic: Apply a single attention module to the output of the final stage
+    layer4 = model.layer4
+    last_block = layer4[-1]
+    
+    if hasattr(last_block, 'conv3'):
+        c = last_block.conv3.out_channels
+    else:
+        c = last_block.conv2.out_channels
         
-        setattr(model, layer_name, nn.Sequential(*new_blocks))
+    model.layer4 = nn.Sequential(*layer4, get_block(c))
     
     return model
 
@@ -162,11 +159,12 @@ def build_augmented_model(backbone_name, attention_type, num_classes, dropout=0.
         if attention_type:
             # ResNet branch: wrap layer4 blocks with attention
             layer4 = model.layer4
-            new_blocks = []
-            for block in layer4:
-                c = block.conv3.out_channels if hasattr(block, 'conv3') else block.conv2.out_channels
-                new_blocks.append(nn.Sequential(block, _get_attention_block(attention_type, c)))
-            model.layer4 = nn.Sequential(*new_blocks)
+            last_block = layer4[-1]
+            if hasattr(last_block, 'conv3'):
+                c = last_block.conv3.out_channels
+            else:
+                c = last_block.conv2.out_channels
+            model.layer4 = nn.Sequential(*layer4, _get_attention_block(attention_type, c))
             # MobileNet branch: append attention after features
             mob_channels = 1280  # MobileNetV2 output channels
             model.features = nn.Sequential(model.features, _get_attention_block(attention_type, mob_channels))

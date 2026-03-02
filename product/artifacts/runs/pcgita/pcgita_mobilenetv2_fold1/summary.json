@@ -1,0 +1,22 @@
+{
+  "best_macro_f1": 0.6869328493647913,
+  "final_macro_f1": 0.6345338983050848,
+  "final_auc": 0.7278787878787879,
+  "final_control_recall": 0.6909090909090909,
+  "config": {
+    "dataset": "pcgita",
+    "model_type": "mobilenetv2",
+    "epochs": 30,
+    "batch_size": 32,
+    "lr": 5e-05,
+    "weight_decay": 0.01,
+    "unfreeze_at": 0,
+    "weighted_loss": false,
+    "dropout": 0.5,
+    "seed": 42,
+    "fold": 1,
+    "run_name": "",
+    "train_csv": null,
+    "val_csv": null
+  }
+}

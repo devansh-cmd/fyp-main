@@ -76,3 +76,16 @@ product/artifacts/runs/**/*.png
 *.bak
 *.tmp
 *.swp
+
+# ------------------------------
+# Large data files & zips
+# ------------------------------
+*.zip
+desktop.ini
+colab_all_kfold/
+product/datasets/raw/
+*.docx
+*.pdf
+FYP_Guidelines.txt
+Supervisor_Update_Phase2.md
+kfold_errors.log

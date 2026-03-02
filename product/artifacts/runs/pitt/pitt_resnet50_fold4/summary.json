@@ -1,0 +1,22 @@
+{
+  "best_macro_f1": 0.6223802255157812,
+  "final_macro_f1": 0.6223802255157812,
+  "final_auc": 0.6441837188612098,
+  "final_control_recall": 0.5551601423487544,
+  "config": {
+    "dataset": "pitt",
+    "model_type": "resnet50",
+    "epochs": 30,
+    "batch_size": 32,
+    "lr": 1e-05,
+    "weight_decay": 0.1,
+    "unfreeze_at": 10,
+    "weighted_loss": true,
+    "dropout": 0.7,
+    "seed": 42,
+    "fold": 4,
+    "run_name": "",
+    "train_csv": null,
+    "val_csv": null
+  }
+}

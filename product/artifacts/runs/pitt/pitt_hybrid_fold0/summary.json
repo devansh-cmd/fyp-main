@@ -1,0 +1,22 @@
+{
+  "best_macro_f1": 0.5841141675517137,
+  "final_macro_f1": 0.5703788651036358,
+  "final_auc": 0.6201664747649204,
+  "final_control_recall": 0.5277777777777778,
+  "config": {
+    "dataset": "pitt",
+    "model_type": "hybrid",
+    "epochs": 30,
+    "batch_size": 32,
+    "lr": 1e-05,
+    "weight_decay": 0.1,
+    "unfreeze_at": 10,
+    "weighted_loss": true,
+    "dropout": 0.7,
+    "seed": 42,
+    "fold": 0,
+    "run_name": "",
+    "train_csv": null,
+    "val_csv": null
+  }
+}
