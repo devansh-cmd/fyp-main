@@ -223,9 +223,15 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     # Build Model via Factory
-    parts = args.model_type.split('_')
-    backbone = parts[0]
-    attention = parts[1] if len(parts) > 1 else None
+    # Split on first '_' only: 'resnet50_ca_ag' → backbone='resnet50', attention='ca_ag'
+    # Supports simple types (ca, gate, sa) and compound types (ca_ag, ca_sa)
+    first_underscore = args.model_type.find('_')
+    if first_underscore == -1:
+        backbone = args.model_type
+        attention = None
+    else:
+        backbone = args.model_type[:first_underscore]
+        attention = args.model_type[first_underscore + 1:]  # everything after first '_'
     model = build_augmented_model(backbone, attention, num_classes, dropout=args.dropout)
     model = model.to(device)
     
@@ -261,8 +267,9 @@ def main():
     # Always unfreeze head/gate and injected attention modules
     # Using string matching to avoid Kaggle ImportError issues with dynamic paths
     attention_class_names = (
-        'SEBlock', 'CBAM', 'CoordinateAttention', 
-        'TripletAttention', 'SingleInputAttentionGate', 'AttentionGate'
+        'SEBlock', 'CBAM', 'CoordinateAttention',
+        'TripletAttention', 'SingleInputAttentionGate', 'AttentionGate',
+        'SpatialSelfAttention',
     )
     unfrozen_attention_count = 0
     for module in model.modules():

@@ -14,6 +14,7 @@ try:
     from coordinate_attention import CoordinateAttention
     from triplet_attention import TripletAttention
     from attention_gate import SingleInputAttentionGate
+    from self_attention import SpatialSelfAttention
     from mobilenet_v2 import get_mobilenet_v2
     from hybrid_net import get_hybrid_model
 except ImportError:
@@ -23,6 +24,7 @@ except ImportError:
         from .coordinate_attention import CoordinateAttention
         from .triplet_attention import TripletAttention
         from .attention_gate import SingleInputAttentionGate
+        from .self_attention import SpatialSelfAttention
         from .mobilenet_v2 import get_mobilenet_v2
         from .hybrid_net import get_hybrid_model
     except ImportError:
@@ -35,75 +37,13 @@ except ImportError:
         from coordinate_attention import CoordinateAttention
         from triplet_attention import TripletAttention
         from attention_gate import SingleInputAttentionGate
+        from self_attention import SpatialSelfAttention
         from mobilenet_v2 import get_mobilenet_v2
         from hybrid_net import get_hybrid_model
 
-def attach_attention_to_resnet(model, attention_type):
-    """
-    Hooks attention blocks into the ResNet architecture.
-    Standard Strategy: Inject attention at the end of EVERY residual block.
-    """
-    if not attention_type:
-        return model
-    
-    attention_type = attention_type.lower()
-    
-    def get_block(in_channels):
-        if attention_type == 'se':
-            return SEBlock(in_channels)
-        elif attention_type == 'cbam':
-            return CBAM(in_channels)
-        elif attention_type == 'ca':
-            return CoordinateAttention(in_channels, in_channels)
-        elif attention_type == 'triplet':
-            return TripletAttention()
-        elif attention_type == 'gate':
-            return SingleInputAttentionGate(in_channels)
-        else:
-            raise ValueError(f"Unknown attention type: {attention_type}")
-
-    # Injection logic: Apply a single attention module to the output of the final stage
-    layer4 = model.layer4
-    last_block = layer4[-1]
-    
-    if hasattr(last_block, 'conv3'):
-        c = last_block.conv3.out_channels
-    else:
-        c = last_block.conv2.out_channels
-        
-    model.layer4 = nn.Sequential(*layer4, get_block(c))
-    
-    return model
-
-def attach_attention_to_mobilenet(model, attention_type):
-    """
-    Hooks attention blocks into MobileNetV2 architecture.
-    """
-    if not attention_type:
-        return model
-    
-    attention_type = attention_type.lower()
-    
-    def get_block(in_channels):
-        if attention_type == 'se':
-            return SEBlock(in_channels)
-        if attention_type == 'cbam':
-            return CBAM(in_channels)
-        if attention_type == 'ca':
-            return CoordinateAttention(in_channels, in_channels)
-        if attention_type == 'triplet':
-            return TripletAttention()
-        if attention_type == 'gate':
-            return SingleInputAttentionGate(in_channels)
-        return None
-
-    last_channels = model.last_channel
-    model.features = nn.Sequential(model.features, get_block(last_channels))
-    
-    return model
 
 def _get_attention_block(attention_type, in_channels):
-    """Helper to create an attention block by type string."""
+    """Create a single attention block by type string."""
     attention_type = attention_type.lower()
     if attention_type == 'se':
         return SEBlock(in_channels)
@@ -115,33 +55,115 @@ def _get_attention_block(attention_type, in_channels):
         return TripletAttention()
     elif attention_type == 'gate':
         return SingleInputAttentionGate(in_channels)
+    elif attention_type == 'sa':
+        return SpatialSelfAttention(in_channels)
     else:
         raise ValueError(f"Unknown attention type: {attention_type}")
+
+
+def _get_layer_channels(layer):
+    """Get output channels from the last block of a ResNet layer."""
+    last_block = layer[-1]
+    if hasattr(last_block, 'conv3'):
+        return last_block.conv3.out_channels
+    else:
+        return last_block.conv2.out_channels
+
+
+def _inject_at_layer_end(layer, attention_type):
+    """Append a single attention module after the last block of a ResNet layer."""
+    c = _get_layer_channels(layer)
+    return nn.Sequential(*layer, _get_attention_block(attention_type, c))
+
+
+def _inject_mixed_resnet(model, early_type, late_type):
+    """
+    Mixed attention injection for ResNet:
+    - early_type: injected at end of layer1, layer2, layer3
+    - late_type:  injected at end of layer4
+
+    Dr. Li strategy: "CA for first 3 blocks, AG/SA for the last block"
+    """
+    model.layer1 = _inject_at_layer_end(model.layer1, early_type)
+    model.layer2 = _inject_at_layer_end(model.layer2, early_type)
+    model.layer3 = _inject_at_layer_end(model.layer3, early_type)
+    model.layer4 = _inject_at_layer_end(model.layer4, late_type)
+    return model
+
+
+def attach_attention_to_resnet(model, attention_type):
+    """
+    Standard single-point injection: one attention module at end of layer4.
+    Supports: ca, gate, sa, se, cbam, triplet
+    """
+    if not attention_type:
+        return model
+    model.layer4 = _inject_at_layer_end(model.layer4, attention_type)
+    return model
+
+
+def attach_attention_to_mobilenet(model, attention_type):
+    """
+    Append a single attention module after MobileNetV2 features.
+    """
+    if not attention_type:
+        return model
+    last_channels = model.last_channel
+    model.features = nn.Sequential(
+        model.features, _get_attention_block(attention_type, last_channels)
+    )
+    return model
 
 
 def build_augmented_model(backbone_name, attention_type, num_classes, dropout=0.5):
     """
     Primary factory function to create any backbone + attention combination.
+
+    Supported backbone+attention combos:
+      resnet50_ca       — ResNet50 + Coordinate Attention at layer4
+      resnet50_gate     — ResNet50 + Attention Gate at layer4
+      resnet50_sa       — ResNet50 + Self-Attention at layer4
+      resnet50_ca_ag    — ResNet50 + CA at layers 1-3, AG at layer4  (mixed)
+      resnet50_ca_sa    — ResNet50 + CA at layers 1-3, SA at layer4  (mixed)
+      hybrid_ca / hybrid_gate / hybrid_sa / hybrid_ca_ag / hybrid_ca_sa — same on HybridNet
     """
     backbone_name = backbone_name.lower()
-    
+
+    # --- Parse compound attention type for mixed strategies ---
+    # e.g. "ca_ag" → early='ca', late='gate'
+    # e.g. "ca_sa" → early='ca', late='sa'
+    mixed_map = {
+        'ca_ag':  ('ca', 'gate'),
+        'ca_sa':  ('ca', 'sa'),
+    }
+    is_mixed = attention_type and attention_type.lower() in mixed_map
+    if is_mixed:
+        early_type, late_type = mixed_map[attention_type.lower()]
+
     if backbone_name == 'resnet50':
         model = models.resnet50(weights=ResNet50_Weights.IMAGENET1K_V2)
-        model = attach_attention_to_resnet(model, attention_type)
-        # Standardize ResNet classifier with dropout for regularization
+        if is_mixed:
+            model = _inject_mixed_resnet(model, early_type, late_type)
+        else:
+            model = attach_attention_to_resnet(model, attention_type)
+        in_features = model.fc.in_features
         model.fc = nn.Sequential(
             nn.Dropout(p=dropout),
-            nn.Linear(model.fc.in_features, num_classes)
+            nn.Linear(in_features, num_classes)
         )
-        
+
     elif backbone_name == 'resnet18':
         model = models.resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
-        model = attach_attention_to_resnet(model, attention_type)
+        if is_mixed:
+            model = _inject_mixed_resnet(model, early_type, late_type)
+        else:
+            model = attach_attention_to_resnet(model, attention_type)
+        in_features = model.fc.in_features
         model.fc = nn.Sequential(
             nn.Dropout(p=dropout),
-            nn.Linear(model.fc.in_features, num_classes)
+            nn.Linear(in_features, num_classes)
         )
-        
+
     elif backbone_name == 'mobilenetv2':
         if attention_type:
             model = models.mobilenet_v2(weights=MobileNet_V2_Weights.DEFAULT)
@@ -152,25 +174,34 @@ def build_augmented_model(backbone_name, attention_type, num_classes, dropout=0.
             )
         else:
             model = get_mobilenet_v2(num_classes=num_classes, dropout=dropout)
-        
+
     elif backbone_name == 'hybrid':
         model = get_hybrid_model(num_classes=num_classes, dropout=dropout)
-        # If attention requested, inject into both branches of HybridNet
         if attention_type:
-            # ResNet branch: wrap layer4 blocks with attention
-            layer4 = model.layer4
-            last_block = layer4[-1]
-            if hasattr(last_block, 'conv3'):
-                c = last_block.conv3.out_channels
+            # ResNet branch
+            if is_mixed:
+                # Inject early type in layers 1-3, late type in layer4
+                model.layer1 = _inject_at_layer_end(model.layer1, early_type)
+                model.layer2 = _inject_at_layer_end(model.layer2, early_type)
+                model.layer3 = _inject_at_layer_end(model.layer3, early_type)
+                model.layer4 = _inject_at_layer_end(model.layer4, late_type)
+                # MobileNet branch — use late type (more discriminative)
+                mob_channels = 1280
+                model.features = nn.Sequential(
+                    model.features, _get_attention_block(late_type, mob_channels)
+                )
             else:
-                c = last_block.conv2.out_channels
-            model.layer4 = nn.Sequential(*layer4, _get_attention_block(attention_type, c))
-            # MobileNet branch: append attention after features
-            mob_channels = 1280  # MobileNetV2 output channels
-            model.features = nn.Sequential(model.features, _get_attention_block(attention_type, mob_channels))
-        
-    else:
-        raise ValueError(f"Backbone {backbone_name} not supported by the factory yet.")
-        
-    return model
+                # Single injection at layer4 + MobileNet features
+                c = _get_layer_channels(model.layer4)
+                model.layer4 = nn.Sequential(
+                    *model.layer4, _get_attention_block(attention_type, c)
+                )
+                mob_channels = 1280
+                model.features = nn.Sequential(
+                    model.features, _get_attention_block(attention_type, mob_channels)
+                )
 
+    else:
+        raise ValueError(f"Backbone '{backbone_name}' not supported by the factory.")
+
+    return model
