@@ -15,6 +15,11 @@ try:
     from triplet_attention import TripletAttention
     from attention_gate import SingleInputAttentionGate
     from self_attention import SpatialSelfAttention
+    from tf_self_attention import FactorisedTFSelfAttention
+    from freq_prior_attention import FrequencyPriorSelfAttention
+    from gated_self_attention import CAGatedSelfAttention
+    from dual_cnn_sa_lstm import DualCNNSALSTM
+    from resnet_bilstm import ResNetBiLSTM
     from mobilenet_v2 import get_mobilenet_v2
     from hybrid_net import get_hybrid_model
 except ImportError:
@@ -25,6 +30,11 @@ except ImportError:
         from .triplet_attention import TripletAttention
         from .attention_gate import SingleInputAttentionGate
         from .self_attention import SpatialSelfAttention
+        from .tf_self_attention import FactorisedTFSelfAttention
+        from .freq_prior_attention import FrequencyPriorSelfAttention
+        from .gated_self_attention import CAGatedSelfAttention
+        from .dual_cnn_sa_lstm import DualCNNSALSTM
+        from .resnet_bilstm import ResNetBiLSTM
         from .mobilenet_v2 import get_mobilenet_v2
         from .hybrid_net import get_hybrid_model
     except ImportError:
@@ -38,6 +48,11 @@ except ImportError:
         from triplet_attention import TripletAttention
         from attention_gate import SingleInputAttentionGate
         from self_attention import SpatialSelfAttention
+        from tf_self_attention import FactorisedTFSelfAttention
+        from freq_prior_attention import FrequencyPriorSelfAttention
+        from gated_self_attention import CAGatedSelfAttention
+        from dual_cnn_sa_lstm import DualCNNSALSTM
+        from resnet_bilstm import ResNetBiLSTM
         from mobilenet_v2 import get_mobilenet_v2
         from hybrid_net import get_hybrid_model
 
@@ -57,6 +72,13 @@ def _get_attention_block(attention_type, in_channels):
         return SingleInputAttentionGate(in_channels)
     elif attention_type == 'sa':
         return SpatialSelfAttention(in_channels)
+    # --- Novel SA variants ---
+    elif attention_type == 'tf_sa':
+        return FactorisedTFSelfAttention(in_channels)
+    elif attention_type == 'fp_sa':
+        return FrequencyPriorSelfAttention(in_channels)
+    elif attention_type == 'gated_sa':
+        return CAGatedSelfAttention(in_channels)
     else:
         raise ValueError(f"Unknown attention type: {attention_type}")
 
@@ -120,12 +142,14 @@ def build_augmented_model(backbone_name, attention_type, num_classes, dropout=0.
     Primary factory function to create any backbone + attention combination.
 
     Supported backbone+attention combos:
-      resnet50_ca       — ResNet50 + Coordinate Attention at layer4
-      resnet50_gate     — ResNet50 + Attention Gate at layer4
-      resnet50_sa       — ResNet50 + Self-Attention at layer4
-      resnet50_ca_ag    — ResNet50 + CA at layers 1-3, AG at layer4  (mixed)
-      resnet50_ca_sa    — ResNet50 + CA at layers 1-3, SA at layer4  (mixed)
+      resnet50_ca        — ResNet50 + Coordinate Attention at layer4
+      resnet50_gate      — ResNet50 + Attention Gate at layer4
+      resnet50_sa        — ResNet50 + Self-Attention at layer4
+      resnet50_ca_ag     — ResNet50 + CA at layers 1-3, AG at layer4  (mixed)
+      resnet50_ca_sa     — ResNet50 + CA at layers 1-3, SA at layer4  (mixed)
+      resnet50_ca_lstm   — ResNet50 + CA + BiLSTM temporal head (Phase 6 SOTA push)
       hybrid_ca / hybrid_gate / hybrid_sa / hybrid_ca_ag / hybrid_ca_sa — same on HybridNet
+      dual               — DualCNNSALSTM: EfficientNetV2-S + ResNet50 + FP-SA + BiLSTM
     """
     backbone_name = backbone_name.lower()
 
@@ -201,7 +225,34 @@ def build_augmented_model(backbone_name, attention_type, num_classes, dropout=0.
                     model.features, _get_attention_block(attention_type, mob_channels)
                 )
 
+    elif backbone_name == 'dual':
+        # Dual-CNN + SA + LSTM: EfficientNetV2-S + ResNet-50 → FP-SA → BiLSTM
+        # attention_type is ignored — SA is baked into the architecture
+        model = DualCNNSALSTM(num_classes=num_classes, dropout=dropout)
+
     else:
         raise ValueError(f"Backbone '{backbone_name}' not supported by the factory.")
 
     return model
+
+
+# ---------------------------------------------------------------------------
+# Phase 6 helpers: handle backbone names that encode their own architecture
+# ---------------------------------------------------------------------------
+
+# Patch build_augmented_model to intercept compound names like 'resnet50_ca_lstm'
+# BEFORE the generic backbone+attention split runs.
+_orig_build = build_augmented_model
+
+
+def build_augmented_model(backbone_name, attention_type, num_classes, dropout=0.5):  # noqa: F811
+    """
+    Extended factory — wraps _orig_build and intercepts Phase 6 special cases.
+    New entries:
+      backbone='resnet50', attention='ca_lstm'  →  ResNetBiLSTM(CA + BiLSTM)
+    """
+    # Intercept ResNetBiLSTM before the generic path tries to parse 'ca_lstm'
+    if backbone_name == 'resnet50' and attention_type == 'ca_lstm':
+        return ResNetBiLSTM(num_classes=num_classes, dropout=dropout)
+
+    return _orig_build(backbone_name, attention_type, num_classes, dropout)

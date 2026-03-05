@@ -63,10 +63,14 @@ class UnifiedDataset(Dataset):
     Standardized Dataset for all domains.
     Expects CSV with 'path' (or 'filepath') and 'label' columns.
     """
-    def __init__(self, csv_path: Path, dataset_name: str, img_size: int = 224, label_map: dict = None):
+    def __init__(self, csv_path: Path, dataset_name: str, img_size: int = 224, label_map: dict = None,
+                 spec_augment: bool = False, spec_aug_T: int = 30, spec_aug_F: int = 30):
         self.df = pd.read_csv(csv_path)
         self.dataset_name = dataset_name
         self.img_size = img_size
+        self.spec_augment = spec_augment
+        self.spec_aug_T = spec_aug_T
+        self.spec_aug_F = spec_aug_F
         
         # Determine path column
         if 'path' in self.df.columns:
@@ -80,7 +84,6 @@ class UnifiedDataset(Dataset):
         if label_map:
             self.label_map = label_map
         else:
-            # Always use definitive mapping for scientific consistency
             self.label_map = get_definitive_label_map(self.dataset_name)
             if not self.label_map:
                  unique_labels = sorted(self.df['label'].unique())
@@ -94,20 +97,10 @@ class UnifiedDataset(Dataset):
         row = self.df.iloc[idx]
         wav_rel_path = row[self.path_col]
         
-        # Spectrogram mapping (standard: _orig.png)
-        # Note: This logic assumes the 'path' in medical CSVs points to .wav
-        # but we need the .png from the outputs folder.
-        # However, for consistency, we expect CSVs to point EXACTLY at the files we want 
-        # OR we handle dataset-specific stem logic.#
-        
-        # We assume for unified training, we pass CSVs that point to generated SPECTROGRAMS
-        # or we fix the paths here. Let's make it flexible.
         p = Path(wav_rel_path)
         if not p.is_absolute():
-            # Try raw path first
             full_path = PROJECT_ROOT / p
             if not full_path.exists():
-                # Fallback: some Pitt paths are missing 'product/' prefix
                 full_path = PROJECT_ROOT / "product" / p
             p = full_path
             
@@ -122,8 +115,18 @@ class UnifiedDataset(Dataset):
         std = torch.tensor(IMAGENET_STD).view(3, 1, 1)
         x = (x - mean) / std
 
-        # Handle mapping: use index directly if it's already an integer, 
-        # otherwise look it up in the label_map.
+        # SpecAugment: random time & frequency masking (train-time only)
+        if self.spec_augment:
+            _, H, W = x.shape
+            # Frequency masking: mask f consecutive frequency rows
+            f = random.randint(0, self.spec_aug_F)
+            f0 = random.randint(0, max(H - f, 0))
+            x[:, f0:f0 + f, :] = 0.0
+            # Time masking: mask t consecutive time columns
+            t = random.randint(0, self.spec_aug_T)
+            t0 = random.randint(0, max(W - t, 0))
+            x[:, :, t0:t0 + t] = 0.0
+
         raw_label = row['label']
         if is_integer_label(raw_label):
             label = int(raw_label)
@@ -148,7 +151,10 @@ def parse_args():
     ap.add_argument("--run_name", default="")
     ap.add_argument("--train_csv", default=None, help="Optional override for training CSV path")
     ap.add_argument("--val_csv", default=None, help="Optional override for validation CSV path")
-    ap.add_argument("--drop_last", action="store_true", help="Drop last incomplete batch (prevents BatchNorm crash with batch_size=1)")
+    ap.add_argument("--drop_last", action="store_true", help="Drop last incomplete batch")
+    ap.add_argument("--spec_augment", action="store_true", help="Enable SpecAugment (time+freq masking)")
+    ap.add_argument("--spec_aug_T", type=int, default=30, help="Max time mask width in pixels")
+    ap.add_argument("--spec_aug_F", type=int, default=30, help="Max frequency mask width in pixels")
     return ap.parse_args()
 
 def set_seed(seed):
@@ -214,7 +220,10 @@ def main():
     print(f"--- Unified Training: {args.dataset} | {args.model_type} | Seed {args.seed} ---")
     
     # Setup Dataset/Loader
-    train_ds = UnifiedDataset(train_csv, dataset_name=args.dataset)
+    train_ds = UnifiedDataset(train_csv, dataset_name=args.dataset,
+                              spec_augment=args.spec_augment,
+                              spec_aug_T=args.spec_aug_T,
+                              spec_aug_F=args.spec_aug_F)
     val_ds = UnifiedDataset(val_csv, dataset_name=args.dataset, label_map=train_ds.label_map)
     
     train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=4, drop_last=True)
@@ -237,12 +246,13 @@ def main():
     
     def unfreeze_backbones(model, model_type):
         """Dynamic unfreezing logic for late features."""
-        if model_type == 'hybrid':
-            # Unfreeze ResNet branch deep layers
+        if hasattr(model, 'unfreeze_backbones') and callable(model.unfreeze_backbones):
+            # DualCNNSALSTM and similar models manage their own unfreezing
+            model.unfreeze_backbones()
+        elif model_type.startswith('hybrid'):
             if hasattr(model, 'layer4'):
                 for param in model.layer4.parameters():
                     param.requires_grad = True
-            # Unfreeze MobileNet branch deep layers
             if hasattr(model, 'features'):
                 for i in range(14, len(model.features)):
                     for param in model.features[i].parameters():
@@ -253,10 +263,6 @@ def main():
         elif hasattr(model, 'features'):
             for i in range(14, len(model.features)):
                 for param in model.features[i].parameters():
-                    param.requires_grad = True
-        elif hasattr(model, 'model') and hasattr(model.model, 'features'):
-             for i in range(14, len(model.model.features)):
-                for param in model.model.features[i].parameters():
                     param.requires_grad = True
         print(">>> Dynamic Unfreeze Executed: Late Features are now trainable.")
 
@@ -270,6 +276,7 @@ def main():
         'SEBlock', 'CBAM', 'CoordinateAttention',
         'TripletAttention', 'SingleInputAttentionGate', 'AttentionGate',
         'SpatialSelfAttention',
+        'FactorisedTFSelfAttention', 'FrequencyPriorSelfAttention', 'CAGatedSelfAttention',
     )
     unfrozen_attention_count = 0
     for module in model.modules():
