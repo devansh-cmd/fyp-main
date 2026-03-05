@@ -1,5 +1,35 @@
-﻿# Project Diary (reverse chronological)
-# Project Status: **PHASE 5 IN PROGRESS — Attention Ablation Study Running on Kaggle.**
+# Project Diary (reverse chronological)
+# Project Status: **PHASE 6 IN PROGRESS — BiLSTM and SpecAugment SOTA Push on Italian PD.**
+
+# 2026-03-05 Phase 6 (SOTA Push) - Stage A Results
+
+**Summary**
+Evaluated the BiLSTM temporal head (`resnet50`_ca_lstm) and the dual-branch baseline (dual_cnn_lstm) against the SOTA target (0.970) on the Italian PD dataset (1 seed, 5 folds). Both models successfully beat the Phase 5 baseline (0.926) and the SpecAugment-only baseline (0.948).
+
+## Headline Results (1 seed, 5 folds)
+| Model | Mean F1 ± Std | AUC | Control Recall |
+|:---|:---:|:---:|:---:|
+| `resnet50` + SpecAug | 0.937 ± 0.053 | 0.980 ± 0.027 | 0.884 ± 0.117 |
+| `resnet50`_ca + SpecAug | 0.948 ± 0.055 | 0.985 ± 0.019 | 0.893 ± 0.121 |
+| `resnet50`_ca_lstm + SpecAug | 0.951 ± 0.059 | **0.988 ± 0.017** | **0.926 ± 0.150** |
+| dual_cnn_lstm + SpecAug | **0.960 ± 0.043** | 0.988 ± 0.016 | **0.928 ± 0.091** |
+
+## Key Findings
+- **Uplift**: Both BiLSTM models pass our internal validation threshold (>0.930), shrinking the gap to SOTA (0.970) to just 1%.
+- **Architecture Surprise**: dual_cnn_lstm outperformed the target model, demonstrating the highest mean and lowest variance, making it the mathematically strongest candidate for SOTA.
+- **Fold 3 Anomaly**: All models systematically dropped to ~0.85 F1 on Fold 3. A deep investigation revealed this is *not* speaker leakage or a split imbalance. Instead, roughly 21 Healthy Control (HC) subjects in Fold 3 are fundamentally misclassified as PD by *all* models (HC recall drops to ~75%). PD recall remains a perfect 1.000. This highlights a cluster of borderline/hard subjects mimicking PD spectrograms.
+
+**Next Steps**: Await supervisor decision on proceeding with Stage B (3-seed runs for `resnet50`_ca_lstm and dual_cnn_lstm to establish statistical significance at N=15) versus prioritizing techniques like Test-Time Augmentation or label smoothing for the Fold 3 hard subjects.
+
+# 2026-03-03 Phase 6 (SOTA Push) - Stage A Prep
+
+**Objective**: Implement BiLSTM temporal head and SpecAugment to close the gap to 0.970 SOTA on Italian PD.
+**Details**:
+- Created ResNetBiLSTM (`resnet50`_ca_lstm) with frequency-only AdaptiveAvgPool2d to preserve time columns.
+- Verified SpecAugment acts purely on mel-spectrogram input prior to CNN ingestion.
+- Designed staged roll-out strategy: Stage A (Italian PD only, 1 seed, 5 folds) before expanding.
+- Built stat_test.py enforcing Wilcoxon signed-rank as the primary metric for 5-fold non-parametric comparisons.
+
 
 # 2026-03-02 Phase 5: Attention Ablation Study (Strategy B — Fair Comparison)
 
@@ -1088,26 +1118,3 @@ Covered:
 ## 2025-10-02 — Admin & planning
 - Decided core aim: benchmark CNN baselines vs transfer learning on ESC-50.
 - Outlined evaluation protocol and notebook structure.
-
-
-## Phase 6 (SOTA Push) - Stage A Prep
-**Date**: 2026-03-03
-**Objective**: Implement BiLSTM temporal head and SpecAugment to close gap to 0.970 SOTA on Italian PD.
-**Details**:
-- Created ResNetBiLSTM (resnet50_ca_lstm) with frequency-only AdaptiveAvgPool2d to preserve time columns.
-- Verified SpecAugment acts purely on mel-spectrogram input.
-- Designed staged roll-out strategy: Stage A (Italian PD only, 1 seed, 5 folds) before expanding.
-- Built stat_test.py enforcing Wilcoxon signed-rank as primary metric for 5-fold comparisons.
-**Next Steps**: Upload phase6_upload.zip to Kaggle and run Stage A. Exit criteria is F1 > 0.930 vs baseline.
-
-
-
-## Phase 6 (SOTA Push) - Stage A Results
-**Date**: 2026-03-05
-**Objective**: Evaluate BiLSTM temporal head (esnet50_ca_lstm) and dual_cnn baseline against SOTA target (0.970) on Italian PD.
-**Details**:
-- **Results (1 seed, 5 folds)**: esnet50_ca_lstm = 0.951 ± 0.059. dual_cnn_lstm = 0.960 ± 0.043. Both beat Phase 5 baseline (0.926) and SpecAugment-only baseline (0.948).
-- **Uplift**: Both models pass our internal validation threshold (>0.930), shrinking the gap to SOTA (0.970) significantly.
-- **Analysis**: Fold 3 systematically underperforms (drops to ~0.85). Deep investigation reveals this is *not* speaker leakage or split imbalance. Instead, 21 Healthy Control (HC) subjects in Fold 3 are fundamentally misclassified as PD by *all* models. PD recall remains 1.000.
-**Next Steps**: Proceed with 3-seed runs (Stage B) on esnet50_ca_lstm and dual_cnn_lstm to establish full statistical significance at N=15.
-
