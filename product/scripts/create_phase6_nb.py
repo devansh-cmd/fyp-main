@@ -78,79 +78,85 @@ for ds in ["italian_pd"]:
 print(f"Cleaned {cleaned} stale Phase 6 run directories.")
 """
 
-EXPERIMENT_CELL = r"""# ============================================================
-# Phase 6 Stage A: Italian PD only, seed=42, 5 folds
-# 3 models × 5 folds = 15 runs
-# Goal: Verify ResNetBiLSTM beats ResNet50_CA (>0.930 F1)
-# ============================================================
+SEEDS = [42, 123, 999]
 
-SPEC_ARGS = ["--spec_augment", "--spec_aug_T", "40", "--spec_aug_F", "40"]
-
-# lr tuned lower for LSTM arms (slower convergence with temporal head)
-STANDARD_ARGS = ["--lr", "1e-4", "--dropout", "0.5", "--unfreeze_at", "0"] + SPEC_ARGS
-LSTM_ARGS     = ["--lr", "5e-5", "--dropout", "0.5", "--unfreeze_at", "5"] + SPEC_ARGS
-
-# (model_type, extra_args, epochs)
 EXPERIMENTS = [
-    ("resnet50",         STANDARD_ARGS, 15),  # reference baseline + SpecAugment
-    ("resnet50_ca",      STANDARD_ARGS, 15),  # best Phase 5 + SpecAugment
-    ("resnet50_ca_lstm", LSTM_ARGS,     20),  # SOTA push: CA + BiLSTM head (Phase 6 MAIN)
+    {
+        "name": "resnet50_ca_lstm",
+        "epochs": 20,
+        "lr": 1e-4,
+        "wd": 1e-2,
+        "label_smoothing": 0.05,
+    },
+    {
+        "name": "dual_cnn_sa_lstm",
+        "epochs": 20,
+        "lr": 1e-4,
+        "wd": 1e-2,
+        "label_smoothing": 0.05,
+    }
 ]
 
 DATASET = "italian_pd"
-SEED    = 42
+total = len(EXPERIMENTS) * len(SEEDS) * 5
 
-total = len(EXPERIMENTS) * 5
-done  = 0
-print(f"Phase 6 Stage A: {total} runs ({len(EXPERIMENTS)} models × 5 folds on {DATASET})")
+# Build the experiment block dynamically so we don't have scoping issues
+EXPERIMENT_CELL = f"""# ============================================================
+# Phase 6 Stage B: Italian PD, 3 seeds, 5 folds
+# 2 models × 3 seeds × 5 folds = 30 runs
+# Goal: Statistical validation of dual_cnn_sa_lstm and resnet50_ca_lstm
+# ============================================================
+import sys
+import subprocess
+from pathlib import Path
 
-for model_type, extra_args, epochs in EXPERIMENTS:
-    for fold in range(5):
-        run_name = f"{DATASET}_{model_type}_s{SEED}_fold{fold}"
-        summary_path = ROOT / f"product/artifacts/runs/{DATASET}/{run_name}/summary.json"
-print(f"Phase 6 Stage B: {total} runs ({len(EXPERIMENTS)} models × {len(SEEDS)} seeds × 5 folds on {DATASET})")
+ROOT = Path('/kaggle/working/PROJECT')
+total = {total}
+done = 0
+print(f"Phase 6 Stage B: {{total}} runs ({len(EXPERIMENTS)} models × {len(SEEDS)} seeds × 5 folds on {DATASET})")
+
+"""
 
 for exp in EXPERIMENTS:
     for seed in SEEDS:
         for fold in range(5):
             run_name = f"{DATASET}_{exp['name']}_s{seed}_fold{fold}"
-            summary_path = ROOT / f"product/artifacts/runs/{DATASET}/{run_name}/summary.json"
+            EXPERIMENT_CELL += f"""
+run_name = "{run_name}"
+summary_path = ROOT / f"product/artifacts/runs/italian_pd/{{run_name}}/summary.json"
 
-            if summary_path.exists():
-                print(f"SKIP {run_name} (already done)")
-                done += 1
-                continue
+if summary_path.exists():
+    print(f"SKIP {{run_name}} (already done)")
+    done += 1
+else:
+    print(f"\\n>>> RUNNING {{run_name}}")
+    cmd = [
+        sys.executable, "-u", "product/training/train_unified.py",
+        "--dataset", "{DATASET}",
+        "--model_type", "{exp['name']}",
+        "--fold", "{fold}",
+        "--epochs", "{exp['epochs']}",
+        "--batch_size", "16",
+        "--seed", "{seed}",
+        "--run_name", "{run_name}",
+        "--drop_last",
+        "--lr", "{exp['lr']}",
+        "--weight_decay", "{exp['wd']}",
+        "--spec_augment",
+        "--label_smoothing", "{exp['label_smoothing']}",
+    ]
 
-            print(f"\n>>> RUNNING {run_name} (epochs={exp['epochs']})")
-            cmd = [
-                sys.executable, "-u", "product/training/train_unified.py",
-                "--dataset",    DATASET,
-                "--model_type", exp['name'],
-                "--fold",       str(fold),
-                "--epochs",     str(exp['epochs']),
-                "--batch_size", "16",
-                "--seed",       str(seed),
-                "--run_name",   run_name,
-                "--drop_last",
-                "--lr",         str(exp['lr']),
-                "--weight_decay", str(exp['wd']),
-                "--spec_augment",
-                "--label_smoothing", str(exp['label_smoothing']),
-            ]
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+    for line in process.stdout:
+        print(line, end="")
+    process.wait()
 
-            process = subprocess.Popen(
-                cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                text=True, bufsize=1
-            )
-            for line in process.stdout:
-                print(line, end="")
-            process.wait()
-
-            status = "DONE" if process.returncode == 0 else "ERROR"
-            print(f"--- {status}: {run_name} ---")
-            done += 1
-            print(f"Progress: {done}/{total}")
+    status = "DONE" if process.returncode == 0 else "ERROR"
+    print(f"--- {{status}}: {{run_name}} ---")
+    done += 1
+    print(f"Progress: {{done}}/{{total}}")
 """
+
 
 AGGREGATE_CELL = r"""# Aggregate Stage A results into a summary table
 import glob
@@ -221,20 +227,17 @@ def make_md_cell(text, cell_id):
     }
 
 TITLE_MD = """\
-# Phase 6: SOTA Push — ResNet+CA+BiLSTM + SpecAugment
+# Phase 6: SOTA Push — Novel Architecture & Soft Ensembling
 
-**Stage A**: Italian PD only | seed=42 | 5 folds | 3 models × 5 folds = **15 runs**
+**Stage B**: Italian PD only | 3 seeds | 5 folds | 2 models × 3 seeds × 5 folds = **30 runs**
 
 | Model | Role |
 |---|---|
-| `resnet50` + SpecAugment | Reference baseline with augmentation |
-| `resnet50_ca` + SpecAugment | Best Phase 5 attention + augmentation |
-| `resnet50_ca_lstm` + SpecAugment | **SOTA push: CA + BiLSTM temporal head** |
+| `resnet50_ca_lstm` | Phase 6 Stage A Champion |
+| `dual_cnn_sa_lstm` | **Novel SOTA candidate (Dual CNN + SA + BiLSTM)** |
 
-### Exit Criteria
-To proceed to full 3-seed Stage B, `resnet50_ca_lstm` must achieve:
-1. Macro F1 **> 0.930** (meaningful uplift over Phase 5 baseline 0.926)
-2. Statistical significance vs CA baseline in paired Wilcoxon test.
+### Goal
+Statistically validate the `dual_cnn_sa_lstm` against the `resnet50_ca_lstm` baseline across $N=15$ runs (3 seeds × 5 folds) with label smoothing ($0.05$).
 """
 
 nb = {
