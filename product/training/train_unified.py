@@ -153,8 +153,9 @@ def parse_args():
     ap.add_argument("--val_csv", default=None, help="Optional override for validation CSV path")
     ap.add_argument("--drop_last", action="store_true", help="Drop last incomplete batch")
     ap.add_argument("--spec_augment", action="store_true", help="Enable SpecAugment (time+freq masking)")
-    ap.add_argument("--spec_aug_T", type=int, default=30, help="Max time mask width in pixels")
-    ap.add_argument("--spec_aug_F", type=int, default=30, help="Max frequency mask width in pixels")
+    ap.add_argument("--spec_aug_T", type=int, default=40, help="Max time mask width in pixels")
+    ap.add_argument("--spec_aug_F", type=int, default=40, help="Max frequency mask width in pixels")
+    ap.add_argument("--label_smoothing", type=float, default=0.0, help="Label smoothing factor (0.0 to 1.0, default: 0.0)")
     return ap.parse_args()
 
 def set_seed(seed):
@@ -321,9 +322,11 @@ def main():
         # Weight = Total / (Num_Classes * Class_Count)
         weights = total_samples / (len(class_counts) * class_counts)
         criterion_weight = torch.tensor(weights, dtype=torch.float32).to(device)
-        print(f"Applying Class Weights: {weights} (Targeting Class 0 Failure)")
+        print(f"Using Weighted Loss: {args.weighted_loss}")
+        print(f"Class Weights applied: {criterion_weight.tolist()}")
+    print(f"Label Smoothing: {args.label_smoothing}")
 
-    criterion = nn.CrossEntropyLoss(weight=criterion_weight)
+    criterion = nn.CrossEntropyLoss(weight=criterion_weight, label_smoothing=args.label_smoothing)
     optimizer = optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, weight_decay=args.weight_decay)
     
     writer = SummaryWriter(str(LOG_DIR))

@@ -1,0 +1,26 @@
+{
+  "best_macro_f1": 0.7875138257343002,
+  "final_macro_f1": 0.7875138257343002,
+  "final_auc": 0.8146802325581395,
+  "final_control_recall": 0.6976744186046512,
+  "config": {
+    "dataset": "italian_pd",
+    "model_type": "resnet50_ca_lstm",
+    "epochs": 1,
+    "batch_size": 8,
+    "lr": 0.0001,
+    "weight_decay": 0.01,
+    "unfreeze_at": 0,
+    "weighted_loss": false,
+    "dropout": 0.5,
+    "seed": 42,
+    "fold": 0,
+    "run_name": "",
+    "train_csv": null,
+    "val_csv": null,
+    "drop_last": true,
+    "spec_augment": false,
+    "spec_aug_T": 30,
+    "spec_aug_F": 30
+  }
+}

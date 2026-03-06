@@ -108,37 +108,48 @@ for model_type, extra_args, epochs in EXPERIMENTS:
     for fold in range(5):
         run_name = f"{DATASET}_{model_type}_s{SEED}_fold{fold}"
         summary_path = ROOT / f"product/artifacts/runs/{DATASET}/{run_name}/summary.json"
+print(f"Phase 6 Stage B: {total} runs ({len(EXPERIMENTS)} models × {len(SEEDS)} seeds × 5 folds on {DATASET})")
 
-        if summary_path.exists():
-            print(f"SKIP {run_name} (already done)")
+for exp in EXPERIMENTS:
+    for seed in SEEDS:
+        for fold in range(5):
+            run_name = f"{DATASET}_{exp['name']}_s{seed}_fold{fold}"
+            summary_path = ROOT / f"product/artifacts/runs/{DATASET}/{run_name}/summary.json"
+
+            if summary_path.exists():
+                print(f"SKIP {run_name} (already done)")
+                done += 1
+                continue
+
+            print(f"\n>>> RUNNING {run_name} (epochs={exp['epochs']})")
+            cmd = [
+                sys.executable, "-u", "product/training/train_unified.py",
+                "--dataset",    DATASET,
+                "--model_type", exp['name'],
+                "--fold",       str(fold),
+                "--epochs",     str(exp['epochs']),
+                "--batch_size", "16",
+                "--seed",       str(seed),
+                "--run_name",   run_name,
+                "--drop_last",
+                "--lr",         str(exp['lr']),
+                "--weight_decay", str(exp['wd']),
+                "--spec_augment",
+                "--label_smoothing", str(exp['label_smoothing']),
+            ]
+
+            process = subprocess.Popen(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                text=True, bufsize=1
+            )
+            for line in process.stdout:
+                print(line, end="")
+            process.wait()
+
+            status = "DONE" if process.returncode == 0 else "ERROR"
+            print(f"--- {status}: {run_name} ---")
             done += 1
-            continue
-
-        print(f"\n>>> RUNNING {run_name} (epochs={epochs})")
-        cmd = [
-            sys.executable, "-u", "product/training/train_unified.py",
-            "--dataset",    DATASET,
-            "--model_type", model_type,
-            "--fold",       str(fold),
-            "--epochs",     str(epochs),
-            "--batch_size", "32",
-            "--seed",       str(SEED),
-            "--run_name",   run_name,
-            "--drop_last",
-        ] + extra_args
-
-        process = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-            text=True, bufsize=1
-        )
-        for line in process.stdout:
-            print(line, end="")
-        process.wait()
-
-        status = "DONE" if process.returncode == 0 else "ERROR"
-        print(f"--- {status}: {run_name} ---")
-        done += 1
-        print(f"Progress: {done}/{total}")
+            print(f"Progress: {done}/{total}")
 """
 
 AGGREGATE_CELL = r"""# Aggregate Stage A results into a summary table

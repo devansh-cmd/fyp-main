@@ -1,5 +1,16 @@
-# Project Diary (reverse chronological)
+﻿# Project Diary (reverse chronological)
 # Project Status: **PHASE 6 IN PROGRESS — BiLSTM and SpecAugment SOTA Push on Italian PD.**
+
+# 2026-03-06 Phase 6 (SOTA Push) - Stage B Prep
+
+**Objective**: Implement novel `dual_cnn_sa_lstm` architecture and label smoothing for Stage B multi-seed execution.
+**Details**:
+- **Architecture**: Created `dual_cnn_sa_lstm.py` fusing `ResNet50` and `EfficientNetV2-S` features.
+- **Fusion & Attention**: Fused spatial features are processed by a `FrequencyPriorSelfAttention` module before sequence reshaping.
+- **Verification**: Built rigorous shape-checking assertions into the `forward` pass to prevent downstream Kaggle failures. Passed local CPU smoke tests gracefully.
+- **Label Smoothing**: Added `--label_smoothing` argument (default `0.0`) to `train_unified.py` to soften hard targets and address the ambiguous Fold 3 Healthy Control cluster.
+- **Execution Plan**: Generated new `phase6_sota_push_kaggle.ipynb` targeting `resnet50_ca_lstm` and `dual_cnn_sa_lstm` across 3 seeds (42, 123, 999) with `label_smoothing=0.05`.
+**Next Steps**: Upload `phase6_upload.zip` (173.2 MB) to Kaggle, run Stage B matrix, and implement soft ensembling across the seeds upon return.
 
 # 2026-03-05 Phase 6 (SOTA Push) - Stage A Results
 

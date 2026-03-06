@@ -254,5 +254,9 @@ def build_augmented_model(backbone_name, attention_type, num_classes, dropout=0.
     # Intercept ResNetBiLSTM before the generic path tries to parse 'ca_lstm'
     if backbone_name == 'resnet50' and attention_type == 'ca_lstm':
         return ResNetBiLSTM(num_classes=num_classes, dropout=dropout)
+        
+    # Intercept DualCNNSALSTM which parses as 'dual'/'cnn_sa_lstm'
+    if backbone_name == 'dual' and attention_type == 'cnn_sa_lstm':
+        return DualCNNSALSTM(num_classes=num_classes, dropout=dropout)
 
     return _orig_build(backbone_name, attention_type, num_classes, dropout)
