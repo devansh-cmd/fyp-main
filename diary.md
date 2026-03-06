@@ -1,5 +1,23 @@
 ﻿# Project Diary (reverse chronological)
-# Project Status: **PHASE 6 IN PROGRESS — BiLSTM and SpecAugment SOTA Push on Italian PD.**
+# Project Status: **PHASE 6 RE-RUN REQUIRED — Fixing data leakage from stale Kaggle dataset files.**
+
+# 2026-03-06 Phase 6 — Data Leakage Investigation & Fix
+
+**Root Cause**: Kaggle dataset versioning kept stale fold CSVs from old uploads. Folds 0 & 1 loaded corrupted splits from a prior version; folds 2-4 loaded the correct ones. This explains the bimodal pattern: fold0/fold1 achieved near-perfect F1 (1.0) while fold3/fold4 showed realistic scores (~0.85-0.93).
+
+**Evidence**:
+- Local CSVs: 0 subject overlap across all 5 folds (verified).
+- Zip contents: match local exactly—no backslashes, no `C:\FYP\PROJECT` paths.
+- The `PATH_FIX_CELL` fixed only 2 unrelated CSV files (legacy `train_italian.csv`/`val_italian.csv`), never the fold-indexed ones.
+- Stage A results from `phase6_results.zip` confirmed compromised: `resnet50_ca_lstm` fold0=1.0, fold1=1.0.
+
+**Fix Applied**:
+1. Replaced fragile `KAGGLE_INPUT_DIR.glob('**/product')` with hardcoded dataset slug `phase6-italian-pd-clean`.
+2. Replaced `PATH_FIX_CELL` with an inline leakage guard that asserts 0 subject overlap per fold—aborts with `RuntimeError` if any overlap detected.
+3. Added identical leakage guard to `train_unified.py` (runs before every training invocation).
+4. Repacked `phase6_upload.zip` (173.2 MB, 1479 files). Verified all 5 folds: overlap=0.
+
+**Next Steps**: Delete old Kaggle dataset entirely. Upload zip as fresh dataset `phase6-italian-pd-clean`. Re-run Stage A (20 runs), then Stage B (30 runs).
 
 # 2026-03-06 Phase 6 (SOTA Push) - Stage B Prep
 

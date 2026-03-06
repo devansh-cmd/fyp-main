@@ -7,6 +7,9 @@ from pathlib import Path
 
 NB_PATH = Path(__file__).parent.parent / "notebooks" / "phase6_sota_push_kaggle.ipynb"
 
+# ── CHANGE THIS to match the exact Kaggle dataset slug you upload to ──
+DATASET_SLUG = "phase6-italian-pd-clean"
+
 SETUP_CELL = r"""import os
 import shutil
 import zipfile
@@ -14,15 +17,18 @@ import subprocess
 import sys
 from pathlib import Path
 
+# ── Hardcoded dataset path — avoids stale-file bugs from Kaggle versioning ──
+DATASET_SLUG = '""" + DATASET_SLUG + r"""'
 KAGGLE_INPUT_DIR = Path('/kaggle/input')
+EXPECTED_DIR = KAGGLE_INPUT_DIR / DATASET_SLUG
 WORK_DIR = Path('/kaggle/working/PROJECT')
 
 if WORK_DIR.exists():
     shutil.rmtree(WORK_DIR)
 WORK_DIR.mkdir(parents=True, exist_ok=True)
 
-# Check if Kaggle kept it as a zip or auto-extracted it
-zips = list(KAGGLE_INPUT_DIR.glob('**/*.zip'))
+# Look for a zip first, then assume auto-extracted
+zips = list(EXPECTED_DIR.glob('*.zip'))
 
 if zips:
     ZIP_PATH = zips[0]
@@ -32,13 +38,13 @@ if zips:
         zf.extractall('/kaggle/working/')
     print('Done extracting.')
 else:
-    print('No zip found — assuming Kaggle auto-extracted the dataset.')
-    product_dirs = list(KAGGLE_INPUT_DIR.glob('**/product'))
-    if not product_dirs:
-        raise FileNotFoundError('Could not find the dataset contents!')
-    src_dir = product_dirs[0].parent
-    print(f'Copying files from {src_dir} to {WORK_DIR}...')
-    shutil.copytree(src_dir, WORK_DIR, dirs_exist_ok=True)
+    print(f'No zip found — copying from {EXPECTED_DIR}...')
+    if not EXPECTED_DIR.exists():
+        raise FileNotFoundError(
+            f'Dataset not found at {EXPECTED_DIR}! '
+            f'Make sure the Kaggle dataset slug is "{DATASET_SLUG}"'
+        )
+    shutil.copytree(EXPECTED_DIR, WORK_DIR, dirs_exist_ok=True)
     print('Done copying.')
 """
 
@@ -47,17 +53,28 @@ print(f'CWD: {os.getcwd()}')
 
 ROOT = WORK_DIR
 SPLITS = ROOT / 'product/artifacts/splits'
-WIN_PREFIX = r'C:\FYP\PROJECT'
 
-fixed = 0
-for csv_file in SPLITS.glob('*.csv'):
-    text = csv_file.read_text()
-    if WIN_PREFIX in text or '\\' in text:
-        text = text.replace(WIN_PREFIX, str(ROOT))
-        text = text.replace('\\', '/')
-        csv_file.write_text(text)
-        fixed += 1
-print(f'Fixed paths in {fixed} CSV files.')
+# ── Leakage guard: assert 0 subject overlap for every fold ──
+import pandas as pd
+leakage_found = False
+for fold in range(5):
+    train_csv = SPLITS / f'train_italian_fold{fold}.csv'
+    val_csv = SPLITS / f'val_italian_fold{fold}.csv'
+    if not train_csv.exists() or not val_csv.exists():
+        print(f'WARN: fold{fold} CSVs missing, skipping check')
+        continue
+    t_subj = set(pd.read_csv(train_csv)['subject_id'])
+    v_subj = set(pd.read_csv(val_csv)['subject_id'])
+    overlap = t_subj & v_subj
+    if overlap:
+        print(f'CRITICAL: fold{fold} has {len(overlap)} overlapping subjects: {overlap}')
+        leakage_found = True
+    else:
+        print(f'fold{fold}: OK (train={len(t_subj)} subjects, val={len(v_subj)} subjects, overlap=0)')
+
+if leakage_found:
+    raise RuntimeError('DATA LEAKAGE DETECTED — aborting. Delete and re-upload the Kaggle dataset.')
+print('All folds passed leakage check.')
 """
 
 CLEANUP_CELL = r"""import shutil
@@ -70,31 +87,43 @@ for ds in ["italian_pd"]:
         continue
     for run_dir in list(ds_dir.iterdir()):
         name = run_dir.name
-        # Only wipe runs that collide with our naming scheme (same model, seed, fold)
-        # — leave other datasets/seeds untouched
-        if any(tag in f"_{name}_" for tag in PHASE6_TAGS) and "_s42_" in name:
+        if any(tag in f"_{name}_" for tag in PHASE6_TAGS):
             shutil.rmtree(run_dir)
             cleaned += 1
 print(f"Cleaned {cleaned} stale Phase 6 run directories.")
 """
 
-SEEDS = [42, 123, 999]
+SEEDS = [42]
 
 EXPERIMENTS = [
+    {
+        "name": "resnet50",
+        "epochs": 20,
+        "lr": 1e-4,
+        "wd": 1e-2,
+        "label_smoothing": 0.0,
+    },
+    {
+        "name": "resnet50_ca",
+        "epochs": 20,
+        "lr": 1e-4,
+        "wd": 1e-2,
+        "label_smoothing": 0.0,
+    },
     {
         "name": "resnet50_ca_lstm",
         "epochs": 20,
         "lr": 1e-4,
         "wd": 1e-2,
-        "label_smoothing": 0.05,
+        "label_smoothing": 0.0,
     },
     {
-        "name": "dual_cnn_sa_lstm",
+        "name": "dual_cnn_lstm",
         "epochs": 20,
         "lr": 1e-4,
         "wd": 1e-2,
-        "label_smoothing": 0.05,
-    }
+        "label_smoothing": 0.0,
+    },
 ]
 
 DATASET = "italian_pd"
@@ -227,17 +256,20 @@ def make_md_cell(text, cell_id):
     }
 
 TITLE_MD = """\
-# Phase 6: SOTA Push — Novel Architecture & Soft Ensembling
+# Phase 6: SOTA Push — Stage A (Clean Re-run)
 
-**Stage B**: Italian PD only | 3 seeds | 5 folds | 2 models × 3 seeds × 5 folds = **30 runs**
+**Stage A**: Italian PD only | 1 seed (42) | 5 folds | 4 models × 5 folds = **20 runs**
 
 | Model | Role |
 |---|---|
-| `resnet50_ca_lstm` | Phase 6 Stage A Champion |
-| `dual_cnn_sa_lstm` | **Novel SOTA candidate (Dual CNN + SA + BiLSTM)** |
+| `resnet50` | Baseline (no attention) |
+| `resnet50_ca` | Coordinate Attention |
+| `resnet50_ca_lstm` | CA + BiLSTM temporal head |
+| `dual_cnn_lstm` | Dual CNN + BiLSTM fusion |
 
 ### Goal
-Statistically validate the `dual_cnn_sa_lstm` against the `resnet50_ca_lstm` baseline across $N=15$ runs (3 seeds × 5 folds) with label smoothing ($0.05$).
+Clean re-run of Stage A to replace results contaminated by stale Kaggle dataset files.
+Inline leakage guard will halt training if any subject overlap is detected.
 """
 
 nb = {

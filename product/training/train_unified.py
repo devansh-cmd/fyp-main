@@ -220,6 +220,28 @@ def main():
     
     print(f"--- Unified Training: {args.dataset} | {args.model_type} | Seed {args.seed} ---")
     
+    # ── Leakage guard: assert 0 subject overlap ──
+    print(f"Checking splits for data leakage...")
+    print(f"Files checked: {train_csv} and {val_csv}")
+    train_df_check = pd.read_csv(train_csv)
+    val_df_check = pd.read_csv(val_csv)
+    if 'subject_id' in train_df_check.columns and 'subject_id' in val_df_check.columns:
+        train_subjects = set(train_df_check['subject_id'])
+        val_subjects = set(val_df_check['subject_id'])
+        overlap = train_subjects & val_subjects
+        print(f"Training subjects: {train_subjects}")
+        print(f"Validation subjects: {val_subjects}")
+        if overlap:
+            print(f"WARNING: {len(overlap)} subjects OVERLAP between training and validation sets!")
+            print(f"Overlapping subjects: {overlap}")
+            raise RuntimeError(
+                f"DATA LEAKAGE: {len(overlap)} overlapping subjects detected. "
+                f"Aborting to prevent invalid results."
+            )
+        else:
+            print(f"Leakage check PASSED: 0 overlap (train={len(train_subjects)}, val={len(val_subjects)} subjects)")
+    del train_df_check, val_df_check
+    
     # Setup Dataset/Loader
     train_ds = UnifiedDataset(train_csv, dataset_name=args.dataset,
                               spec_augment=args.spec_augment,
