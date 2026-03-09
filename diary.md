@@ -1,5 +1,26 @@
 ﻿# Project Diary (reverse chronological)
-# Project Status: **PHASE 6 RE-RUN REQUIRED — Fixing data leakage from stale Kaggle dataset files.**
+# Project Status: **PHASE 6 STAGE A COMPLETE — Stage B next (dual_cnn_sa_lstm + label smoothing + 3 seeds).**
+
+# 2026-03-09 Phase 6 — Stage A Clean Re-run Results
+
+Stage A re-run on fresh Kaggle dataset `phase6-italian-pd-clean`. All 20 runs completed with **0 subject overlap** confirmed by inline leakage guard. Results extracted from Kaggle logs (zip cell failed due to AGGREGATE_CELL bug, now fixed).
+
+## Headline Results (seed 42, 5 folds)
+| Model | fold0 | fold1 | fold2 | fold3 | fold4 | **Mean ± Std** |
+|:---|:---:|:---:|:---:|:---:|:---:|:---:|
+| `resnet50` | 0.984 | 0.987 | 0.991 | 0.865 | 0.923 | **0.950 ± 0.049** |
+| `resnet50_ca` | 0.984 | 0.987 | 0.991 | 0.885 | 0.936 | **0.957 ± 0.041** |
+| `resnet50_ca_lstm` | 1.000 | 1.000 | 1.000 | 0.858 | 0.932 | **0.958 ± 0.058** |
+| `dual_cnn_lstm` | 1.000 | 1.000 | 1.000 | 0.878 | 0.941 | **0.964 ± 0.051** |
+
+**SOTA target: 0.970** (Bandini et al.)
+
+## Key Findings
+- **Did NOT beat SOTA on mean F1** — best model `dual_cnn_lstm` reaches 0.964, just 0.6% short of the 0.970 target.
+- **Fold 3 is the bottleneck** — all models score 0.86–0.88 on fold3 (11 val subjects), dragging the mean down. Folds 0–2 achieve perfect or near-perfect F1.
+- **Perfect scores on folds 0–2 are legitimate** — leakage guard confirmed 0 overlap every run. The `ca_lstm` and `dual_cnn_lstm` models genuinely saturate these easy folds.
+- **Attention helps incrementally**: resnet50 → resnet50_ca (+0.7%), → ca_lstm (+0.1%), → dual_cnn (+0.6%).
+- **Stage B needed**: label smoothing (0.05) may help the fold3 HC cluster, and multi-seed (3 seeds) will give statistical confidence.
 
 # 2026-03-06 Phase 6 — Data Leakage Investigation & Fix
 
