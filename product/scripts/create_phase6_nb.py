@@ -7,7 +7,8 @@ from pathlib import Path
 
 NB_PATH = Path(__file__).parent.parent / "notebooks" / "phase6_sota_push_kaggle.ipynb"
 
-# ── CHANGE THIS to match the exact Kaggle dataset slug you upload to ──
+# ── CHANGE THIS to match your Kaggle username and dataset slug ──
+KAGGLE_USER = "devanshdev01"
 DATASET_SLUG = "phase6-italian-pd-clean"
 
 SETUP_CELL = r"""import os
@@ -18,9 +19,12 @@ import sys
 from pathlib import Path
 
 # ── Hardcoded dataset path — avoids stale-file bugs from Kaggle versioning ──
+KAGGLE_USER = '""" + KAGGLE_USER + r"""'
 DATASET_SLUG = '""" + DATASET_SLUG + r"""'
-KAGGLE_INPUT_DIR = Path('/kaggle/input')
-EXPECTED_DIR = KAGGLE_INPUT_DIR / DATASET_SLUG
+EXPECTED_DIR = Path('/kaggle/input') / 'datasets' / KAGGLE_USER / DATASET_SLUG
+if not EXPECTED_DIR.exists():
+    # Fallback: some Kaggle setups mount at /kaggle/input/SLUG directly
+    EXPECTED_DIR = Path('/kaggle/input') / DATASET_SLUG
 WORK_DIR = Path('/kaggle/working/PROJECT')
 
 if WORK_DIR.exists():
@@ -80,7 +84,7 @@ print('All folds passed leakage check.')
 CLEANUP_CELL = r"""import shutil
 runs_root = ROOT / "product/artifacts/runs"
 cleaned = 0
-PHASE6_TAGS = ["_resnet50_", "_resnet50_ca_", "_resnet50_ca_lstm_", "_dual_cnn_lstm_"]
+PHASE6_TAGS = ["_resnet50_ca_lstm_", "_dual_cnn_sa_lstm_"]
 for ds in ["italian_pd"]:
     ds_dir = runs_root / ds
     if not ds_dir.exists():
@@ -93,37 +97,23 @@ for ds in ["italian_pd"]:
 print(f"Cleaned {cleaned} stale Phase 6 run directories.")
 """
 
-SEEDS = [42]
+SEEDS = [42, 123, 999]
 
 EXPERIMENTS = [
-    {
-        "name": "resnet50",
-        "epochs": 20,
-        "lr": 1e-4,
-        "wd": 1e-2,
-        "label_smoothing": 0.0,
-    },
-    {
-        "name": "resnet50_ca",
-        "epochs": 20,
-        "lr": 1e-4,
-        "wd": 1e-2,
-        "label_smoothing": 0.0,
-    },
     {
         "name": "resnet50_ca_lstm",
         "epochs": 20,
         "lr": 1e-4,
         "wd": 1e-2,
-        "label_smoothing": 0.0,
+        "label_smoothing": 0.05,
     },
     {
-        "name": "dual_cnn_lstm",
+        "name": "dual_cnn_sa_lstm",
         "epochs": 20,
         "lr": 1e-4,
         "wd": 1e-2,
-        "label_smoothing": 0.0,
-    },
+        "label_smoothing": 0.05,
+    }
 ]
 
 DATASET = "italian_pd"
@@ -133,7 +123,7 @@ total = len(EXPERIMENTS) * len(SEEDS) * 5
 EXPERIMENT_CELL = f"""# ============================================================
 # Phase 6 Stage B: Italian PD, 3 seeds, 5 folds
 # 2 models × 3 seeds × 5 folds = 30 runs
-# Goal: Statistical validation of dual_cnn_sa_lstm and resnet50_ca_lstm
+# Goal: Statistical validation of dual_cnn_sa_lstm and resnet50_ca_lstm with 0.05 label smoothing
 # ============================================================
 import sys
 import subprocess
@@ -188,34 +178,36 @@ else:
 
 
 AGGREGATE_CELL = r"""# Aggregate Stage A results into a summary table
-import glob
+import json as _json
+import numpy as np
+from pathlib import Path as _P
 
-print("\n=== Phase 6 Stage A Results (Italian PD) ===\n")
+print("\n=== Phase 6 Stage B Results (Italian PD) ===\n")
 print(f"{'Model':<25} {'Fold':<6} {'Best F1':>8} {'Final F1':>9} {'AUC':>7}")
 print("-" * 60)
 
-import json as _json
-from pathlib import Path as _P
-
 runs_root = ROOT / "product/artifacts/runs/italian_pd"
-for model_type, _, _ in EXPERIMENTS:
-    fold_f1s = []
-    for fold in range(5):
-        run_name = f"italian_pd_{model_type}_s42_fold{fold}"
-        summary_p = runs_root / run_name / "summary.json"
-        if summary_p.exists():
-            s = _json.loads(summary_p.read_text())
-            f1  = s.get("best_macro_f1", 0.0)
-            ff1 = s.get("final_macro_f1", 0.0)
-            auc = s.get("final_auc", 0.0)
-            fold_f1s.append(f1)
-            print(f"{model_type:<25} {fold:<6} {f1:>8.4f} {ff1:>9.4f} {auc:>7.4f}")
-        else:
-            print(f"{model_type:<25} {fold:<6} {'MISSING':>8}")
-    if fold_f1s:
-        import numpy as np
-        print(f"  → mean ± std: {np.mean(fold_f1s):.4f} ± {np.std(fold_f1s):.4f}")
-    print()
+MODEL_NAMES = """ + repr([e["name"] for e in EXPERIMENTS]) + r"""
+SEEDS = """ + repr(SEEDS) + r"""
+
+for model_type in MODEL_NAMES:
+    for seed in SEEDS:
+        fold_f1s = []
+        for fold in range(5):
+            run_name = f"italian_pd_{model_type}_s{seed}_fold{fold}"
+            summary_p = runs_root / run_name / "summary.json"
+            if summary_p.exists():
+                s = _json.loads(summary_p.read_text())
+                f1  = s.get("best_macro_f1", 0.0)
+                ff1 = s.get("final_macro_f1", 0.0)
+                auc = s.get("final_auc", 0.0)
+                fold_f1s.append(f1)
+                print(f"{model_type:<25} {fold:<6} {f1:>8.4f} {ff1:>9.4f} {auc:>7.4f}")
+            else:
+                print(f"{model_type:<25} {fold:<6} {'MISSING':>8}")
+        if fold_f1s:
+            print(f"  → mean ± std: {np.mean(fold_f1s):.4f} ± {np.std(fold_f1s):.4f}")
+        print()
 """
 
 ZIP_CELL = r"""# Zip all results for download
@@ -256,20 +248,17 @@ def make_md_cell(text, cell_id):
     }
 
 TITLE_MD = """\
-# Phase 6: SOTA Push — Stage A (Clean Re-run)
+# Phase 6: SOTA Push — Stage B
 
-**Stage A**: Italian PD only | 1 seed (42) | 5 folds | 4 models × 5 folds = **20 runs**
+**Stage B**: Italian PD only | 3 seeds (42, 123, 999) | 5 folds | 2 models × 3 seeds × 5 folds = **30 runs**
 
 | Model | Role |
 |---|---|
-| `resnet50` | Baseline (no attention) |
-| `resnet50_ca` | Coordinate Attention |
-| `resnet50_ca_lstm` | CA + BiLSTM temporal head |
-| `dual_cnn_lstm` | Dual CNN + BiLSTM fusion |
+| `resnet50_ca_lstm` | Phase 6 Stage A Baseline |
+| `dual_cnn_sa_lstm` | **Novel architecture: Dual CNN + Self-Attention + BiLSTM** |
 
 ### Goal
-Clean re-run of Stage A to replace results contaminated by stale Kaggle dataset files.
-Inline leakage guard will halt training if any subject overlap is detected.
+Statistically validate the novel `dual_cnn_sa_lstm` against `resnet50_ca_lstm` across 3 seeds with label smoothing factor $0.05$.
 """
 
 nb = {
