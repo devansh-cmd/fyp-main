@@ -104,7 +104,7 @@ Recent hybrid CNN-LSTM approaches process spectrograms with a CNN backbone and p
 
 \subsection{Multi-Branch and Hybrid Architectures}
 
-Multi-branch architectures combine complementary feature extractors to enrich the learned representation. Early dual-stream networks fused hand-crafted and learned features~\cite{orozco2016}. More recently, deep multi-branch models have combined multiple CNN backbones trained on different augmentation strategies~[CITATION NEEDED]. Zhao et al. proposed a two-stream spectrogram network achieving state-of-the-art results on environmental sound classification~[CITATION NEEDED], while Pham et al. explored ensemble-like fusion of EfficientNet variants for audio tagging~[CITATION NEEDED].
+Multi-branch architectures combine complementary feature extractors to enrich the learned representation. Early dual-stream networks fused hand-crafted and learned features~\cite{orozco2016}. More recently, deep multi-branch models have extended this idea to parallel CNN backbones, exploiting the complementary inductive biases of different architectures to capture richer spectro-temporal representations than any single backbone can provide.
 
 In the PD detection literature, multi-branch approaches remain underexplored. Existing systems typically employ a single backbone, and fusion strategies that retain spatial feature-map structure---rather than pooled global descriptors---before attention and temporal heads have not been evaluated on clinical speech corpora. These gaps motivate the early spatial fusion strategy and the architectural choices described in Section~III.
 
@@ -128,7 +128,7 @@ All four datasets were evaluated under identical preprocessing and model pipelin
 
 All audio is resampled to 16\,kHz. Log-Mel spectrograms are computed using a short-time Fourier transform (STFT) with $N_{\text{fft}}=2048$, hop length 512 samples, and $n_{\text{mels}}=128$ filterbanks. The resulting 2-D representation is resized bilinearly to $224\times224$ pixels to match the expected input resolution of ImageNet-pretrained backbone networks.
 
-During training, we apply a stochastic augmentation pipeline to the waveform before spectrogram extraction: (i) additive Gaussian noise at a random SNR in $[20, 40]$\,dB, (ii) pitch shift uniformly drawn from $[-2, +2]$ semitones, (iii) time stretching with rate $r \in [0.8, 1.2]$, (iv) simulated room impulse response (reverb) using randomly sampled RIRs~[CITATION NEEDED], and (v) random gain in $[0.5, 1.5]$. Each augmentation is applied independently with probability 0.5, increasing effective training-set diversity.
+During training, we apply a stochastic augmentation pipeline to the waveform before spectrogram extraction: (i) additive Gaussian noise at a random SNR in $[20, 40]$\,dB, (ii) pitch shift uniformly drawn from $[-2, +2]$ semitones, (iii) time stretching with rate $r \in [0.8, 1.2]$, (iv) simulated room impulse response convolution to model reverb effects, and (v) random gain in $[0.5, 1.5]$. Each augmentation is applied independently with probability 0.5, increasing effective training-set diversity.
 
 Following waveform augmentation, SpecAugment~\cite{park2019} is applied directly to the log-Mel spectrogram: two frequency masks of width up to 27 bins and two time masks of width up to 100 frames are applied with probability 0.5 each. Validation and test spectrograms are computed from clean audio without waveform augmentation or SpecAugment, to maintain evaluation integrity.
 
