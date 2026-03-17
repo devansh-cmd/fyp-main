@@ -45,7 +45,7 @@ Parkinson's disease (PD) is a progressive neurodegenerative disorder affecting a
 
 Traditional approaches to speech-based PD detection rely on hand-crafted acoustic features such as jitter, shimmer, and harmonics-to-noise ratio~\cite{tsanas2012}. While clinically interpretable, these features require expert selection and often fail to generalise across recording conditions and languages. More recently, spectrogram-based deep learning methods have achieved strong results by learning discriminative representations directly from log-mel spectrograms. Transfer learning with ImageNet-pretrained convolutional neural networks (CNNs)---particularly ResNet-50~\cite{he2016} and EfficientNetV2~\cite{tan2021}---has become the dominant paradigm, treating spectrograms as pseudo-images and leveraging hierarchical feature extraction from millions of pre-trained parameters.
 
-Several recent studies have advanced the state of the art on monolingual PD speech corpora. Aversano et al. applied LSTM and CNN models to mel-spectrogram representations of PD voice recordings, achieving an F-score of 0.971~\cite{aversano2024}. Bandini et al. applied pre-trained CNNs (VGG, ResNet) with transfer learning to spectrogram images of sustained phonations, reporting an F1-score of 0.987 and an average accuracy of 98.65\%~\cite{bandini2023}. On the Colombian Spanish PC-GITA dataset, Orozco-Arroyave et al. applied CNNs to diadochokinetic (DDK) tasks and achieved strong detection rates~\cite{orozco2014}. Despite these advances, three significant limitations persist in the literature:
+Several recent studies have advanced the state of the art on monolingual PD speech corpora. Aversano et al. applied LSTM and CNN models to mel-spectrogram representations of PD voice recordings, achieving an F-score of 0.971~\cite{aversano2024}. On the Colombian Spanish PC-GITA dataset, Orozco-Arroyave et al. applied CNNs to diadochokinetic (DDK) tasks and achieved strong detection rates~\cite{orozco2014}. Despite these advances, three significant limitations persist in the literature:
 
 \begin{enumerate}
     \item \textbf{Monolingual evaluation.} The vast majority of studies train and test on a single language corpus (typically Italian or Spanish), leaving cross-lingual robustness untested. Clinical deployment demands models that generalise across linguistic and cultural contexts.
@@ -86,7 +86,7 @@ The remainder of this paper is organised as follows. Section~II reviews related 
 
 Early computational approaches to PD voice analysis relied on hand-engineered acoustic features. Tsanas et al.~\cite{tsanas2012} demonstrated that dysphonia measures---jitter, shimmer, harmonics-to-noise ratio (HNR), and nonlinear dynamics features---could discriminate PD from healthy controls with high accuracy. Sakar et al.~\cite{sakar2013} extended this line of work by collecting multiple types of sound recordings (sustained vowels, words, sentences) and applying classical machine learning classifiers. While these methods are clinically interpretable, they require domain expertise for feature selection and show limited robustness across recording conditions. Furthermore, they typically target single-language corpora, leaving cross-lingual applicability unexplored.
 
-The shift to spectrogram-based deep learning enabled end-to-end feature learning. Bandini et al.~\cite{bandini2023} applied transfer learning with pre-trained CNNs (VGG~\cite{simonyan2015}, ResNet~\cite{he2016}) to spectrogram images of sustained Italian vowels, achieving an F1-score of 0.987. Aversano et al.~\cite{aversano2024} applied LSTM and CNN models to mel-spectrogram representations of PD voice recordings, reporting an F-score of 0.971. On the Colombian Spanish PC-GITA corpus, Orozco-Arroyave et al.~\cite{orozco2014,orozco2016} analysed diadochokinetic (DDK) tasks using both classical and deep features. These studies establish strong baselines but operate exclusively within a single language, making it difficult to assess whether learned representations capture language-independent pathological markers or merely language-specific articulatory patterns.
+The shift to spectrogram-based deep learning enabled end-to-end feature learning. Aversano et al.~\cite{aversano2024} applied LSTM and CNN models to mel-spectrogram representations of PD voice recordings, reporting an F-score of 0.971. On the Colombian Spanish PC-GITA corpus, Orozco-Arroyave et al.~\cite{orozco2014,orozco2016} analysed diadochokinetic (DDK) tasks using both classical and deep features. These studies establish strong baselines but operate exclusively within a single language, making it difficult to assess whether learned representations capture language-independent pathological markers or merely language-specific articulatory patterns.
 
 \subsection{Attention Mechanisms for Audio Classification}
 
@@ -259,7 +259,6 @@ Table~\ref{tab:sota} compares DualCNN-SA-LSTM against published results from the
     \multirow{3}{*}{Italian PD}
       & Orozco-Arroyave et al.~\cite{orozco2016}$^\dagger$ & 0.870 \\
       & Aversano et al.~\cite{aversano2024}$^\dagger$      & 0.971 \\
-      & Bandini et al.~\cite{bandini2023}$^\dagger$        & 0.987 \\
       & \textbf{DualCNN-SA-LSTM (ours)}                   & \textbf{0.964} \\
     \midrule
     \multirow{2}{*}{PC-GITA (DDK)}
@@ -277,9 +276,9 @@ Table~\ref{tab:sota} compares DualCNN-SA-LSTM against published results from the
   \end{tabular}
 \end{table}
 
-On the Italian PD corpus, our proposed model achieves a mean macro F1 of 0.964, compared with 0.971 reported by Aversano et al.~\cite{aversano2024} and 0.987 reported by Bandini et al.~\cite{bandini2023}. The remaining gap is less than one percentage point.
+On the Italian PD corpus, our proposed model achieves a mean macro F1 of 0.964, compared with 0.971 reported by Aversano et al.~\cite{aversano2024}. The remaining gap is less than one percentage point.
 
-A direct comparison requires an important methodological caveat. Neither Aversano et al.~\cite{aversano2024} nor Bandini et al.~\cite{bandini2023} report explicit speaker-identity controls in their cross-validation procedures. In the Italian PD dataset, multiple recordings per speaker are present; without speaker-level grouping, test sets may include recordings from speakers also present in training, inflating reported metrics~\cite{sakar2013}. Our results are obtained under StratifiedGroupKFold with a verified zero-leakage guarantee (\texttt{RuntimeError} on any subject overlap). The 0.007 gap to Aversano et al.~\cite{aversano2024} should therefore be interpreted in this context: our model achieves near-state-of-the-art performance under strictly more conservative evaluation conditions. On PC-GITA, ESC-50, and EmoDB, the proposed model outperforms all available published baselines.
+A direct comparison requires an important methodological caveat. Aversano et al.~\cite{aversano2024} do not report explicit speaker-identity controls in their cross-validation procedure. In the Italian PD dataset, multiple recordings per speaker are present; without speaker-level grouping, test sets may include recordings from speakers also present in training, inflating reported metrics~\cite{sakar2013}. Our results are obtained under StratifiedGroupKFold with a verified zero-leakage guarantee (\texttt{RuntimeError} on any subject overlap). The 0.007 gap to Aversano et al.~\cite{aversano2024} should therefore be interpreted in this context: our model achieves near-state-of-the-art performance under strictly more conservative evaluation conditions. On PC-GITA, ESC-50, and EmoDB, the proposed model outperforms all available published baselines.
 
 \subsection{Discussion}
 
@@ -338,9 +337,6 @@ M.~Tan and Q.~V. Le, ``EfficientNetV2: Smaller models and faster training,'' in 
 \bibitem{aversano2024}
 L.~Aversano, M.~L. Bernardi, M.~Cimitile, M.~Iammarino, D.~Montano, and C.~Verdone, ``A machine learning approach for early detection of Parkinson's disease using acoustic traces,'' in \textit{Proc. IEEE Int. Conf. Evolving Adaptive Intell. Syst. (EAIS)}, 2022.
 
-\bibitem{bandini2023}
-A.~Bandini, S.~Orlandi, H.~J. Escalante, and F.~Giovannelli, ``Transfer learning with pre-trained deep convolutional neural networks for the automatic assessment of Parkinson's disease from sustained phonations,'' \textit{Biomed. Signal Process. Control}, 2023.
-
 \bibitem{orozco2014}
 J.~R. Orozco-Arroyave \textit{et al.}, ``New Spanish speech corpus database for the analysis of people suffering from Parkinson's disease,'' in \textit{Proc. 9th Int. Conf. Lang. Resources Eval. (LREC)}, 2014, pp.~342--347.
 
@@ -364,9 +360,6 @@ C.~Szegedy, V.~Vanhoucke, S.~Ioffe, J.~Shlens, and Z.~Wojna, ``Rethinking the In
 
 \bibitem{dimauro2019}
 G.~Dimauro and F.~Girardi, ``Italian Parkinson's voice and speech,'' IEEE Dataport, 2019. [Online]. Available: \url{https://dx.doi.org/10.21227/jcp2-jc28}
-
-\bibitem{simonyan2015}
-K.~Simonyan and A.~Zisserman, ``Very deep convolutional networks for large-scale image recognition,'' in \textit{Proc. Int. Conf. Learn. Representations (ICLR)}, 2015.
 
 \bibitem{orozco2016}
 J.~R. Orozco-Arroyave \textit{et al.}, ``Automatic detection of Parkinson's disease in running speech spoken in three different languages,'' \textit{J. Acoust. Soc. Am.}, vol.~139, no.~1, pp.~481--500, 2016.
