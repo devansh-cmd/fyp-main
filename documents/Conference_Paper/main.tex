@@ -186,7 +186,12 @@ Table~\ref{tab:ablation} reports the incremental macro F1-score gains on the Ita
 
 The ablation reveals that Coordinate Attention provides the single largest single-component gain (+0.007). Adding the BiLSTM temporal head (R50+CA+BiLSTM) yields a further incremental improvement (+0.001), confirming that temporal sequence modelling provides complementary information to spatial attention. Introducing the second branch (EfficientNetV2-S) produces the next largest step (+0.006), validating the complementarity of ResNet-50 structural features and EfficientNetV2-S frequency-detail features. The full DualCNN-SA-LSTM with FP-SA and label smoothing achieves a 15-run mean macro F1 of \textbf{0.964\,$\pm$\,0.015} on the Italian PD dataset.
 
-[TODO: FIGURE \ref{fig:ablation}]
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\columnwidth]{figures/fig_ablation.png}
+    \caption{Incremental ablation study on the Italian PD dataset (5-fold CV). Starting from a ResNet-50 baseline, each architectural addition yields consistent improvements in macro F1-score.}
+    \label{fig:ablation}
+\end{figure}
 
 \subsection{Main Results}
 
@@ -232,7 +237,12 @@ Table~\ref{tab:model_comparison} further contextualises these results by compari
   \end{tabular}
 \end{table}
 
-[TODO: FIGURE \ref{fig:cross_dataset}]
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\columnwidth]{figures/fig_cross_dataset.png}
+    \caption{Cross-dataset evaluation (15-run means) across four distinct speech corpora. The proposed DualCNN-SA-LSTM consistently outperforms the ResNet-50 baseline and intermediate models across all evaluated languages and tasks.}
+    \label{fig:cross_dataset}
+\end{figure}
 
 \subsection{State-of-the-Art Comparison}
 
@@ -275,7 +285,12 @@ A direct comparison requires an important methodological caveat. Neither Aversan
 
 \textbf{Fold 3 anomaly.} Across all model configurations and all three seeds, Fold 3 of the Italian PD dataset exhibits a consistent performance drop of approximately 0.04--0.08 macro F1 relative to the other folds (Fig.~\ref{fig:fold3_anomaly}). Inspection of speaker metadata indicates that Fold 3 contains a disproportionate concentration of speakers with borderline vocal impairment severity---subjects whose pathological markers are ambiguous under acoustic analysis. This finding is consistent with clinical observations that early-stage PD presents with subtle dysarthric features that even trained speech-language pathologists may find difficult to characterise~\cite{duffy2013}. Rather than representing a model failure, the Fold 3 anomaly may reflect a genuine clinical difficulty in this subject sub-population and warrants further investigation with severity-stratified analysis.
 
-[TODO: FIGURE \ref{fig:fold3_anomaly}]
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\columnwidth]{figures/fig_fold3_anomaly.png}
+    \caption{Per-fold performance across the 5 splits of the Italian PD dataset. Fold 3 exhibits a distinct performance drop across all evaluated models, highlighting the challenge of specific hard subject groups.}
+    \label{fig:fold3_anomaly}
+\end{figure}
 
 \textbf{ESC-50 generalisation.} The absolute F1 gain on ESC-50 (+5.0\%) is comparable to the gains on PD corpora, despite ESC-50 being a general environmental sound classification task with no speech content. This suggests that the dual-branch spatial fusion and BiLSTM temporal head provide general audio discriminative capacity. However, the relative improvement due to FP-SA is smaller on ESC-50 than on the PD datasets: the frequency biases learned by FP-SA appear most beneficial for spectra structured around vocal resonances (formants, pitch) rather than broadband environmental sounds. This is consistent with the hypothesis that FP-SA's learnable frequency biases specialise toward speech-specific spectral regions, providing a larger benefit in speech-centric tasks.
 
@@ -283,26 +298,6 @@ A direct comparison requires an important methodological caveat. Neither Aversan
 
 \textbf{Limitations.} Several limitations should be acknowledged. First, all four datasets are small by deep learning standards; the Italian PD corpus contains only 50 speakers, and the reported standard deviations across 15 runs (typically $\pm 0.01$--$0.02$) reflect the inherent variability of small-sample evaluation. Second, our evaluation uses cross-validation on the full available data; no independent held-out test set was used. Consequently, reported figures represent cross-validated training performance rather than prospective generalisation performance. Third, the model has not been evaluated on severe or late-stage PD, nor on patients with co-morbid speech disorders. Future work should address these limitations through multi-site studies with independent test cohorts.
 
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=\columnwidth]{figures/fig_ablation.pdf}
-    \caption{Incremental ablation study on the Italian PD dataset (5-fold CV). Starting from a ResNet-50 baseline, each architectural addition yields consistent improvements in macro F1-score.}
-    \label{fig:ablation}
-\end{figure}
-
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=\columnwidth]{figures/fig_cross_dataset.pdf}
-    \caption{Cross-dataset evaluation (15-run means) across four distinct speech corpora. The proposed DualCNN-SA-LSTM consistently outperforms the ResNet-50 baseline and intermediate models across all evaluate languages and tasks.}
-    \label{fig:cross_dataset}
-\end{figure}
-
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=\columnwidth]{figures/fig_fold3_anomaly.pdf}
-    \caption{Per-fold performance across the 5 splits of the Italian PD dataset. Fold 3 exhibits a distinct performance drop across all evaluated models, highlighting the challenge of specific "hard" subject groups.}
-    \label{fig:fold3_anomaly}
-\end{figure}
 
 \section{Conclusion}
 
