@@ -1,0 +1,27 @@
+{
+  "best_macro_f1": 0.9674811195895966,
+  "final_macro_f1": 0.9592569620287371,
+  "final_auc": 0.9993125201222128,
+  "final_control_recall": 1.0,
+  "config": {
+    "dataset": "emodb",
+    "model_type": "resnet50_ca_lstm",
+    "epochs": 15,
+    "batch_size": 16,
+    "lr": 0.0001,
+    "weight_decay": 0.01,
+    "unfreeze_at": 0,
+    "weighted_loss": false,
+    "dropout": 0.5,
+    "seed": 42,
+    "fold": 1,
+    "run_name": "emodb_resnet50_ca_lstm_s42_fold1",
+    "train_csv": null,
+    "val_csv": null,
+    "drop_last": true,
+    "spec_augment": true,
+    "spec_aug_T": 40,
+    "spec_aug_F": 40,
+    "label_smoothing": 0.05
+  }
+}

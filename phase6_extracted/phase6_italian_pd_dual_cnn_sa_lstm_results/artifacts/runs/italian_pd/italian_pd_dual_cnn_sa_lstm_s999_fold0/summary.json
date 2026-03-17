@@ -1,0 +1,27 @@
+{
+  "best_macro_f1": 0.9944853498166832,
+  "final_macro_f1": 0.9944853498166832,
+  "final_auc": 0.9996366279069767,
+  "final_control_recall": 0.9883720930232558,
+  "config": {
+    "dataset": "italian_pd",
+    "model_type": "dual_cnn_sa_lstm",
+    "epochs": 15,
+    "batch_size": 16,
+    "lr": 0.0001,
+    "weight_decay": 0.01,
+    "unfreeze_at": 0,
+    "weighted_loss": false,
+    "dropout": 0.5,
+    "seed": 999,
+    "fold": 0,
+    "run_name": "italian_pd_dual_cnn_sa_lstm_s999_fold0",
+    "train_csv": null,
+    "val_csv": null,
+    "drop_last": true,
+    "spec_augment": true,
+    "spec_aug_T": 40,
+    "spec_aug_F": 40,
+    "label_smoothing": 0.05
+  }
+}

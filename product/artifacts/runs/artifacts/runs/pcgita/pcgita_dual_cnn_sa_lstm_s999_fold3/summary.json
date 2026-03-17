@@ -1,0 +1,27 @@
+{
+  "best_macro_f1": 0.6755166475315728,
+  "final_macro_f1": 0.5783730158730158,
+  "final_auc": 0.6878531073446328,
+  "final_control_recall": 0.6440677966101694,
+  "config": {
+    "dataset": "pcgita",
+    "model_type": "dual_cnn_sa_lstm",
+    "epochs": 15,
+    "batch_size": 16,
+    "lr": 0.0001,
+    "weight_decay": 0.01,
+    "unfreeze_at": 0,
+    "weighted_loss": false,
+    "dropout": 0.5,
+    "seed": 999,
+    "fold": 3,
+    "run_name": "pcgita_dual_cnn_sa_lstm_s999_fold3",
+    "train_csv": null,
+    "val_csv": null,
+    "drop_last": true,
+    "spec_augment": true,
+    "spec_aug_T": 40,
+    "spec_aug_F": 40,
+    "label_smoothing": 0.05
+  }
+}

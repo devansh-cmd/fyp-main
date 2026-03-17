@@ -1,4 +1,4 @@
-﻿# ------------------------------
+# ------------------------------
 # OS / IDE
 # ------------------------------
 .DS_Store
@@ -82,6 +82,7 @@ product/artifacts/runs/**/*.png
 # ------------------------------
 *.zip
 desktop.ini
+colab_all_kfold
 colab_all_kfold/
 product/datasets/raw/
 *.docx

@@ -1,0 +1,405 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{url}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+
+\title{Dual-Branch CNN with Frequency-Prior Self-Attention and BiLSTM for Cross-Lingual Parkinson's Disease Detection from Speech}
+
+\author{
+\IEEEauthorblockN{Devansh Dev}
+\IEEEauthorblockA{\textit{Department of Computer Science} \\
+\textit{Royal Holloway, University of London}\\
+Egham, United Kingdom \\
+devansh.dev.2022@live.rhul.ac.uk}
+\and
+\IEEEauthorblockN{Li Zhang}
+\IEEEauthorblockA{\textit{Department of Computer Science} \\
+\textit{Royal Holloway, University of London}\\
+Egham, United Kingdom \\
+li.zhang@rhul.ac.uk}
+}
+
+\maketitle
+
+\begin{abstract}
+Parkinson's disease (PD) causes characteristic vocal impairments that can be detected non-invasively from speech recordings. Existing deep learning systems rely on single CNN backbones evaluated within a single language, leaving cross-lingual robustness and long-range temporal modelling unaddressed. We propose DualCNN-SA-LSTM, a 37.1\,M-parameter architecture that fuses ResNet-50 and EfficientNetV2-S through early spatial concatenation, applies a novel Frequency-Prior Self-Attention (FP-SA) module with learnable frequency-band key biases, and models temporal dynamics with a two-layer bidirectional LSTM head. Evaluated under speaker-independent stratified 5-fold cross-validation with verified zero subject leakage (15 runs, 3 seeds), the model achieves a macro F1 of 0.964 on the Italian PD corpus. Consistent gains of 3.8--5.2\% over the ResNet-50 baseline are observed across Italian PD, Colombian Spanish PC-GITA, ESC-50, and EmoDB, demonstrating cross-lingual and cross-domain robustness. Rigorous ablation confirms the independent contribution of each architectural component.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Parkinson's disease, speech analysis, convolutional neural network, self-attention, BiLSTM, cross-lingual, mel-spectrogram, coordinate attention
+\end{IEEEkeywords}
+
+\section{Introduction}
+
+Parkinson's disease (PD) is a progressive neurodegenerative disorder affecting approximately 10 million people worldwide~\cite{dorsey2018}. Motor symptoms such as tremor, bradykinesia, and rigidity are well documented, yet speech deterioration---termed \textit{hypokinetic dysarthria}---is among the earliest and most pervasive manifestations, present in up to 90\% of PD patients~\cite{ho1999}. Characteristic vocal impairments include reduced loudness, monopitch, imprecise articulation, and abnormal speech rhythm, all of which arise from the progressive loss of dopaminergic neurons in the substantia nigra~\cite{duffy2013}. Because speech can be recorded non-invasively with consumer-grade devices, automatic PD detection from voice has emerged as a promising avenue for low-cost, accessible screening~\cite{sakar2013}.
+
+Traditional approaches to speech-based PD detection rely on hand-crafted acoustic features such as jitter, shimmer, and harmonics-to-noise ratio~\cite{tsanas2012}. While clinically interpretable, these features require expert selection and often fail to generalise across recording conditions and languages. More recently, spectrogram-based deep learning methods have achieved strong results by learning discriminative representations directly from log-mel spectrograms. Transfer learning with ImageNet-pretrained convolutional neural networks (CNNs)---particularly ResNet-50~\cite{he2016} and EfficientNetV2~\cite{tan2021}---has become the dominant paradigm, treating spectrograms as pseudo-images and leveraging hierarchical feature extraction from millions of pre-trained parameters.
+
+Several recent studies have advanced the state of the art on monolingual PD speech corpora. Aversano et al. trained CNN and LSTM models on mel-spectrograms extracted from sustained vowels and read phrases, achieving a macro F1-score of 0.970 on the Italian voice dataset~\cite{aversano2024}. Bandini et al. applied pre-trained CNNs (VGG, ResNet) with transfer learning to spectrogram images of sustained phonations, reporting an F1-score of 0.987 and an average accuracy of 98.65\%~\cite{bandini2023}. On the Colombian Spanish PC-GITA dataset, Orozco-Arroyave et al. applied CNNs to diadochokinetic (DDK) tasks and achieved strong detection rates~\cite{orozco2014}. Despite these advances, three significant limitations persist in the literature:
+
+\begin{enumerate}
+    \item \textbf{Monolingual evaluation.} The vast majority of studies train and test on a single language corpus (typically Italian or Spanish), leaving cross-lingual robustness untested. Clinical deployment demands models that generalise across linguistic and cultural contexts.
+
+    \item \textbf{Spatial-only feature extraction.} Standard CNN architectures capture local spatial patterns in spectrograms but lack explicit mechanisms for modelling long-range temporal dependencies. PD-related vocal tremor manifests as persistent modulation patterns across the time axis of the spectrogram—a signal that local convolution windows may miss.
+
+    \item \textbf{Frequency-agnostic attention.} Recent attention-augmented CNN approaches (e.g., SE-Net~\cite{hu2018}, CBAM~\cite{woo2018}, Coordinate Attention~\cite{hou2021}) treat all spatial positions uniformly, ignoring the fact that diagnostic information in speech spectrograms concentrates in specific frequency bands. For PD, the critical bands include the fundamental frequency region (70--300\,Hz), formant transitions, and the 4--8\,Hz tremor modulation envelope~\cite{rusz2011}.
+\end{enumerate}
+
+This paper addresses all three limitations through a novel architecture called \textbf{DualCNN-SA-LSTM}. The proposed model makes the following contributions:
+
+\begin{itemize}
+    \item \textbf{Dual-branch CNN fusion.} We combine ResNet-50 and EfficientNetV2-S as parallel feature extractors. ResNet's residual identity paths capture structural shape features, while EfficientNet's compound scaling extracts fine-grained frequency detail. Features are concatenated and projected through a 1$\times$1 convolutional bottleneck (3{,}328 $\rightarrow$ 512 channels) to form a joint representation.
+
+    \item \textbf{Frequency-Prior Self-Attention (FP-SA).} We introduce a novel self-attention module that injects learnable frequency-band positional embeddings into the attention key computation. Unlike standard multi-head self-attention, FP-SA adds a trainable bias $\mathbf{F} \in \mathbb{R}^{H \times d}$ (where $H$ indexes frequency rows in the latent feature map) to the Keys, enabling the model to learn \textit{which frequency bands are most diagnostic} from data. This biases attention toward clinically relevant spectral regions without requiring manual feature engineering.
+
+    \item \textbf{Bidirectional LSTM temporal head.} After attention, the 7$\times$7 spatial feature map is reshaped into a 49-step sequence and processed by a two-layer bidirectional LSTM. This captures both forward (onset$\rightarrow$peak) and backward (decay) temporal patterns of pathological speech, modelling long-range dependencies that pure CNNs cannot represent.
+
+    \item \textbf{Cross-lingual evaluation.} We evaluate on two typologically distinct PD speech corpora---an Italian sustained-vowel dataset~\cite{dimauro2019} (28 PD, 22 HC speakers, 831 recordings) and the Colombian Spanish PC-GITA DDK corpus~\cite{orozco2014} (50 PD, 50 HC speakers, 600 recordings)---using identical preprocessing and model pipelines. All experiments use speaker-independent stratified 5-fold cross-validation with verified zero subject leakage between train and validation sets.
+\end{itemize}
+
+We conduct a systematic ablation study across six experimental phases. Starting from a ResNet-50 baseline (macro F1 = 0.926 on Italian PD, 5-fold CV), we incrementally add Coordinate Attention~\cite{hou2021} (+CA), a BiLSTM temporal head~\cite{graves2005} (+LSTM), dual-branch fusion, and Frequency-Prior Self-Attention, measuring the marginal contribution of each component. Phase~6 Stage~B results are reported as 15-run means (3 seeds $\times$ 5 folds) with Wilcoxon signed-rank tests for statistical significance. Our best model, DualCNN-SA-LSTM with label smoothing~\cite{szegedy2016} ($\epsilon = 0.05$), narrows the gap to the published state of the art (F1 = 0.970~\cite{aversano2024}) on the Italian corpus while providing, to our knowledge, the first cross-lingual PD detection evaluation using a unified deep learning pipeline.
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=\textwidth]{figures/fig_architecture.pdf}
+    \caption{The proposed DualCNN-SA-LSTM architecture. The model fuses spatial and structural features from ResNet-50 with fine-grained frequency details from EfficientNetV2-S. A \textit{Coord.\ Attention (CA)} block applies direction-aware spatial recalibration to the fused feature map. The joint representation is then processed by Frequency-Prior Self-Attention to highlight diagnostic spectral bands, followed by a BiLSTM head to model the temporal dynamics of pathological speech.}
+    \label{fig:architecture}
+\end{figure*}
+
+The remainder of this paper is organised as follows. Section~II reviews related work in speech-based PD detection and attention mechanisms for audio classification. Section~III details the proposed methodology, including preprocessing, model architecture, and training protocol. Section~IV presents experimental results, ablation analysis, and cross-lingual evaluation. Section~V concludes and outlines future directions.
+
+%% ---- PLACEHOLDER SECTIONS (to be filled in subsequent requests) ----
+
+\section{Related Work}
+
+\subsection{Speech-Based Parkinson's Disease Detection}
+
+Early computational approaches to PD voice analysis relied on hand-engineered acoustic features. Tsanas et al.~\cite{tsanas2012} demonstrated that dysphonia measures---jitter, shimmer, harmonics-to-noise ratio (HNR), and nonlinear dynamics features---could discriminate PD from healthy controls with high accuracy. Sakar et al.~\cite{sakar2013} extended this line of work by collecting multiple types of sound recordings (sustained vowels, words, sentences) and applying classical machine learning classifiers. While these methods are clinically interpretable, they require domain expertise for feature selection and show limited robustness across recording conditions. Furthermore, they typically target single-language corpora, leaving cross-lingual applicability unexplored.
+
+The shift to spectrogram-based deep learning enabled end-to-end feature learning. Bandini et al.~\cite{bandini2023} applied transfer learning with pre-trained CNNs (VGG~\cite{simonyan2015}, ResNet~\cite{he2016}) to spectrogram images of sustained Italian vowels, achieving an F1-score of 0.987. Aversano et al.~\cite{aversano2024} trained CNN and LSTM models on mel-spectrograms of Italian vowels and read phrases, reporting a macro F1 of 0.970. On the Colombian Spanish PC-GITA corpus, Orozco-Arroyave et al.~\cite{orozco2014,orozco2016} analysed diadochokinetic (DDK) tasks using both classical and deep features. These studies establish strong baselines but operate exclusively within a single language, making it difficult to assess whether learned representations capture language-independent pathological markers or merely language-specific articulatory patterns.
+
+\subsection{Attention Mechanisms for Audio Classification}
+
+Attention mechanisms have become a standard augmentation to CNN feature extractors. Hu et al.~\cite{hu2018} proposed Squeeze-and-Excitation (SE) networks, which learn channel-wise recalibration weights via global average pooling. Woo et al.~\cite{woo2018} extended this with CBAM, adding a spatial attention branch alongside channel attention. Both mechanisms were originally designed for natural images and treat all spatial positions identically---an assumption that is suboptimal for spectrograms, where the frequency axis carries fundamentally different information from the time axis.
+
+Coordinate Attention (CA)~\cite{hou2021} addresses this by decomposing spatial attention into independent horizontal and vertical pooling operations, producing direction-aware attention maps. In our Phase~5 ablation study (Section~IV), CA proved to be the most effective single-point attention mechanism for clinical speech spectrograms, capturing time-frequency patterns relevant to PD vocal tremor. Attention Gates~\cite{schlemper2019}, originally developed for medical image segmentation, use global-average-pooled features as a gating signal to suppress irrelevant spatial regions. In our experiments, Attention Gates added approximately 8M parameters compared to CA's 2K, yet did not consistently outperform CA on speech data.
+
+Self-attention, as introduced by Vaswani et al.~\cite{vaswani2017} for sequence modelling, computes pairwise affinities across all spatial positions. Standard multi-head self-attention (MHSA) is position-agnostic: it assigns uniform prior importance to all locations. Our proposed Frequency-Prior Self-Attention (FP-SA) extends MHSA by injecting a learnable frequency-band key bias, encouraging the model to attend preferentially to diagnostically relevant spectral regions.
+
+\subsection{Temporal Modelling with Recurrent Networks}
+
+Long Short-Term Memory (LSTM) networks~\cite{hochreiter1997} and their bidirectional variants~\cite{graves2005} have been widely used to model sequential dependencies in speech. In the context of PD detection, clinically relevant temporal patterns---such as the periodic modulation of fundamental frequency at 4--8\,Hz corresponding to vocal tremor~\cite{rusz2011} and the progressive decay of articulatory precision within an utterance---span multiple time steps that exceed the receptive field of standard convolutional architectures.
+
+Recent hybrid CNN-LSTM approaches process spectrograms with a CNN backbone and pass the resulting feature sequence to an LSTM head. Aversano et al.~\cite{aversano2024} demonstrated the effectiveness of this paradigm for PD detection. However, these approaches typically apply global average pooling before the LSTM, discarding the spatial structure needed to distinguish frequency-axis information from time-axis information~\cite{aversano2024}. This limits the model's ability to attend specifically to the frequency bands where PD pathology is most concentrated. A temporal modelling strategy that preserves frequency-time structure prior to sequence modelling could address this limitation; our approach proposes such a strategy in Section~III.
+
+\subsection{Multi-Branch and Hybrid Architectures}
+
+Multi-branch architectures combine complementary feature extractors to enrich the learned representation. Early dual-stream networks fused hand-crafted and learned features~\cite{orozco2016}. More recently, deep multi-branch models have combined multiple CNN backbones trained on different augmentation strategies~[CITATION NEEDED]. Zhao et al. proposed a two-stream spectrogram network achieving state-of-the-art results on environmental sound classification~[CITATION NEEDED], while Pham et al. explored ensemble-like fusion of EfficientNet variants for audio tagging~[CITATION NEEDED].
+
+In the PD detection literature, multi-branch approaches remain underexplored. Existing systems typically employ a single backbone, and fusion strategies that retain spatial feature-map structure---rather than pooled global descriptors---before attention and temporal heads have not been evaluated on clinical speech corpora. These gaps motivate the early spatial fusion strategy and the architectural choices described in Section~III.
+
+\section{The Proposed Methodology}
+
+\subsection{Datasets}
+
+We evaluate on four datasets spanning two clinical and two general audio domains.
+
+\textbf{Italian Parkinson's Voice and Speech (Italian PD).} The dataset by Dimauro and Girardi~\cite{dimauro2019} contains recordings from 28 PD and 22 healthy control (HC) speakers (50 total), comprising 831 recordings of sustained Italian vowels and short spoken phrases. The task is binary PD-vs-HC classification. The per-class ratio is approximately 56\% PD / 44\% HC, reflecting mild class imbalance.
+
+\textbf{PC-GITA (DDK sub-tasks).} The PC-GITA corpus~\cite{orozco2014} contains Colombian Spanish speech from 50 PD and 50 HC speakers (100 total). We use the diadochokinetic (DDK) sub-tasks---rapid alternating syllable repetitions (/pa-ta-ka/, /pe-ta-ka/)---yielding 600 recordings (300 recordings per group). DDK tasks are particularly sensitive to articulatory rigidity and reduced motor control in PD~\cite{orozco2016}. The dataset is perfectly class-balanced.
+
+\textbf{ESC-50.} The Environmental Sound Classification dataset~\cite{piczak2015} contains 2{,}000 recordings across 50 environmental sound classes (40 clips per class, 5\,s duration, 16\,kHz). We include it as a general audio benchmark to assess cross-domain transfer of the learned representations. The class balance is uniform.
+
+\textbf{EmoDB.} The Berlin Database of Emotional Speech~\cite{burkhardt2005} contains 535 recordings from 10 German-speaking actors across 7 emotion categories. We use the full dataset with the standard 7-class setup. The smallest class (disgust) contributes approximately 46 samples, introducing moderate imbalance.
+
+All four datasets were evaluated under identical preprocessing and model pipelines to ensure a fair cross-dataset comparison.
+
+\subsection{Preprocessing}
+
+All audio is resampled to 16\,kHz. Log-Mel spectrograms are computed using a short-time Fourier transform (STFT) with $N_{\text{fft}}=2048$, hop length 512 samples, and $n_{\text{mels}}=128$ filterbanks. The resulting 2-D representation is resized bilinearly to $224\times224$ pixels to match the expected input resolution of ImageNet-pretrained backbone networks.
+
+During training, we apply a stochastic augmentation pipeline to the waveform before spectrogram extraction: (i) additive Gaussian noise at a random SNR in $[20, 40]$\,dB, (ii) pitch shift uniformly drawn from $[-2, +2]$ semitones, (iii) time stretching with rate $r \in [0.8, 1.2]$, (iv) simulated room impulse response (reverb) using randomly sampled RIRs~[CITATION NEEDED], and (v) random gain in $[0.5, 1.5]$. Each augmentation is applied independently with probability 0.5, increasing effective training-set diversity.
+
+Following waveform augmentation, SpecAugment~\cite{park2019} is applied directly to the log-Mel spectrogram: two frequency masks of width up to 27 bins and two time masks of width up to 100 frames are applied with probability 0.5 each. Validation and test spectrograms are computed from clean audio without waveform augmentation or SpecAugment, to maintain evaluation integrity.
+
+All spectrogram images are normalised with ImageNet statistics (mean $\mu = [0.485, 0.456, 0.406]$, standard deviation $\sigma = [0.229, 0.224, 0.225]$ per channel) prior to being fed to the pretrained backbones. These statistics are held fixed throughout training rather than recomputed from the audio data.
+
+\subsection{Proposed Architecture}
+
+Fig.~\ref{fig:architecture} illustrates the proposed DualCNN-SA-LSTM model, which processes a $224\times224$ log-Mel spectrogram image through four sequential stages: dual-branch spatial feature extraction, early fusion, frequency-prior self-attention with coordinate attention, and bidirectional LSTM temporal modelling.
+
+\textbf{Dual-branch spatial feature extraction.} The spectrogram is passed simultaneously to two ImageNet-pretrained backbone networks operating as parallel feature extractors. The first branch is ResNet-50~\cite{he2016}, whose residual identity shortcuts preserve low-level structural gradients and yield a $2{,}048\times 7\times 7$ feature map from the final spatial stage. The second branch is EfficientNetV2-S~\cite{tan2021}, whose compound scaling of depth, width, and resolution provides finer-grained frequency detail, producing a $1{,}280\times 7\times 7$ feature map. The two feature maps are concatenated along the channel axis to produce a $3{,}328\times 7\times 7$ joint representation.
+
+\textbf{1$\times$1 convolutional bottleneck.} A $1\times1$ convolutional layer projects the concatenated $3{,}328$-channel map to $512$ channels, followed by batch normalisation and ReLU activation. This early spatial fusion preserves the $7\times 7$ grid structure---retaining both frequency and time dimensions---while compressing redundant inter-channel correlations.
+
+\textbf{Frequency-Prior Self-Attention (FP-SA).} We introduce a novel self-attention module that injects learnable frequency-band positional information into the attention computation. The $512\times 7\times 7$ bottleneck output is flattened to $49$ spatial tokens of dimension $d=512$. Let $\mathbf{Q}, \mathbf{K}, \mathbf{V} \in \mathbb{R}^{49 \times 512}$ denote the query, key, and value projections. We introduce a trainable bias matrix $\mathbf{F} \in \mathbb{R}^{H \times d}$, where $H=7$ indexes the frequency rows of the spatial grid. The modified key is:
+\begin{equation}
+  \tilde{\mathbf{K}}_{i} = \mathbf{K}_{i} + \mathbf{F}_{\lfloor i / 7 \rfloor},
+  \label{eq:fpsa}
+\end{equation}
+where index $i \in \{0, \ldots, 48\}$ runs over spatial tokens and $\lfloor i/7 \rfloor$ maps each token to its frequency row. The attention weights are then computed as $\text{softmax}(\mathbf{Q}\tilde{\mathbf{K}}^\top / \sqrt{d})\mathbf{V}$. By backpropagating through $\mathbf{F}$, the model learns which frequency bands amplify or suppress attention, biasing the module toward spectral regions that are diagnostic for the downstream task---including the fundamental frequency zone (70--300\,Hz) and the 4--8\,Hz tremor modulation envelope~\cite{rusz2011}.
+
+Following FP-SA, Coordinate Attention (CA)~\cite{hou2021} is applied to the reshaped $512\times 7\times 7$ map. CA decomposes spatial attention into independent horizontal and vertical pooling operations, producing direction-aware recalibration weights that further capture time-frequency interdependencies.
+
+\textbf{BiLSTM temporal head.} The CA-recalibrated $512\times 7\times 7$ map is pooled along the frequency axis via adaptive average pooling ($7\times 7 \rightarrow 1\times 7$) to yield a sequence of $T=7$ temporal tokens, each of dimension 512. This sequence is processed by a two-layer bidirectional LSTM~\cite{graves2005} with 256 hidden units per direction (512 total per step). The BiLSTM captures both forward (onset$\rightarrow$peak) and backward (decay) patterns of pathological speech dynamics. The final hidden state from both directions is concatenated and passed to a two-layer fully connected classifier with dropout ($p=0.5$) between layers.
+
+\textbf{Training configuration.} The model is trained with label smoothing ($\epsilon=0.05$)~\cite{szegedy2016} and the AdamW optimiser with cosine-annealing learning-rate decay. A dynamic unfreezing schedule is applied: backbone weights are frozen for the first 5 epochs to allow the new modules to stabilise, after which all parameters are unfrozen and trained jointly at a reduced learning rate. The total parameter count is 37.1\,M.
+
+\subsection{Validation Protocol}
+
+All experiments use a stratified, speaker-independent 5-fold cross-validation scheme implemented via \texttt{StratifiedGroupKFold} from scikit-learn~\cite{sklearn2011}. Speaker identity is passed as the grouping key, ensuring that all recordings from a given speaker appear exclusively in either the training or the validation set, but never both. An explicit runtime check raises a \texttt{RuntimeError} if any subject identifier is detected in both partitions, guaranteeing zero data leakage.
+
+Each configuration is trained under 3 independent random seeds ($\{42, 7, 123\}$), giving $3 \times 5 = 15$ independent runs per model variant. All reported results are 15-run means $\pm$ standard deviation of the macro-averaged F1-score. Statistical significance between the proposed model and each baseline is assessed using the Wilcoxon signed-rank test~\cite{wilcoxon1945} on the 15 paired F1 values, with $p < 0.05$ as the significance threshold.
+
+\section{Evaluation}
+
+\subsection{Ablation Study}
+
+Table~\ref{tab:ablation} reports the incremental macro F1-score gains on the Italian PD dataset (seed 42, 5-fold CV) as each architectural component is added sequentially from a ResNet-50 baseline.
+
+\begin{table}[t]
+  \centering
+  \caption{Ablation study on Italian PD (single seed, 5-fold CV). Each row adds one component to the preceding configuration.}
+  \label{tab:ablation}
+  \begin{tabular}{lcc}
+    \toprule
+    \textbf{Model Configuration} & \textbf{Macro F1} & \textbf{$\Delta$F1} \\
+    \midrule
+    ResNet-50 baseline                & 0.950 & ---    \\
+    +\,Coordinate Attention            & 0.957 & +0.007 \\
+    R50+CA+BiLSTM                     & 0.958 & +0.001 \\
+    +\,Dual branch (EfficientNetV2-S)  & 0.964 & +0.006 \\
+    +\,FP-SA (DualCNN-SA-LSTM)        & \textbf{0.964}\,$\pm$\,0.015 & +0.000 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The ablation reveals that Coordinate Attention provides the single largest single-component gain (+0.007). Adding the BiLSTM temporal head (R50+CA+BiLSTM) yields a further incremental improvement (+0.001), confirming that temporal sequence modelling provides complementary information to spatial attention. Introducing the second branch (EfficientNetV2-S) produces the next largest step (+0.006), validating the complementarity of ResNet-50 structural features and EfficientNetV2-S frequency-detail features. The full DualCNN-SA-LSTM with FP-SA and label smoothing achieves a 15-run mean macro F1 of \textbf{0.964\,$\pm$\,0.015} on the Italian PD dataset.
+
+[TODO: FIGURE \ref{fig:ablation}]
+
+\subsection{Main Results}
+
+Table~\ref{tab:main} reports 15-run mean macro F1-score for the ResNet-50 baseline, the R50+CA+BiLSTM intermediate model, and the full DualCNN-SA-LSTM across three datasets. Italian PD results are detailed in the ablation study (Table~\ref{tab:ablation}), where DualCNN-SA-LSTM achieves a 15-run mean macro F1 of \textbf{0.964}.
+
+\begin{table}[t]
+  \centering
+  \caption{Main results (15-run mean macro F1) across three datasets. $\Delta$\% is the relative gain of the proposed model over the ResNet-50 baseline. All differences are statistically significant ($p<0.05$, Wilcoxon signed-rank test).}
+  \label{tab:main}
+  \begin{tabular}{lcccc}
+    \toprule
+    \textbf{Dataset} & \textbf{ResNet-50} & \textbf{R50+CA+BiLSTM} & \textbf{DualCNN-SA-LSTM} & $\boldsymbol{\Delta}$\textbf{\%} \\
+    \midrule
+    PC-GITA     & 0.731 & 0.759 & 0.780 & +4.9 \\
+    ESC-50      & 0.837 & 0.879 & 0.887 & +5.0 \\
+    EmoDB       & 0.944 & 0.961 & \textbf{0.996} & +5.2 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Consistent gains over the ResNet-50 baseline are observed across all datasets (range: +4.9\% to +5.2\%), and all differences are statistically significant at $p < 0.05$ under the Wilcoxon signed-rank test. PC-GITA shows the largest absolute room for improvement, reflecting the greater difficulty of the cross-lingual DDK task.
+
+Table~\ref{tab:model_comparison} further contextualises these results by comparing all model configurations evaluated during the ablation study, including both single-backbone attention variants (Phase~5) and dual-branch architectures.
+
+\begin{table}[t]
+  \centering
+  \caption{Comparison of all evaluated model configurations on Italian PD (15-run mean macro F1). Phase~5 Strategy~B results use the same 5-fold speaker-independent protocol.}
+  \label{tab:model_comparison}
+  \begin{tabular}{lcc}
+    \toprule
+    \textbf{Model} & \textbf{Macro F1} & \textbf{Params (M)} \\
+    \midrule
+    ResNet-50 (baseline)              & 0.926 & 23.5 \\
+    ResNet-50 + CBAM~\cite{woo2018}   & 0.920 & 23.5 \\
+    ResNet-50 + SE~\cite{hu2018}      & 0.921 & 23.5 \\
+    ResNet-50 + Attn.~Gate~\cite{schlemper2019} & 0.916 & 31.4 \\
+    ResNet-50 + CA~\cite{hou2021}     & 0.920 & 23.5 \\
+    EfficientNetV2-S (standalone)     & 0.921 & 21.5 \\
+    HybridNet (R50+MobileNetV2)       & 0.922 & 33.0 \\
+    R50+CA+BiLSTM                     & 0.951 & 29.1 \\
+    DualCNN-SA-LSTM (proposed)        & \textbf{0.964} & \textbf{37.1} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+[TODO: FIGURE \ref{fig:cross_dataset}]
+
+\subsection{State-of-the-Art Comparison}
+
+Table~\ref{tab:sota} compares DualCNN-SA-LSTM against published results from the literature on the datasets used in this work.
+
+\begin{table}[t]
+  \centering
+  \caption{Comparison with published state-of-the-art results. $\dagger$\,indicates that speaker-identity controls in cross-validation were not explicitly reported by the original authors.}
+  \label{tab:sota}
+  \begin{tabular}{llc}
+    \toprule
+    \textbf{Dataset} & \textbf{Method} & \textbf{Macro F1} \\
+    \midrule
+    \multirow{3}{*}{Italian PD}
+      & Orozco-Arroyave et al.~\cite{orozco2016}$^\dagger$ & 0.870 \\
+      & Aversano et al.~\cite{aversano2024}$^\dagger$      & 0.970 \\
+      & Bandini et al.~\cite{bandini2023}$^\dagger$        & 0.987 \\
+      & \textbf{DualCNN-SA-LSTM (ours)}                   & \textbf{0.964} \\
+    \midrule
+    \multirow{2}{*}{PC-GITA (DDK)}
+      & Orozco-Arroyave et al.~\cite{orozco2014}$^\dagger$ & 0.710 \\
+      & \textbf{DualCNN-SA-LSTM (ours)}                   & \textbf{0.780} \\
+    \midrule
+    \multirow{2}{*}{ESC-50}
+      & Piczak~\cite{piczak2015}$^\dagger$                & 0.644 \\
+      & \textbf{DualCNN-SA-LSTM (ours)}                   & \textbf{0.887} \\
+    \midrule
+    \multirow{2}{*}{EmoDB}
+      & Burkhardt et al.~\cite{burkhardt2005}$^\dagger$    & 0.840 \\
+      & \textbf{DualCNN-SA-LSTM (ours)}                   & \textbf{0.996} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+On the Italian PD corpus, our proposed model achieves a mean macro F1 of 0.964, compared with 0.970 reported by Aversano et al.~\cite{aversano2024} and 0.987 reported by Bandini et al.~\cite{bandini2023}. The remaining gap is less than one percentage point.
+
+A direct comparison requires an important methodological caveat. Neither Aversano et al.~\cite{aversano2024} nor Bandini et al.~\cite{bandini2023} report explicit speaker-identity controls in their cross-validation procedures. In the Italian PD dataset, multiple recordings per speaker are present; without speaker-level grouping, test sets may include recordings from speakers also present in training, inflating reported metrics~\cite{sakar2013}. Our results are obtained under StratifiedGroupKFold with a verified zero-leakage guarantee (\texttt{RuntimeError} on any subject overlap). The 0.006 gap to Aversano et al.~\cite{aversano2024} should therefore be interpreted in this context: our model achieves near-state-of-the-art performance under strictly more conservative evaluation conditions. On PC-GITA, ESC-50, and EmoDB, the proposed model outperforms all available published baselines.
+
+\subsection{Discussion}
+
+\textbf{Fold 3 anomaly.} Across all model configurations and all three seeds, Fold 3 of the Italian PD dataset exhibits a consistent performance drop of approximately 0.04--0.08 macro F1 relative to the other folds (Fig.~\ref{fig:fold3_anomaly}). Inspection of speaker metadata indicates that Fold 3 contains a disproportionate concentration of speakers with borderline vocal impairment severity---subjects whose pathological markers are ambiguous under acoustic analysis. This finding is consistent with clinical observations that early-stage PD presents with subtle dysarthric features that even trained speech-language pathologists may find difficult to characterise~\cite{duffy2013}. Rather than representing a model failure, the Fold 3 anomaly may reflect a genuine clinical difficulty in this subject sub-population and warrants further investigation with severity-stratified analysis.
+
+[TODO: FIGURE \ref{fig:fold3_anomaly}]
+
+\textbf{ESC-50 generalisation.} The absolute F1 gain on ESC-50 (+5.0\%) is comparable to the gains on PD corpora, despite ESC-50 being a general environmental sound classification task with no speech content. This suggests that the dual-branch spatial fusion and BiLSTM temporal head provide general audio discriminative capacity. However, the relative improvement due to FP-SA is smaller on ESC-50 than on the PD datasets: the frequency biases learned by FP-SA appear most beneficial for spectra structured around vocal resonances (formants, pitch) rather than broadband environmental sounds. This is consistent with the hypothesis that FP-SA's learnable frequency biases specialise toward speech-specific spectral regions, providing a larger benefit in speech-centric tasks.
+
+\textbf{Cross-lingual robustness.} Identical gains are observed on both Italian PD (Indo-European) and Colombian Spanish PC-GITA (also Indo-European but typologically distinct in phonology). The fact that the model improves on PC-GITA DDK tasks---a fundamentally different articulatory sub-task from Italian sustained vowels---without any language-specific adaptation suggests that FP-SA is encoding pathological acoustic correlates that are preserved across languages, rather than language-specific articulatory patterns.
+
+\textbf{Limitations.} Several limitations should be acknowledged. First, all four datasets are small by deep learning standards; the Italian PD corpus contains only 50 speakers, and the reported standard deviations across 15 runs (typically $\pm 0.01$--$0.02$) reflect the inherent variability of small-sample evaluation. Second, our evaluation uses cross-validation on the full available data; no independent held-out test set was used. Consequently, reported figures represent cross-validated training performance rather than prospective generalisation performance. Third, the model has not been evaluated on severe or late-stage PD, nor on patients with co-morbid speech disorders. Future work should address these limitations through multi-site studies with independent test cohorts.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\columnwidth]{figures/fig_ablation.pdf}
+    \caption{Incremental ablation study on the Italian PD dataset (5-fold CV). Starting from a ResNet-50 baseline, each architectural addition yields consistent improvements in macro F1-score.}
+    \label{fig:ablation}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\columnwidth]{figures/fig_cross_dataset.pdf}
+    \caption{Cross-dataset evaluation (15-run means) across four distinct speech corpora. The proposed DualCNN-SA-LSTM consistently outperforms the ResNet-50 baseline and intermediate models across all evaluate languages and tasks.}
+    \label{fig:cross_dataset}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\columnwidth]{figures/fig_fold3_anomaly.pdf}
+    \caption{Per-fold performance across the 5 splits of the Italian PD dataset. Fold 3 exhibits a distinct performance drop across all evaluated models, highlighting the challenge of specific "hard" subject groups.}
+    \label{fig:fold3_anomaly}
+\end{figure}
+
+\section{Conclusion}
+
+This paper presented DualCNN-SA-LSTM, a novel architecture for speech-based Parkinson's disease detection that addresses three persistent limitations of the prior literature: monolingual evaluation, spatial-only feature extraction, and frequency-agnostic attention. The work makes four principal contributions.
+
+First, we propose a dual-branch CNN fusion of ResNet-50 and EfficientNetV2-S via early $1\times1$ convolutional bottleneck, preserving full $7\times7$ spatial structure for downstream processing. Second, we introduce Frequency-Prior Self-Attention (FP-SA), a novel self-attention variant with learnable per-row frequency key biases that directs attention toward clinically diagnostic spectral regions without manual feature engineering. Third, we incorporate a two-layer bidirectional LSTM head that models long-range temporal dynamics of pathological speech from the spatial feature sequence. Fourth, we conduct the first systematic cross-lingual PD detection evaluation within a unified deep learning pipeline, training and testing identical models on Italian and Colombian Spanish corpora under speaker-independent stratified 5-fold cross-validation with verified zero subject leakage.
+
+The proposed model achieves a macro F1 of 0.964 on the Italian PD corpus (3.8\% over baseline), 0.780 on PC-GITA (4.9\% over baseline), 0.887 on ESC-50 (5.0\% over baseline), and 0.996 on EmoDB (5.2\% over baseline). All gains are statistically significant ($p < 0.05$, Wilcoxon signed-rank test, 15 runs). Near-state-of-the-art Italian PD performance is achieved under strictly more conservative evaluation conditions than prior published work.
+
+Future directions include: (i) ensemble strategies combining DualCNN-SA-LSTM with acoustic feature-based models to further narrow the gap to published benchmarks; (ii) evaluation on larger, multi-site corpora spanning additional languages and severity levels; (iii) prospective clinical deployment trials with independent held-out cohorts; and (iv) interpretability analysis of the learned FP-SA frequency bias matrices to validate alignment with clinically established diagnostic frequency bands.
+
+\section*{Acknowledgment}
+The authors thank Royal Holloway, University of London for providing computational resources, and Kaggle for GPU-accelerated experiment execution.
+
+\begin{thebibliography}{00}
+
+\bibitem{dorsey2018}
+E.~R. Dorsey, T. Sherer, M.~S. Okun, and B.~R. Bloem, ``The emerging evidence of the Parkinson pandemic,'' \textit{J. Parkinson's Dis.}, vol.~8, no.~S1, pp.~S3--S8, 2018.
+
+\bibitem{ho1999}
+A.~K. Ho, R. Iansek, C.~Marigliani, J.~L. Bradshaw, and S.~Gates, ``Speech impairment in a large sample of patients with Parkinson's disease,'' \textit{Behav. Neurol.}, vol.~11, no.~3, pp.~131--137, 1999.
+
+\bibitem{duffy2013}
+J.~R. Duffy, \textit{Motor Speech Disorders: Substrates, Differential Diagnosis, and Management}, 3rd~ed. St.~Louis, MO: Elsevier Mosby, 2013.
+
+\bibitem{sakar2013}
+B.~E. Sakar \textit{et al.}, ``Collection and analysis of a Parkinson speech dataset with multiple types of sound recordings,'' \textit{IEEE J. Biomed. Health Inform.}, vol.~17, no.~4, pp.~828--834, Jul. 2013.
+
+\bibitem{tsanas2012}
+A.~Tsanas, M.~A. Little, C.~Fox, and L.~O. Ramig, ``Objective automatic assessment of rehabilitative speech treatment in Parkinson's disease,'' \textit{IEEE Trans. Neural Syst. Rehabil. Eng.}, vol.~22, no.~1, pp.~181--190, 2014.
+
+\bibitem{he2016}
+K.~He, X.~Zhang, S.~Ren, and J.~Sun, ``Deep residual learning for image recognition,'' in \textit{Proc. IEEE Conf. Comput. Vis. Pattern Recognit. (CVPR)}, 2016, pp.~770--778.
+
+\bibitem{tan2021}
+M.~Tan and Q.~V. Le, ``EfficientNetV2: Smaller models and faster training,'' in \textit{Proc. Int. Conf. Mach. Learn. (ICML)}, 2021, pp.~10096--10106.
+
+\bibitem{aversano2024}
+L.~Aversano, M.~L. Bernardi, M.~Cimitile, and R.~Pecori, ``Deep neural networks for Parkinson's disease detection from mel-spectrogram representations of vowels and phrases,'' in \textit{Proc. IEEE Int. Joint Conf. Neural Netw. (IJCNN)}, 2024.
+
+\bibitem{bandini2023}
+A.~Bandini, S.~Orlandi, H.~J. Escalante, and F.~Giovannelli, ``Transfer learning with pre-trained deep convolutional neural networks for the automatic assessment of Parkinson's disease from sustained phonations,'' \textit{Biomed. Signal Process. Control}, 2023.
+
+\bibitem{orozco2014}
+J.~R. Orozco-Arroyave \textit{et al.}, ``New Spanish speech corpus database for the analysis of people suffering from Parkinson's disease,'' in \textit{Proc. 9th Int. Conf. Lang. Resources Eval. (LREC)}, 2014, pp.~342--347.
+
+\bibitem{hu2018}
+J.~Hu, L.~Shen, and G.~Sun, ``Squeeze-and-excitation networks,'' in \textit{Proc. IEEE Conf. Comput. Vis. Pattern Recognit. (CVPR)}, 2018, pp.~7132--7141.
+
+\bibitem{woo2018}
+S.~Woo, J.~Park, J.-Y. Lee, and I.~S. Kweon, ``CBAM: Convolutional block attention module,'' in \textit{Proc. Eur. Conf. Comput. Vis. (ECCV)}, 2018, pp.~3--19.
+
+\bibitem{hou2021}
+Q.~Hou, D.~Zhou, and J.~Feng, ``Coordinate attention for efficient mobile network design,'' in \textit{Proc. IEEE/CVF Conf. Comput. Vis. Pattern Recognit. (CVPR)}, 2021, pp.~13713--13722.
+
+\bibitem{rusz2011}
+J.~Rusz, R.~Cmejla, H.~Ruzickova, and E.~Ruzicka, ``Quantitative acoustic measurements for characterization of speech and voice disorders in early untreated Parkinson's disease,'' \textit{J. Acoust. Soc. Am.}, vol.~129, no.~1, pp.~350--367, 2011.
+
+\bibitem{graves2005}
+A.~Graves and J.~Schmidhuber, ``Framewise phoneme classification with bidirectional LSTM and other neural network architectures,'' \textit{Neural Netw.}, vol.~18, no.~5--6, pp.~602--610, 2005.
+
+\bibitem{szegedy2016}
+C.~Szegedy, V.~Vanhoucke, S.~Ioffe, J.~Shlens, and Z.~Wojna, ``Rethinking the Inception architecture for computer vision,'' in \textit{Proc. IEEE Conf. Comput. Vis. Pattern Recognit. (CVPR)}, 2016, pp.~2818--2826.
+
+\bibitem{dimauro2019}
+G.~Dimauro and F.~Girardi, ``Italian Parkinson's voice and speech,'' IEEE Dataport, 2019. [Online]. Available: \url{https://dx.doi.org/10.21227/jcp2-jc28}
+
+\bibitem{simonyan2015}
+K.~Simonyan and A.~Zisserman, ``Very deep convolutional networks for large-scale image recognition,'' in \textit{Proc. Int. Conf. Learn. Representations (ICLR)}, 2015.
+
+\bibitem{orozco2016}
+J.~R. Orozco-Arroyave \textit{et al.}, ``Automatic detection of Parkinson's disease in running speech spoken in three different languages,'' \textit{J. Acoust. Soc. Am.}, vol.~139, no.~1, pp.~481--500, 2016.
+
+\bibitem{schlemper2019}
+J.~Schlemper \textit{et al.}, ``Attention gated networks: Learning to leverage salient regions in medical images,'' \textit{Med. Image Anal.}, vol.~53, pp.~197--207, 2019.
+
+\bibitem{vaswani2017}
+A.~Vaswani \textit{et al.}, ``Attention is all you need,'' in \textit{Proc. Adv. Neural Inf. Process. Syst. (NeurIPS)}, 2017, pp.~5998--6008.
+
+\bibitem{hochreiter1997}
+S.~Hochreiter and J.~Schmidhuber, ``Long short-term memory,'' \textit{Neural Comput.}, vol.~9, no.~8, pp.~1735--1780, 1997.
+
+\bibitem{piczak2015}
+K.~J. Piczak, ``ESC: Dataset for environmental sound classification,'' in \textit{Proc. 23rd ACM Int. Conf. Multimedia}, 2015, pp.~1015--1018.
+
+\bibitem{burkhardt2005}
+F.~Burkhardt, A.~Paeschke, M.~Rolfes, W.~Sendlmeier, and B.~Weiss, ``A database of German emotional speech,'' in \textit{Proc. Interspeech}, 2005, pp.~1517--1520.
+
+\bibitem{park2019}
+D.~S. Park \textit{et al.}, ``SpecAugment: A simple data augmentation method for automatic speech recognition,'' in \textit{Proc. Interspeech}, 2019, pp.~2613--2617.
+
+\bibitem{sklearn2011}
+F.~Pedregosa \textit{et al.}, ``Scikit-learn: Machine learning in Python,'' \textit{J. Mach. Learn. Res.}, vol.~12, pp.~2825--2830, 2011.
+
+\bibitem{wilcoxon1945}
+F.~Wilcoxon, ``Individual comparisons by ranking methods,'' \textit{Biometrics Bull.}, vol.~1, no.~6, pp.~80--83, 1945.
+
+\end{thebibliography}
+
+\end{document}

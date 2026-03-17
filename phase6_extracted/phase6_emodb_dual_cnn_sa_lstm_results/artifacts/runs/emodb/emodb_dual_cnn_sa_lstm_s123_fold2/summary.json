@@ -1,0 +1,27 @@
+{
+  "best_macro_f1": 0.9945143549477313,
+  "final_macro_f1": 0.9889533607891768,
+  "final_auc": 0.9999031956185787,
+  "final_control_recall": 1.0,
+  "config": {
+    "dataset": "emodb",
+    "model_type": "dual_cnn_sa_lstm",
+    "epochs": 15,
+    "batch_size": 16,
+    "lr": 0.0001,
+    "weight_decay": 0.01,
+    "unfreeze_at": 0,
+    "weighted_loss": false,
+    "dropout": 0.5,
+    "seed": 123,
+    "fold": 2,
+    "run_name": "emodb_dual_cnn_sa_lstm_s123_fold2",
+    "train_csv": null,
+    "val_csv": null,
+    "drop_last": true,
+    "spec_augment": true,
+    "spec_aug_T": 40,
+    "spec_aug_F": 40,
+    "label_smoothing": 0.05
+  }
+}
