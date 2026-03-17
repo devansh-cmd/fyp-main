@@ -201,6 +201,7 @@ Table~\ref{tab:main} reports 15-run mean macro F1-score for the ResNet-50 baseli
   \centering
   \caption{Main results (15-run mean macro F1) across three datasets. $\Delta$\% is the relative gain of the proposed model over the ResNet-50 baseline. All differences are statistically significant ($p<0.05$, Wilcoxon signed-rank test).}
   \label{tab:main}
+  \resizebox{\columnwidth}{!}{%
   \begin{tabular}{lcccc}
     \toprule
     \textbf{Dataset} & \textbf{ResNet-50} & \textbf{R50+CA+BiLSTM} & \textbf{DualCNN-SA-LSTM} & $\boldsymbol{\Delta}$\textbf{\%} \\
@@ -209,7 +210,7 @@ Table~\ref{tab:main} reports 15-run mean macro F1-score for the ResNet-50 baseli
     ESC-50      & 0.837 & 0.879 & 0.887 & +5.0 \\
     EmoDB       & 0.944 & 0.961 & \textbf{0.996} & +5.2 \\
     \bottomrule
-  \end{tabular}
+  \end{tabular}}
 \end{table}
 
 Consistent gains over the ResNet-50 baseline are observed across all datasets (range: +4.9\% to +5.2\%), and all differences are statistically significant at $p < 0.05$ under the Wilcoxon signed-rank test. PC-GITA shows the largest absolute room for improvement, reflecting the greater difficulty of the cross-lingual DDK task.
