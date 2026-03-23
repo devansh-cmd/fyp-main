@@ -1,5 +1,42 @@
-﻿# Project Diary (reverse chronological)
-# Project Status: **PHASE 6 STAGE A COMPLETE — Stage B next (dual_cnn_sa_lstm + label smoothing + 3 seeds).**
+# Project Diary (reverse chronological)
+# Project Status: **PROJECT COMPLETE — Final Conference Paper Compiled and Repo Restructured.**
+
+# 2026-03-17 Finalizing Conference Paper & Repository Restructure
+
+**Summary**
+Successfully applied Dr. Li's final feedback, completed all publication figures, resolved LaTeX compilation issues, and restructured the project repository to comply with RHUL FYP guidelines. The paper is now fully complete and compiles cleanly.
+
+**Key Updates:**
+- **Repository Restructure:** Reorganized the repository to strictly match RHUL Final Year Project guidelines.
+- **Reference & Citation Audit:**
+  - Removed unverified Bandini citation and renumbered references.
+  - Corrected the Aversano reference: fixed title, venue, authors, year (2024 -> 2022), and F-score (0.970 -> 0.971).
+  - Cleared all `[CITATION NEEDED]` placeholders from Sections II-D and III-B.
+- **Dr. Li's Feedback Implemented:** Corrected PC-GITA dataset numbers globally, restructured the results tables, and strengthened the evaluation by adding comprehensive baseline comparisons (ResNet50+CBAM, ResNet50+CA, ResNet50+Attention Gate, EfficientNetV2-S, HybridNet).
+- **LaTeX & Formatting:** Fixed `overfull \hbox` warnings in tables using `\resizebox`. The paper now compiles perfectly.
+- **Figures Added:** Inserted all final, high-quality publication figures into the document. 
+
+# 2026-03-13 Data Visualization & Publication Figures
+
+**Summary**
+Designed and generated four professional-grade, IEEE-formatted figures using a consistent color palette (blue/orange/grey) for the conference paper.
+
+**Figures Created:**
+1. **Architecture Diagram:** High-level visualization of the DualCNN-SA-LSTM pipeline with channel dimensions.
+2. **Ablation Study:** Bar chart showing incremental F1 gains on the Italian PD dataset.
+3. **Cross-Dataset Results:** Multi-bar chart comparing our model against baselines across all datasets.
+4. **Fold 3 Anomaly:** Per-fold F1 bar chart visualizing the performance degradation on Fold 3 for Italian PD.
+
+# 2026-03-12 Phase 6 Stage B Notebook Generation & Technical Fixes
+
+**Summary**
+Resolved Kaggle notebook generation issues, addressed variable scoping bugs, and fixed data leakage concerns to ensure Phase 6 Stage B executions are fully reproducible. 
+
+**Key Fixes:**
+- Fixed Kaggle target variables and notebook metric outputs.
+- Addressed execution failures in EmoDB runs by correcting dataset zip structures.
+- Repacked and guarded Stage A baseline runs with hardcoded Kaggle dataset slugs.
+- Finalized integration of `dual_cnn_sa_lstm` with label smoothing (Stage B).
 
 # 2026-03-09 Phase 6 — Stage A Clean Re-run Results
 
