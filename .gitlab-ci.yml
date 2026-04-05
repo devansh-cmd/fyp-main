@@ -36,7 +36,7 @@ lint_job:
     - python -m pip install ruff black mypy
     - ruff check . --exclude "*.ipynb" --extend-exclude "venv"
     - black --check . --exclude "venv/|\.ipynb$"
-    - mypy product || true
+    - mypy product --ignore-missing-imports --no-strict-optional
 
 test_job:
   extends: .base_job
