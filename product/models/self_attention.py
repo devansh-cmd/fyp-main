@@ -1,3 +1,22 @@
+"""
+Spatial Self-Attention (standard MHSA baseline)
+=================================================
+Paper: "Attention Is All You Need", Vaswani et al., NeurIPS 2017.
+Ref:   https://arxiv.org/abs/1706.03762
+
+Applies multi-head scaled dot-product attention across all spatial positions
+of a CNN feature map, treating each (H, W) location as a sequence token.
+Includes a channel projection bottleneck (in_channels → inner_dim) to
+keep parameter count manageable at ResNet layer4 scale (2048 channels).
+
+Used as the SA baseline in Phase-4/5 ablation.  Superseded by
+FrequencyPriorSelfAttention (FP-SA) which adds learnable frequency-band
+key biases for clinical speech specificity.
+
+Devansh Dev — FYP 2026
+"""
+from __future__ import annotations
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -21,7 +40,7 @@ class SpatialSelfAttention(nn.Module):
         reduction (int): Bottleneck reduction ratio (default: 8, so 2048 → 256)
     """
 
-    def __init__(self, in_channels, num_heads=8, reduction=8):
+    def __init__(self, in_channels: int, num_heads: int = 8, reduction: int = 8) -> None:
         super(SpatialSelfAttention, self).__init__()
 
         self.in_channels = in_channels
@@ -52,7 +71,7 @@ class SpatialSelfAttention(nn.Module):
         # Output normalisation
         self.norm_out = nn.LayerNorm(in_channels)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         B, C, H, W = x.shape
 
         # Project to bottleneck: (B, C, H, W) → (B, inner_dim, H, W)

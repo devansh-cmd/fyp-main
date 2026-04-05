@@ -1,14 +1,18 @@
 """
 Convolutional Block Attention Module (CBAM)
+============================================
+Paper: "CBAM: Convolutional Block Attention Module", Woo et al., ECCV 2018.
+Ref:   https://arxiv.org/abs/1807.06521
 
-Official implementation:
-https://github.com/Jongchan/attention-module
+Sequentially applies channel attention (via avg + max pooling MLP) then
+spatial attention (via channel-wise pooling + convolution).  Evaluated in
+Phase-1 ablation; rejected due to severe training instability on spectrogram
+inputs (F1 variance ±19.3% on EmoDB, ±10.9% on ESC-50) — attributed to
+noise amplification in the spatial branch on low-texture spectrogram regions.
 
-Paper: "CBAM: Convolutional Block Attention Module" (ECCV 2018)
-Authors: Sanghyun Woo, Jongchan Park, Joon-Young Lee, In So Kweon
-
-Devansh Dev - FYP Implementation
+Devansh Dev — FYP 2026
 """
+from __future__ import annotations
 
 import torch
 import torch.nn as nn
@@ -20,7 +24,7 @@ class ChannelAttention(nn.Module):
     
     Applies attention across channels using both average and max pooling.
     """
-    def __init__(self, in_channels, reduction_ratio=16):
+    def __init__(self, in_channels: int, reduction_ratio: int = 16) -> None:
         super(ChannelAttention, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.max_pool = nn.AdaptiveMaxPool2d(1)
@@ -33,7 +37,7 @@ class ChannelAttention(nn.Module):
         )
         self.sigmoid = nn.Sigmoid()
     
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         # Average pooling path
         avg_out = self.fc(self.avg_pool(x))
         # Max pooling path
@@ -49,7 +53,7 @@ class SpatialAttention(nn.Module):
     
     Applies attention across spatial dimensions using channel-wise pooling.
     """
-    def __init__(self, kernel_size=7):
+    def __init__(self, kernel_size: int = 7) -> None:
         super(SpatialAttention, self).__init__()
         assert kernel_size in (3, 7), 'kernel size must be 3 or 7'
         padding = 3 if kernel_size == 7 else 1  # 7x7 works better in practice
@@ -57,7 +61,7 @@ class SpatialAttention(nn.Module):
         self.conv = nn.Conv2d(2, 1, kernel_size, padding=padding, bias=False)
         self.sigmoid = nn.Sigmoid()
     
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         # Channel-wise average pooling
         avg_out = torch.mean(x, dim=1, keepdim=True)
         # Channel-wise max pooling
@@ -86,12 +90,12 @@ class CBAM(nn.Module):
         >>> out = cbam(x)
         >>> print(out.shape)  # torch.Size([1, 512, 28, 28])
     """
-    def __init__(self, in_channels, reduction_ratio=16, kernel_size=7):
+    def __init__(self, in_channels: int, reduction_ratio: int = 16, kernel_size: int = 7) -> None:
         super(CBAM, self).__init__()
         self.channel_attention = ChannelAttention(in_channels, reduction_ratio)
         self.spatial_attention = SpatialAttention(kernel_size)
     
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         # Apply channel attention
         x = self.channel_attention(x)
         # Apply spatial attention

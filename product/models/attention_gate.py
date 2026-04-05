@@ -1,5 +1,23 @@
+"""
+Attention Gate
+===============
+Paper: "Attention U-Net: Learning Where to Look for the Pancreas",
+       Oktay et al., MIDL 2018.  Adapted from the medical image segmentation
+       context to sequential CNN feature maps.
+Ref:   https://arxiv.org/abs/1804.03999
+
+Uses a gating signal (typically a global-average-pooled context vector) to
+suppress irrelevant spatial activations in skip-connection features.  Phase-4
+ablation showed AG added ~8 M parameters with no consistent F1 improvement
+over CoordinateAttention on clinical speech data; rejected from final model.
+
+Devansh Dev — FYP 2026
+"""
+from __future__ import annotations
+
 import torch
 import torch.nn as nn
+
 
 class AttentionGate(nn.Module):
     """
@@ -11,7 +29,7 @@ class AttentionGate(nn.Module):
         F_l (int): Input feature channels
         F_int (int): Internal channels for the bottleneck
     """
-    def __init__(self, F_g, F_l, F_int):
+    def __init__(self, F_g: int, F_l: int, F_int: int) -> None:
         super(AttentionGate, self).__init__()
         self.W_g = nn.Sequential(
             nn.Conv2d(F_g, F_int, kernel_size=1, stride=1, padding=0, bias=True),
@@ -31,7 +49,7 @@ class AttentionGate(nn.Module):
         
         self.relu = nn.ReLU(inplace=True)
         
-    def forward(self, g, x):
+    def forward(self, g: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
         # g is usually from a coarser layer, x from a finer one.
         # If used in-place, g can be the result of a global avg pool + convolution.
         g1 = self.W_g(g)
@@ -46,7 +64,7 @@ class SingleInputAttentionGate(nn.Module):
     Simpler version for use in sequential backbones.
     Uses global-average-pooled features as the gating signal.
     """
-    def __init__(self, in_channels, F_int=None):
+    def __init__(self, in_channels: int, F_int: int | None = None) -> None:
         super(SingleInputAttentionGate, self).__init__()
         if F_int is None:
             F_int = max(8, in_channels // 2)
@@ -75,7 +93,7 @@ class SingleInputAttentionGate(nn.Module):
         
         self.relu = nn.ReLU(inplace=True)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         g = self.gate_conv(x)
         g1 = self.W_g(g)
         x1 = self.W_x(x)

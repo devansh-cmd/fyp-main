@@ -1,8 +1,31 @@
+"""
+Baseline CNN
+=============
+Lightweight 5-layer custom CNN trained from scratch (no pretrained weights).
+Used as a sanity-check lower bound in Term-1 to confirm the experimental
+pipeline was functioning before introducing transfer learning.
+
+In practice, ResNet-50 with ImageNet pretraining dominates this baseline on
+every evaluated dataset; BaselineCNN is retained for completeness and as an
+educational reference for custom architecture construction.
+
+Devansh Dev — FYP 2026
+"""
+from __future__ import annotations
+
+import torch
 import torch.nn as nn
 
 
 class BaselineCNN(nn.Module):
-    def __init__(self, num_classes: int):
+    """
+    Custom 5-layer CNN for audio spectrogram classification.
+
+    Args:
+        num_classes (int): Number of output classes.
+    """
+
+    def __init__(self, num_classes: int) -> None:
         super().__init__()
         self.features = nn.Sequential(
             nn.Conv2d(3, 32, 3, padding=1),
@@ -34,6 +57,6 @@ class BaselineCNN(nn.Module):
             nn.Linear(256, num_classes),
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.features(x)
         return self.head(x)
