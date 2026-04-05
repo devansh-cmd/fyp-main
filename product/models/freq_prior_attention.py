@@ -18,6 +18,10 @@ of the feature map (H = frequency axis). This enables the model to learn
 For ResNet-50 layer4 (B, 2048, 7, 7): H=7 frequency "bands" in latent space.
 """
 
+from __future__ import annotations
+
+from typing import Optional
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -36,7 +40,7 @@ class FrequencyPriorSelfAttention(nn.Module):
         reduction (int):   Channel bottleneck ratio.
     """
 
-    def __init__(self, in_channels, num_heads=8, reduction=8):
+    def __init__(self, in_channels: int, num_heads: int = 8, reduction: int = 8) -> None:
         super().__init__()
         self.in_channels = in_channels
         self.num_heads = num_heads
@@ -66,7 +70,7 @@ class FrequencyPriorSelfAttention(nn.Module):
         self.proj_out = nn.Conv2d(inner, in_channels, 1, bias=False)
         self.out_norm = nn.GroupNorm(32, in_channels)
 
-    def _get_freq_bias(self, H, device):
+    def _get_freq_bias(self, H: int, device: torch.device) -> nn.Parameter:
         """Lazily initialise frequency-prior bias tensor."""
         if self._freq_bias is None or self._freq_bias_H != H:
             # Shape: (H, inner) — one embedding per frequency "band" (row)
@@ -79,7 +83,7 @@ class FrequencyPriorSelfAttention(nn.Module):
             self.register_parameter('freq_bias', self._freq_bias)
         return self._freq_bias
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         B, C, H, W = x.shape
         N = H * W
 

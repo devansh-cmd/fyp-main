@@ -21,6 +21,12 @@ This is equivalent to the SOTA CNN-LSTM papers (Aversano et al. 2024, F1=0.97)
 plus the novel SA fusion layer between CNN and LSTM.
 """
 
+from __future__ import annotations
+
+import os
+import sys
+from typing import Optional
+
 import torch
 import torch.nn as nn
 from torchvision import models
@@ -29,7 +35,6 @@ from torchvision.models import (
     EfficientNet_V2_S_Weights,
 )
 
-import sys, os
 sys.path.append(os.path.dirname(__file__))
 from freq_prior_attention import FrequencyPriorSelfAttention
 
@@ -49,9 +54,17 @@ class DualCNNSALSTM(nn.Module):
     EFFICIENTNET_DIM = 1280   # EfficientNetV2-S last conv channels
     RESNET_DIM       = 2048   # ResNet-50 layer4 channels
 
-    def __init__(self, num_classes=2, dropout=0.5, lstm_hidden=512, lstm_layers=2,
-                 freeze_backbones=True):
+    def __init__(
+        self,
+        num_classes: int = 2,
+        dropout: float = 0.5,
+        lstm_hidden: int = 512,
+        lstm_layers: int = 2,
+        freeze_backbones: bool = True,
+        use_sa: bool = True,
+    ) -> None:
         super().__init__()
+        self.use_sa = use_sa
 
         # --- EfficientNetV2-S branch ---
         effnet = models.efficientnet_v2_s(weights=EfficientNet_V2_S_Weights.DEFAULT)
@@ -107,7 +120,7 @@ class DualCNNSALSTM(nn.Module):
                 for p in layer.parameters():
                     p.requires_grad = False
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         # 0. Input check: (B, 3, 224, 224) expected
         B, C, H, W = x.shape
         assert H == 224 and W == 224, f"Expected 224x224 input, got {x.shape}"
@@ -132,8 +145,11 @@ class DualCNNSALSTM(nn.Module):
         assert joint.shape[-3:] == (512, 7, 7), f"Fusion projection shape wrong: {joint.shape}"
 
         # 4. Self-attention on joint features
-        joint_sa = self.sa(joint)   # (B, 512, 7, 7)
-        assert joint_sa.shape == joint.shape, f"SA output shape mismatch: {joint_sa.shape} != {joint.shape}"
+        if self.use_sa:
+            joint_sa = self.sa(joint)   # (B, 512, 7, 7)
+            assert joint_sa.shape == joint.shape, f"SA output shape mismatch: {joint_sa.shape} != {joint.shape}"
+        else:
+            joint_sa = joint
 
         # 5. Reshape to sequence for LSTM: (B, 49, 512)
         # We flatten the spatial (7x7) dimension into a 49-step sequence
@@ -148,7 +164,7 @@ class DualCNNSALSTM(nn.Module):
 
         return self.classifier(out)
 
-    def unfreeze_backbones(self):
+    def unfreeze_backbones(self) -> None:
         """Unfreeze deep layers for fine-tuning (call at unfreeze_at epoch)."""
         # Only unfreeze the deep layers (layer3+, last 2 EfficientNet blocks)
         for p in self.resnet_layer4.parameters():

@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Optional
+
 import torch.nn as nn
 from torchvision import models
 from torchvision.models import (
@@ -57,7 +61,7 @@ except ImportError:
         from hybrid_net import get_hybrid_model
 
 
-def _get_attention_block(attention_type, in_channels):
+def _get_attention_block(attention_type: str, in_channels: int) -> nn.Module:
     """Create a single attention block by type string."""
     attention_type = attention_type.lower()
     if attention_type == 'se':
@@ -83,7 +87,7 @@ def _get_attention_block(attention_type, in_channels):
         raise ValueError(f"Unknown attention type: {attention_type}")
 
 
-def _get_layer_channels(layer):
+def _get_layer_channels(layer: nn.Sequential) -> int:
     """Get output channels from the last block of a ResNet layer."""
     last_block = layer[-1]
     if hasattr(last_block, 'conv3'):
@@ -92,13 +96,13 @@ def _get_layer_channels(layer):
         return last_block.conv2.out_channels
 
 
-def _inject_at_layer_end(layer, attention_type):
+def _inject_at_layer_end(layer: nn.Sequential, attention_type: str) -> nn.Sequential:
     """Append a single attention module after the last block of a ResNet layer."""
     c = _get_layer_channels(layer)
     return nn.Sequential(*layer, _get_attention_block(attention_type, c))
 
 
-def _inject_mixed_resnet(model, early_type, late_type):
+def _inject_mixed_resnet(model: nn.Module, early_type: str, late_type: str) -> nn.Module:
     """
     Mixed attention injection for ResNet:
     - early_type: injected at end of layer1, layer2, layer3
@@ -113,7 +117,7 @@ def _inject_mixed_resnet(model, early_type, late_type):
     return model
 
 
-def attach_attention_to_resnet(model, attention_type):
+def attach_attention_to_resnet(model: nn.Module, attention_type: Optional[str]) -> nn.Module:
     """
     Standard single-point injection: one attention module at end of layer4.
     Supports: ca, gate, sa, se, cbam, triplet
@@ -124,7 +128,7 @@ def attach_attention_to_resnet(model, attention_type):
     return model
 
 
-def attach_attention_to_mobilenet(model, attention_type):
+def attach_attention_to_mobilenet(model: nn.Module, attention_type: Optional[str]) -> nn.Module:
     """
     Append a single attention module after MobileNetV2 features.
     """
@@ -137,7 +141,12 @@ def attach_attention_to_mobilenet(model, attention_type):
     return model
 
 
-def build_augmented_model(backbone_name, attention_type, num_classes, dropout=0.5):
+def build_augmented_model(
+    backbone_name: str,
+    attention_type: Optional[str],
+    num_classes: int,
+    dropout: float = 0.5,
+) -> nn.Module:
     """
     Primary factory function to create any backbone + attention combination.
 
@@ -245,7 +254,12 @@ def build_augmented_model(backbone_name, attention_type, num_classes, dropout=0.
 _orig_build = build_augmented_model
 
 
-def build_augmented_model(backbone_name, attention_type, num_classes, dropout=0.5):  # noqa: F811
+def build_augmented_model(  # noqa: F811
+    backbone_name: str,
+    attention_type: Optional[str],
+    num_classes: int,
+    dropout: float = 0.5,
+) -> nn.Module:
     """
     Extended factory — wraps _orig_build and intercepts Phase 6 special cases.
     New entries:
@@ -257,6 +271,10 @@ def build_augmented_model(backbone_name, attention_type, num_classes, dropout=0.
         
     # Intercept DualCNNSALSTM which parses as 'dual'/'cnn_sa_lstm' and prepare for 3-seed runs
     if backbone_name == 'dual' and attention_type == 'cnn_sa_lstm':
-        return DualCNNSALSTM(num_classes=num_classes, dropout=dropout) 
+        return DualCNNSALSTM(num_classes=num_classes, dropout=dropout, use_sa=True) 
+
+    # Intercept DualCNNLSTM (ablation without SA)
+    if backbone_name == 'dual' and attention_type == 'cnn_lstm':
+        return DualCNNSALSTM(num_classes=num_classes, dropout=dropout, use_sa=False)
 
     return _orig_build(backbone_name, attention_type, num_classes, dropout)
