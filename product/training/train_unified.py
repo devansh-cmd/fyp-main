@@ -1,7 +1,16 @@
+from __future__ import annotations
+
 import json
 import random
 import sys
 from pathlib import Path
+from typing import Dict, List, Optional, Tuple, Union
+
+try:
+    import yaml  # PyYAML — optional, only needed for --config
+    _YAML_AVAILABLE = True
+except ImportError:
+    _YAML_AVAILABLE = False
 
 import argparse
 import matplotlib.pyplot as plt
@@ -12,6 +21,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
 
 from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score
 from PIL import Image
@@ -26,7 +36,7 @@ from model_builder import build_augmented_model  # noqa: E402
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
 
-def get_definitive_label_map(dataset_name):
+def get_definitive_label_map(dataset_name: str) -> Optional[Dict[str, int]]:
     """Static mapping to ensure classes never swap between seeds."""
     # Static mappings to ensure Positive (Disease/Event) class is always at index 1 for ROC-AUC
     classes = {
@@ -54,7 +64,7 @@ def get_definitive_label_map(dataset_name):
     # Use the order prescribed in the lists above (not sorted alphabetically)
     return {lab: i for i, lab in enumerate(lst)}
 
-def is_integer_label(val):
+def is_integer_label(val: object) -> bool:
     """Check if a label is already an integer or numpy integer."""
     return isinstance(val, (int, np.integer)) or (isinstance(val, str) and val.isdigit())
 
@@ -135,7 +145,7 @@ class UnifiedDataset(Dataset):
 
         return x, torch.tensor(label, dtype=torch.long)
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dataset", required=True, choices=["esc50", "emodb", "italian_pd", "pcgita", "physionet", "pitt"])
     ap.add_argument("--model_type", default="resnet50", help="e.g. resnet50, resnet50_se, resnet50_ca")
@@ -158,7 +168,7 @@ def parse_args():
     ap.add_argument("--label_smoothing", type=float, default=0.0, help="Label smoothing factor (0.0 to 1.0, default: 0.0)")
     return ap.parse_args()
 
-def set_seed(seed):
+def set_seed(seed: int) -> None:
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -363,27 +373,29 @@ def main():
             
         model.train()
         train_loss, train_correct, seen = 0.0, 0, 0
-        for xb, yb in train_loader:
+        train_bar = tqdm(train_loader, desc=f"Epoch {epoch:02d} train", leave=False, unit="batch")
+        for xb, yb in train_bar:
             xb, yb = xb.to(device), yb.to(device)
             optimizer.zero_grad()
             logits = model(xb)
             loss = criterion(logits, yb)
             loss.backward()
             optimizer.step()
-            
+
             preds = logits.argmax(1)
             train_loss += loss.item() * yb.size(0)
             train_correct += (preds == yb).sum().item()
             seen += yb.size(0)
-            
+            train_bar.set_postfix(loss=f"{loss.item():.3f}")
+
         t_loss, t_acc = train_loss/seen, train_correct/seen
-        
+
         # Validation
         model.eval()
         v_loss, v_correct, v_seen = 0.0, 0, 0
         all_probs, all_targets = [], []
         with torch.no_grad():
-            for xb, yb in val_loader:
+            for xb, yb in tqdm(val_loader, desc=f"Epoch {epoch:02d} val  ", leave=False, unit="batch"):
                 xb, yb = xb.to(device), yb.to(device)
                 logits = model(xb)
                 v_loss += criterion(logits, yb).item() * yb.size(0)
@@ -443,7 +455,10 @@ def main():
         "best_macro_f1": float(best_macro_f1),
         "final_macro_f1": float(macro_f1),
         "final_auc": float(auc),
+        "final_acc": float(val_acc),
         "final_control_recall": float(control_recall),
+        "final_precision": float(rep.get("macro avg", {}).get("precision", 0.0)),
+        "final_recall": float(rep.get("macro avg", {}).get("recall", 0.0)),
         "config": vars(args)
     }
     LOG_DIR.mkdir(parents=True, exist_ok=True) # Ensure dir exists before summary save
