@@ -1,0 +1,19 @@
+# Config: DualCNN-SA-LSTM on PC-GITA (cross-lingual evaluation, Phase 4)
+# Usage: python product/training/train_unified.py --config product/configs/pcgita_dual_cnn.yaml
+
+dataset: pcgita
+model_type: dual_cnn_sa_lstm
+fold: 0
+seed: 42
+epochs: 30
+batch_size: 32
+lr: 1.0e-4
+weight_decay: 1.0e-2
+dropout: 0.5
+unfreeze_at: 5
+spec_augment: true
+spec_aug_T: 40
+spec_aug_F: 40
+label_smoothing: 0.05
+weighted_loss: false
+drop_last: true

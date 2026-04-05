@@ -1,0 +1,17 @@
+# Config: ResNet-50 baseline on Italian PD (Phase 2 anchor)
+# Usage: python product/training/train_unified.py --config product/configs/italian_pd_baseline.yaml
+
+dataset: italian_pd
+model_type: resnet50
+fold: 0
+seed: 42
+epochs: 30
+batch_size: 32
+lr: 1.0e-4
+weight_decay: 1.0e-2
+dropout: 0.5
+unfreeze_at: 5
+spec_augment: false
+label_smoothing: 0.0
+weighted_loss: false
+drop_last: true
