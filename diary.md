@@ -1,5 +1,47 @@
 # Project Diary (reverse chronological)
-# Project Status: **PROJECT COMPLETE — Final Conference Paper Compiled and Repo Restructured.**
+# Project Status: **PROJECT COMPLETE — Code Quality Hardened, Tests Passing, Video Demo Pending.**
+
+# 2026-04-05 Code Quality, Testing & Documentation Hardening
+
+**Summary**
+Major engineering quality pass across the entire codebase. Added comprehensive type hints, docstrings with paper citations, a full pytest test suite, YAML config support, and CI enforcement with mypy and coverage reporting. The codebase is now production-grade and ready for final submission.
+
+**Key Updates:**
+- **Type Hints & Docstrings:** Added type annotations to all attention modules (SE, CBAM, CA, AG, SA, Triplet, Gated SA, TF-SA), DualCNN-SA-LSTM, Frequency-Prior Self-Attention, and the model factory. Every module now has paper-cited docstrings linking to the original publications.
+- **YAML Config Support:** Training pipeline (`train_unified.py`) now accepts `--config` YAML files. Added pre-built configs for the best-performing models (e.g., `italian_pd_dual_cnn_sa_lstm.yaml`). Also added tqdm progress bars for training loops.
+- **Test Suite:** Wrote 22 fast pytest tests covering model output shape contracts, attention module shape preservation, residual correctness, data leakage detection, and label map integrity. All tests pass without downloading model weights.
+- **Documentation:** Created `ARCHITECTURE.md` documenting design patterns (Factory, Template Method, Composite), data flow, and the full directory structure. Added `product/README.md` as a quick-start guide.
+- **Model Complexity Analysis:** Added `model_complexity.py` script to compute parameter counts and FLOPs for every architecture — useful for the paper's efficiency discussion.
+- **CI Pipeline:** Updated `.gitlab-ci.yml` to enforce `mypy --strict` type checking and `pytest --cov` with coverage reporting. Code must pass both to merge.
+
+# 2026-03-23 Report Writing — Draft Refinement & Phase 6 Stage B Integration
+
+**Summary**
+Continued refining the conference paper after incorporating Phase 6 Stage B results. Updated the diary to reflect the full Phase 6 experimental arc (Stage A baselines → Stage B SOTA push). Reviewed the paper structure to ensure the narrative flows clearly from problem statement through to ablation results.
+
+**Key Updates:**
+- Integrated Phase 6 Stage B results (DualCNN-SA-LSTM with label smoothing + SpecAugment) into the paper's results section.
+- Updated diary entries to cover the complete Phase 6 timeline.
+- Reviewed and tightened the Related Work section to focus on the most directly comparable studies.
+
+# 2026-03-15 Report Writing — Dr. Li Feedback Meeting & Paper Revisions
+
+**Summary**
+Met with supervisor Dr. Li to review the near-final draft of the conference paper. Received detailed feedback on figure quality, dataset reporting accuracy, and table structure. Spent the following days implementing all corrections.
+
+**Feedback from Dr. Li:**
+- **PC-GITA Numbers:** Corrected dataset statistics (sample counts, speaker demographics) to match the source publication exactly.
+- **Table Restructure:** Restructured the main results tables to include comprehensive baseline comparisons (ResNet50+CBAM, ResNet50+CA, ResNet50+AG, EfficientNetV2-S, HybridNet) — not just the top models.
+- **Figures:** Advised improving figure resolution and ensuring consistent formatting across all four publication figures.
+- **Baselines:** Strengthened the evaluation by adding more baseline comparisons so the ablation story is clearer.
+
+**Actions Taken (implemented 2026-03-17):**
+- Applied all Dr. Li's corrections across the paper.
+- Fixed Aversano reference (year 2024→2022, F-score 0.970→0.971, corrected venue and authors).
+- Removed unverified Bandini citation and renumbered all references.
+- Cleared all `[CITATION NEEDED]` placeholders.
+- Fixed LaTeX `overfull \hbox` warnings using `\resizebox` in tables.
+- Inserted all four final publication figures.
 
 # 2026-03-17 Finalizing Conference Paper & Repository Restructure
 
