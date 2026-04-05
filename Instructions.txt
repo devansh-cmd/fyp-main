@@ -1,0 +1,75 @@
+# Quick Execution Instructions
+
+For detailed installation and user manuals, please refer to Appendix B of the Final Report located in the `documents/` directory.
+
+## 1. Environment Setup
+
+To run the codebase, create a virtual environment and install the dependencies:
+
+```bash
+python -m venv .venv
+# On Windows:
+.venv\Scripts\activate
+# On macOS/Linux:
+# source .venv/bin/activate
+
+pip install -U pip
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+pip install -r product/requirements.txt
+```
+
+## 2. Dataset Acquisition & Spectrogram Generation
+
+The raw audio datasets are not distributed with this repository. You must acquire them independently:
+- **Italian PD**: Available on IEEE Dataport (https://ieee-dataport.org/open-access/italian-parkinsons-voice-and-speech)
+- **PC-GITA**: Requires special permission. Request directly from Prof. Juan Rafael Orozco-Arroyave.
+- **ESC-50**: Available on GitHub (https://github.com/karolpiczak/ESC-50)
+- **EmoDB**: Available from TU Berlin (http://emodb.bilderbar.info/download/)
+
+Place the downloaded raw audio datasets into the corresponding directories under `product/audio_preprocessing/data/`.
+Once the audio files are placed, run the following scripts to convert them into 224x224 log-Mel spectrograms:
+
+```bash
+python product/audio_preprocessing/src/generate_spectrograms_italian.py
+python product/audio_preprocessing/src/generate_spectrograms_pcgita.py
+python product/audio_preprocessing/src/generate_spectrograms_emodb.py
+python product/audio_preprocessing/src/generate_spectrograms.py
+```
+
+Generate the 5-fold cross-validation CSVs:
+```bash
+python product/scripts/generate_kfold_splits.py --n_folds 5 --seed 42
+```
+
+## 3. Training Models
+
+Run the unified training engine to train the selected model on the generated spectrograms. For the novel `dual_cnn_sa_lstm` on the Italian PD dataset:
+
+```bash
+python product/training/train_unified.py \
+    --dataset italian_pd \
+    --model_type dual_cnn_sa_lstm \
+    --fold 0 \
+    --seed 42 \
+    --epochs 30 \
+    --spec_augment \
+    --label_smoothing 0.05
+```
+
+Alternatively, to run the full K-fold experimental suite:
+```bash
+# Windows
+product\scripts\kfold_italian_pd.bat
+```
+
+## 4. Viewing Results
+
+Aggregated results across folds can be compiled using:
+```bash
+python product/scripts/aggregate_kfold_results.py --n_folds 5
+```
+
+All training metrics, JSON summaries, and visual artifacts (like Confusion Matrices) are saved to `product/artifacts/runs/`. You can view the live training curves using TensorBoard:
+```bash
+tensorboard --logdir product/artifacts/runs/
+```

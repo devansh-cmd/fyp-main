@@ -1,209 +1,213 @@
-﻿# Final Year Project — Audio Classification with Attention-Augmented CNNs
+# A Novel Dual-Branch CNN with FrequencyPriorSelfAttention for Parkinson's Disease Speech Detection
 
-Multi-domain audio classification system benchmarking CNN architectures with attention mechanisms (SE, CBAM) across **5 diverse datasets** spanning environmental sounds, speech emotion, and clinical speech pathology.
-
----
-
-## Project Overview
-
-The system classifies audio signals using log-mel spectrograms and transfer-learning CNNs.  
-It evaluates **3 model architectures** across **5 datasets** using **Stratified 5-Fold Cross-Validation**, producing publication-grade Mean ± Std metrics.
-
-### Datasets
-
-| Dataset | Domain | Classes | Samples | Splitting Strategy |
-|---------|--------|---------|---------|-------------------|
-| **ESC-50** | Environmental Sound | 50 | 8,000 spectrograms | Clip-level `StratifiedKFold` |
-| **EmoDB** | Speech Emotion | 7 | 3,210 spectrograms | Clip-level `StratifiedKFold` |
-| **Italian PD** | Parkinson's Disease | 2 (PD/HC) | 831 spectrograms | Subject-grouped `StratifiedGroupKFold` |
-| **Pitt Corpus** | Alzheimer's/Dementia | 2 (AD/Control) | 3,836 segments | Subject-grouped `StratifiedGroupKFold` |
-| **PhysioNet 2016** | Heart Sound | 2 (Normal/Abnormal) | 3,153 records | Source+label `StratifiedKFold` |
-
-### Models
-- **ResNet-50** — ImageNet-pretrained backbone with custom classifier head
-- **MobileNetV2** — Lightweight efficiency baseline
-- **HybridNet** — Custom attention-augmented architecture
-
-### Evaluation: 5-Fold Cross-Validation
-
-```
-┌────────────────────────────────────────────────────────┐
-│          Stratified Grouped 5-Fold CV                  │
-│                                                        │
-│  Fold 0:  ████████████████████ │▒▒▒▒▒│                │
-│  Fold 1:  ████████████████│▒▒▒▒▒│████                 │
-│  Fold 2:  ████████████│▒▒▒▒▒│████████                 │
-│  Fold 3:  ████████│▒▒▒▒▒│████████████                 │
-│  Fold 4:  │▒▒▒▒▒│████████████████████                 │
-│                                                        │
-│  ████ = Train    ▒▒▒▒▒ = Validation                   │
-│                                                        │
-│  ✓ Zero subject leakage (clinical datasets)            │
-│  ✓ Every subject validated exactly once                │
-│  ✓ Stratified by diagnosis label                       │
-│  ✓ Results: Mean ± Std across 5 folds                  │
-│                                                        │
-│  Experiment Matrix: 5 datasets × 3 models × 5 folds   │
-│                   = 75 training runs                    │
-└────────────────────────────────────────────────────────┘
-```
+**Devansh Dev** · BSc Computer Science (Artificial Intelligence) · Royal Holloway, University of London · 2026
+**Supervisor:** Dr. Li Zhang
 
 ---
 
-## Data Setup
+## Overview
 
-Since datasets are excluded from this repository, please set up the following:
+This project presents `dual_cnn_sa_lstm`, a novel deep learning architecture for automated Parkinson's Disease (PD) detection from speech spectrograms. The system fuses dual-branch convolutional feature extraction (ResNet50 + EfficientNetV2-S) with a custom FrequencyPriorSelfAttention (FP-SA) module, Coordinate Attention, and a Bidirectional LSTM temporal head.
 
-1.  **ESC-50**: Download from [ESC-50 GitHub](https://github.com/karolpiczak/ESC-50)
-    - Place `audio/` and `meta/esc50.csv` into: `product/audio_preprocessing/data/ESC-50/`
-2.  **EmoDB**: Download from [EmoDB Kaggle](https://www.kaggle.com/piyushagni5/berlin-database-of-emotional-speech-emodb)
-    - Place `.wav` files directly into: `product/audio_preprocessing/data/EmoDB-wav/`
-3.  **Italian PD**: Place the dataset into: `product/audio_preprocessing/data/Italian Parkinson's Voice and speech/`
-4.  **Pitt Corpus**: Place cookie-theft recordings into: `product/audio_preprocessing/data/English Pitt Corpus/`
-5.  **PhysioNet 2016**: Place heart sound databases into: `product/audio_preprocessing/data/physionet.org/`
+All experiments are evaluated under speaker-independent 5-fold cross-validation with certified zero data leakage, producing N=15 observations per dataset (3 seeds × 5 folds) with Wilcoxon signed-rank statistical testing.
+
+**Key result:** F1 = 0.964 ± 0.051 on the Italian PD dataset — the strongest reported result under a fully verifiable evaluation protocol.
 
 ---
 
 ## Repository Structure
 
 ```
-product/
-├── audio_preprocessing/
-│   ├── data/                          # Raw audio datasets (excluded from repo)
-│   ├── src/                           # Spectrogram generation scripts
-│   │   ├── audio_utils.py             # Common I/O and augmentation functions
-│   │   ├── generate_spectrograms.py   # ESC-50 spectrogram generation
-│   │   └── augment_audio.py           # Audio augmentation pipeline
-│   └── outputs/                       # Generated spectrogram PNGs
-│       ├── spectrograms/              # ESC-50
-│       ├── spectrograms_emodb/        # EmoDB
-│       ├── spectrograms_italian/      # Italian PD
-│       ├── spectrograms_pitt/         # Pitt Corpus
-│       └── spectrograms_physionet/    # PhysioNet
-│
-├── datasets/
-│   ├── make_split.py                  # ESC-50 splits (single + K-Fold)
-│   ├── make_split_emodb.py            # EmoDB splits
-│   ├── make_split_italian.py          # Italian PD splits (subject-grouped)
-│   ├── make_split_pitt.py             # Pitt Corpus splits (subject-grouped)
-│   ├── make_split_physionet.py        # PhysioNet splits
-│   └── esc50_png_dataset.py           # PyTorch Dataset for spectrograms
-│
-├── models/
-│   ├── baseline_cnn.py                # Baseline CNN architecture
-│   ├── cbam.py                        # CBAM attention module
-│   ├── se_block.py                    # Squeeze-and-Excitation module
-│   └── __init__.py
-│
-├── training/
-│   └── train_unified.py               # Unified training pipeline (all datasets + K-Fold)
-│
-└── artifacts/
-    ├── splits/                        # Train/Val CSVs (single-split + fold-indexed)
-    └── runs/                          # Model checkpoints, logs, summaries
-
-scripts/
-├── generate_kfold_splits.py           # Generate all 50 fold CSV files
-├── aggregate_kfold_results.py         # Compute Mean ± Std from fold results
-├── run_kfold_experiments.bat          # Run full 75-experiment matrix
-└── verify_leakage.py                  # Data leakage verification tool
+├── product/                          Main codebase
+│   ├── models/                       All model architectures
+│   │   ├── dual_cnn_sa_lstm.py       Novel final architecture
+│   │   ├── freq_prior_attention.py   FrequencyPriorSelfAttention module
+│   │   ├── coordinate_attention.py   Coordinate Attention module
+│   │   ├── model_builder.py          Factory (20+ backbone+attention combos)
+│   │   ├── hybrid_net.py             HybridNet (alpha-gate fusion baseline)
+│   │   └── [se_block, cbam, attention_gate, resnet_bilstm, ...]
+│   ├── training/
+│   │   └── train_unified.py          Dataset-agnostic training engine
+│   ├── audio_preprocessing/
+│   │   └── src/                      Spectrogram generation scripts per dataset
+│   ├── datasets/                     K-fold split generation scripts
+│   ├── scripts/                      Aggregation, leakage audit, GradCAM, Wilcoxon
+│   ├── notebooks/                    Kaggle GPU execution notebooks
+│   ├── tests/                        Pytest suite (22 tests)
+│   ├── artifacts/
+│   │   ├── splits/                   All 50 fold CSVs (5 datasets × 5 folds × train/val)
+│   │   └── runs/                     Experiment results, checkpoints, TensorBoard logs
+│   └── requirements.txt
+├── documents/
+│   ├── final report/                 LaTeX source for final report
+│   │   ├── DevanshDev.final.tex      Main report source
+│   │   └── figures/                  All report figures (PNG)
+│   ├── Conference_Paper/             Submitted conference paper (LaTeX + PDF)
+│   ├── DevanshDev-Plan.pdf           Project plan
+│   └── Research/                     Reference papers
+├── Interim_Submission/               Full interim submission archive
+├── diary.md                          Project diary (weekly entries, Terms 1 and 2)
+├── ARCHITECTURE.md                   System architecture overview
+├── .gitlab-ci.yml                    CI/CD pipeline (lint, test, leakage audit, smoke test)
+└── pytest.ini                        Test configuration
 ```
 
 ---
 
-## Workflow
+## Demonstration
 
-### 1. Generate Spectrograms (once per dataset)
+- **Video Walkthrough:** [YouTube Link Placeholder](#)
+- **Screenshots:** Available in the `screenshots/` directory.
+- **User and Installation Manual:** Please refer to **Appendix B** of the final report PDF located in `documents/`.
 
-```powershell
-python product/audio_preprocessing/src/generate_spectrograms.py           # ESC-50
-python product/audio_preprocessing/src/generate_spectrograms_emodb.py     # EmoDB
-python product/audio_preprocessing/src/generate_spectrograms_italian.py   # Italian PD
-python product/audio_preprocessing/src/generate_spectrograms_pitt.py      # Pitt Corpus
-python product/audio_preprocessing/src/generate_spectrograms_physionet.py # PhysioNet
-```
+## Quick Start
 
-### 2. Generate K-Fold Splits
-
-```powershell
-python scripts/generate_kfold_splits.py --n_folds 5 --seed 42
-```
-
-This creates **50 CSV files** (5 datasets × 5 folds × train/val), all pointing to `.png` spectrogram paths.
-
-### 3. Run Experiments
-
-**Full 75-run matrix (automated):**
-```powershell
-scripts\run_kfold_experiments.bat
-```
-
-**Single fold (manual):**
-```powershell
-python product/training/train_unified.py --dataset italian_pd --model_type resnet50 --fold 0 --epochs 30
-```
-
-**Legacy single-split mode (backward compatible):**
-```powershell
-python product/training/train_unified.py --dataset esc50 --model_type resnet50 --seed 42 --epochs 30
-```
-
-### 4. Aggregate Results
-
-```powershell
-python scripts/aggregate_kfold_results.py --n_folds 5
-```
-
-Outputs a Mean ± Std table in CSV and LaTeX format.
-
----
-
-## Key Conventions
-
-- **Paths** — handled via `pathlib.Path`. Avoid hardcoding.
-- **File naming** — spectrogram PNGs: `<base>_orig.png`, `_noisy.png`, `_pitchUp2.png`, `_stretch0.9.png`.
-- **Augmentation** — applied at the audio level before spectrogram conversion.
-- **Subject independence** — clinical datasets (Italian PD, Pitt) split by `subject_id` to guarantee zero leakage.
-- **Logging** — TensorBoard logs and model checkpoints saved under `product/artifacts/runs/`.
-
----
-
-## Output Locations
-
-| Artifact | Path |
-|----------|------|
-| Spectrogram images | `product/audio_preprocessing/outputs/spectrograms*/` |
-| Train/Val split CSVs | `product/artifacts/splits/` |
-| K-Fold CSVs | `product/artifacts/splits/*_fold{0-4}.csv` |
-| Model checkpoints & logs | `product/artifacts/runs/` |
-| Aggregated results | `product/artifacts/kfold_results.csv` |
-
----
-
-## Environment Setup
+### 1. Environment setup
 
 ```bash
 python -m venv .venv
-.\.venv\Scripts\activate
+
+# Windows:
+.venv\Scripts\activate
+# macOS/Linux:
+source .venv/bin/activate
+
 pip install -U pip
-pip install numpy scipy librosa soundfile matplotlib pandas scikit-learn torch torchvision tensorboard pillow
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+pip install -r product/requirements.txt
 ```
+
+### 2. Dataset setup
+
+Raw audio datasets are not included in the repository due to ethics and size constraints. You must acquire them independently:
+- **Italian PD**: Available publicly on [IEEE Dataport](https://ieee-dataport.org/open-access/italian-parkinsons-voice-and-speech).
+- **PC-GITA**: Requires special permission. Request directly from Prof. Juan Rafael Orozco-Arroyave.
+- **ESC-50**: Available on [GitHub](https://github.com/karolpiczak/ESC-50).
+- **EmoDB**: Available from [TU Berlin](http://emodb.bilderbar.info/download/).
+
+Once acquired, place them as follows:
+
+| Dataset | Expected path |
+|---------|---------------|
+| Italian PD | `product/audio_preprocessing/data/Italian Parkinson's Voice and speech/` |
+| PC-GITA | `product/audio_preprocessing/data/PC-GITA/` |
+| ESC-50 | `product/audio_preprocessing/data/ESC-50/` |
+| EmoDB | `product/audio_preprocessing/data/EmoDB-wav/` |
+
+### 3. Generate spectrograms
+
+```bash
+python product/audio_preprocessing/src/generate_spectrograms_italian.py
+python product/audio_preprocessing/src/generate_spectrograms_pcgita.py
+python product/audio_preprocessing/src/generate_spectrograms_emodb.py
+python product/audio_preprocessing/src/generate_spectrograms.py        # ESC-50
+```
+
+### 4. Generate k-fold splits
+
+```bash
+python product/scripts/generate_kfold_splits.py --n_folds 5 --seed 42
+```
+
+### 5. Train the final architecture
+
+```bash
+# Single fold (fold 0, seed 42)
+python product/training/train_unified.py \
+    --dataset italian_pd \
+    --model_type dual_cnn_sa_lstm \
+    --fold 0 --seed 42 --epochs 30 \
+    --spec_augment --label_smoothing 0.05
+
+# Full 3-seed × 5-fold matrix (Windows)
+product\scripts\kfold_italian_pd.bat
+```
+
+### 6. Verify zero leakage
+
+```bash
+python product/scripts/verify_leakage.py
+```
+
+### 7. Run tests
+
+```bash
+pytest        # 22 fast tests, ~10 seconds
+```
+
+---
+
+## Datasets
+
+| Dataset | Language | Task | Subjects | Evaluation |
+|---------|----------|------|----------|------------|
+| Italian PD | Italian | PD vs HC | ~65 | Speaker-independent 5-fold |
+| PC-GITA | Colombian Spanish | PD vs HC (DDK) | 101 | Speaker-independent 5-fold |
+| ESC-50 | — | 50-class environmental sounds | 2000 clips | Grouped 5-fold |
+| EmoDB | German | 7-class speech emotion | 10 actors | Speaker-independent 5-fold |
+
+---
+
+## Architecture
+
+The `dual_cnn_sa_lstm` model processes 224×224 log-Mel spectrograms through:
+
+1. **Dual-branch extraction** — ResNet50 (2048-dim) and EfficientNetV2-S (1280-dim) in parallel
+2. **Channel projection** — 1×1 conv reduces concatenated (3328-dim) features to 512-dim
+3. **FrequencyPriorSelfAttention** — 8-head self-attention with a learnable frequency-axis prior bias
+4. **Coordinate Attention** — direction-aware channel recalibration on time and frequency axes independently
+5. **BiLSTM temporal head** — 2-layer bidirectional LSTM over the 49-step spatial sequence
+6. **Classifier** — dropout (0.5) + linear output
+
+See `ARCHITECTURE.md` and `product/models/dual_cnn_sa_lstm.py` for full implementation details.
+
+---
+
+## Results Summary
+
+| Dataset | Model | Mean F1 ± Std | N |
+|---------|-------|---------------|---|
+| Italian PD | dual_cnn_sa_lstm | **0.964 ± 0.051** | 15 |
+| PC-GITA (cross-lingual) | dual_cnn_sa_lstm | 0.780 ± 0.056 | 15 |
+| ESC-50 | HybridNet | 0.923 ± 0.006 | 15 |
+| EmoDB | HybridNet | 0.976 ± 0.006 | 15 |
+
+All results are produced under speaker-independent 5-fold cross-validation with certified zero leakage. Full per-fold breakdowns are in `product/artifacts/runs/` and in the final report (Chapter 7).
+
+---
+
+## CI/CD Pipeline
+
+The `.gitlab-ci.yml` runs four stages on every push:
+
+| Stage | What it does |
+|-------|-------------|
+| `setup` | Install Python 3.12 dependencies |
+| `lint` | Ruff, Black formatting, mypy type checking |
+| `audit` | Data leakage verification (`verify_leakage.py`) |
+| `package` | One-epoch smoke test on EmoDB (end-to-end pipeline check) |
+
+---
+
+## Reproducibility
+
+- **Seeds:** 42, 123, 999 used across all experiments
+- **SHA-256 hashes** embedded in spectrogram filenames for cryptographic traceability back to source recordings
+- **Split manifests** locked as SHA-256 checksums in `product/artifacts/splits/`
+- **Zero-leakage enforced at runtime:** training aborts with `RuntimeError` on any subject overlap between train and validation sets
+- **Static normalisation:** fixed ImageNet parameters used throughout; no training-set statistics are computed at runtime
 
 ---
 
 ## Troubleshooting
 
-- If imports fail, ensure the correct Python interpreter is selected and dependencies installed:
-  ```bash
-  pip install -r requirements.txt
-  ```
-- To inspect training progress:
-  ```bash
-  tensorboard --logdir product/artifacts/runs/
-  ```
+- If imports fail, check the Python interpreter is set to the virtual environment and run `pip install -r product/requirements.txt`
+- To inspect training progress: `tensorboard --logdir product/artifacts/runs/`
+- To check for data leakage across all splits: `python product/scripts/verify_leakage.py`
 
 ---
 
 ## Author
-**Devansh Dev** — BSc Computer Science (Artificial Intelligence)  
-Royal Holloway, University of London
+
+**Devansh Dev** — BSc Computer Science (Artificial Intelligence), Royal Holloway, University of London
+Supervised by Dr. Li Zhang
