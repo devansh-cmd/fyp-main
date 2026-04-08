@@ -22,14 +22,9 @@ class h_swish(nn.Module):
 
 class CoordinateAttention(nn.Module):
     """
-    Coordinate Attention Module.
-
-    Paper: "Coordinate Attention for Efficient Mobile Network Design" (CVPR 2021)
-
-    Args:
-        inp (int): Number of input channels
-        oup (int): Number of output channels (usually same as inp)
-        reduction (int): Reduction ratio for the bottleneck (default: 32)
+    Coordinate Attention (Hou et al., CVPR 2021).
+    Decomposes global pooling into H and W directions so the module is
+    sensitive to the frequency axis and time axis independently.
     """
 
     def __init__(self, inp, oup, reduction=32):
@@ -70,12 +65,8 @@ class CoordinateAttention(nn.Module):
 
 
 if __name__ == "__main__":
-    # Test CA module
-    print("Testing Coordinate Attention module...")
     x = torch.randn(1, 64, 56, 56)
     ca = CoordinateAttention(64, 64)
     out = ca(x)
-    print(f"Input shape: {x.shape}")
-    print(f"Output shape: {out.shape}")
     assert x.shape == out.shape
-    print("[PASS] Coordinate Attention test passed!")
+    print(f"in: {x.shape}  out: {out.shape}")

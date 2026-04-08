@@ -18,7 +18,6 @@ of the feature map (H = frequency axis). This enables the model to learn
 For ResNet-50 layer4 (B, 2048, 7, 7): H=7 frequency "bands" in latent space.
 """
 
-from __future__ import annotations
 
 
 import torch
@@ -29,14 +28,8 @@ import torch.nn.functional as F
 class FrequencyPriorSelfAttention(nn.Module):
     """
     Self-Attention with learnable frequency-band key biases.
-
-    Adds a trainable embedding per frequency-axis row to the attention Keys,
-    allowing the model to weight frequency bands by their diagnostic relevance.
-
-    Args:
-        in_channels (int): Number of input feature channels.
-        num_heads (int):   Number of attention heads.
-        reduction (int):   Channel bottleneck ratio.
+    Adds a trainable embedding per frequency row to the Keys so the model
+    can weight frequency bands by their diagnostic relevance.
     """
 
     def __init__(self, in_channels: int, num_heads: int = 8, reduction: int = 8) -> None:
@@ -116,13 +109,8 @@ class FrequencyPriorSelfAttention(nn.Module):
 
 
 if __name__ == "__main__":
-    print("Testing FrequencyPriorSelfAttention...")
     x = torch.randn(2, 2048, 7, 7)
     m = FrequencyPriorSelfAttention(2048, num_heads=8, reduction=8)
     out = m(x)
-    assert out.shape == x.shape, f"Shape mismatch: {out.shape}"
-    params = sum(p.numel() for p in m.parameters())
-    print(f"Input:  {x.shape}")
-    print(f"Output: {out.shape}")
-    print(f"Params: {params:,}")
-    print("[PASS] FrequencyPriorSelfAttention test passed!")
+    assert out.shape == x.shape
+    print(f"in: {x.shape}  out: {out.shape}  params: {sum(p.numel() for p in m.parameters()):,}")
