@@ -208,29 +208,29 @@ def main():
     print(f"\n{'='*60}")
     print(f"  Generating {n_folds}-Fold Splits for ALL Datasets")
     print(f"  Seed: {seed} | Output: {split_out_dir}")
-    print(f"  All CSVs point to .png spectrogram files")
+    print("  All CSVs point to .png spectrogram files")
     print(f"{'='*60}\n")
 
     # 1. Italian PD
-    print(f"\n--- [1/5] Italian PD ---")
+    print("\n--- [1/5] Italian PD ---")
     generate_italian_kfold(n_folds, seed, split_out_dir)
 
     # 2. Pitt Corpus
-    print(f"\n--- [2/5] Pitt Corpus ---")
+    print("\n--- [2/5] Pitt Corpus ---")
     generate_pitt_kfold(n_folds, seed, split_out_dir)
 
     # 3. PhysioNet
-    print(f"\n--- [3/5] PhysioNet ---")
+    print("\n--- [3/5] PhysioNet ---")
     generate_physionet_kfold(n_folds, seed, split_out_dir)
 
     # 4. ESC-50 (already scans PNGs directly)
-    print(f"\n--- [4/5] ESC-50 ---")
+    print("\n--- [4/5] ESC-50 ---")
     esc50_spec_dir = PROJECT_ROOT / "product" / "audio_preprocessing" / "outputs" / "spectrograms"
     esc50_csv = PROJECT_ROOT / "product" / "audio_preprocessing" / "data" / "ESC-50" / "meta" / "esc50.csv"
     make_kfold_split_esc50(esc50_spec_dir, esc50_csv, split_out_dir, n_folds=n_folds, seed=seed)
 
     # 5. EmoDB (already scans PNGs directly)
-    print(f"\n--- [5/5] EmoDB ---")
+    print("\n--- [5/5] EmoDB ---")
     emodb_spec_dir = PROJECT_ROOT / "product" / "audio_preprocessing" / "outputs" / "spectrograms_emodb"
     make_kfold_split_emodb(emodb_spec_dir, split_out_dir, n_folds=n_folds, seed=seed)
 
@@ -238,7 +238,7 @@ def main():
     print(f"\n{'='*60}")
     print(f"  COMPLETE: Generated {n_folds * 5 * 2} CSV files")
     print(f"  ({n_folds} folds x 5 datasets x 2 files)")
-    print(f"  All CSVs contain .png spectrogram paths")
+    print("  All CSVs contain .png spectrogram paths")
     print(f"{'='*60}\n")
 
 

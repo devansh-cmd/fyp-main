@@ -1,6 +1,5 @@
 import os
 import zipfile
-import glob
 
 zip_files = [
     'phase6_esc50_dual_cnn_sa_lstm_results.zip',

@@ -20,7 +20,6 @@ For ResNet-50 layer4 (B, 2048, 7, 7): H=7 frequency "bands" in latent space.
 
 from __future__ import annotations
 
-from typing import Optional
 
 import torch
 import torch.nn as nn

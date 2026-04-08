@@ -4,7 +4,7 @@ import json
 import random
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, Optional
 
 try:
     import yaml  # PyYAML — optional, only needed for --config
@@ -231,7 +231,7 @@ def main():
     print(f"--- Unified Training: {args.dataset} | {args.model_type} | Seed {args.seed} ---")
     
     # ── Leakage guard: assert 0 subject overlap ──
-    print(f"Checking splits for data leakage...")
+    print("Checking splits for data leakage...")
     print(f"Files checked: {train_csv} and {val_csv}")
     train_df_check = pd.read_csv(train_csv)
     val_df_check = pd.read_csv(val_csv)
@@ -424,7 +424,7 @@ def main():
                 auc = roc_auc_score(y_true, y_probs[:, 1])
             else:
                 auc = roc_auc_score(y_true, y_probs, multi_class='ovr', average='macro')
-        except Exception as e:
+        except Exception:
             auc = 0.0
         
         print(f"Epoch {epoch:2d} | Train Acc: {t_acc:.3f} | Val Acc: {val_acc:.3f} | Macro F1: {macro_f1:.3f} | C-Recall: {control_recall:.3f} | AUC: {auc:.3f}")

@@ -11,7 +11,7 @@ KAGGLE_USER = "devanshdev01"
 def generate_setup_cell(dataset):
     dataset_slug_name = dataset.replace('_', '-')
     dataset_slug = f"phase6-{dataset_slug_name}-clean"
-    return f"""import os
+    return """import os
 import glob
 import shutil
 import zipfile
@@ -37,26 +37,26 @@ if not available_dirs:
 dataset_folder_name = available_dirs[0]
 EXPECTED_DIR = Path('/kaggle/input') / dataset_folder_name
 
-print(f"Dataset securely located at: {{EXPECTED_DIR}}")
+print(f"Dataset securely located at: {EXPECTED_DIR}")
 
 # Look for a zip first, then assume auto-extracted
 zips = list(EXPECTED_DIR.glob('*.zip'))
 
 if zips:
     ZIP_PATH = zips[0]
-    print(f'Found zip: {{ZIP_PATH}}')
+    print(f'Found zip: {ZIP_PATH}')
     print('Extracting... (may take 2-3 mins)')
     with zipfile.ZipFile(ZIP_PATH, 'r') as zf:
         zf.extractall('/kaggle/working/')
     print('Done extracting.')
 else:
-    print(f'No zip found — scanning auto-extracted contents from {{EXPECTED_DIR}}...')
+    print(f'No zip found — scanning auto-extracted contents from {EXPECTED_DIR}...')
     # Kaggle sometimes nests the upload into another directory arbitrarily.
     # Find the actual 'product' directory containing our code & splits.
     product_dirs = list(EXPECTED_DIR.rglob('product'))
     
     if not product_dirs:
-        raise FileNotFoundError(f"Could not find the 'product' directory inside {{EXPECTED_DIR}}!")
+        raise FileNotFoundError(f"Could not find the 'product' directory inside {EXPECTED_DIR}!")
         
     actual_product_dir = product_dirs[0]
     
@@ -64,7 +64,7 @@ else:
     target_product_dir = WORK_DIR / 'product'
     
     shutil.copytree(actual_product_dir, target_product_dir, dirs_exist_ok=True)
-    print(f'Done copying from {{actual_product_dir}} to {{target_product_dir}}')
+    print(f'Done copying from {actual_product_dir} to {target_product_dir}')
 """
 
 def generate_path_fix_cell(dataset):

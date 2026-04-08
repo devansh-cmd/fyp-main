@@ -22,7 +22,6 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-import torch
 import torch.nn as nn
 
 # Add models directory to path
@@ -172,7 +171,7 @@ def main() -> None:
         print(f"  {display_name}...", end="", flush=True)
         r = analyse_model(display_name, backbone, attention, num_classes)
         results.append(r)
-        status = "OK" if r["error"] is None else f"FAILED"
+        status = "OK" if r["error"] is None else "FAILED"
         print(f" {status}")
 
     print()

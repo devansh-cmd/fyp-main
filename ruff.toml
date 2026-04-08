@@ -1,0 +1,13 @@
+exclude = [
+    "documents",
+    ".venv",
+    ".venv312",
+    "venv",
+    "product/notebooks",
+    "*.ipynb",
+]
+
+[lint.per-file-ignores]
+"product/scripts/*.py" = ["E402", "E741", "F841", "E701", "F401"]
+"product/training/aggregate_seeds.py" = ["F841"]
+"product/training/train_unified.py" = ["F401", "E741"]

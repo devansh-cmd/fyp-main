@@ -1,5 +1,4 @@
 import pandas as pd
-import sys
 from pathlib import Path
 
 def check_leakage(train_path, val_path, dataset_name, subject_col=None):

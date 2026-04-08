@@ -36,7 +36,7 @@ for root, _, files in os.walk(base_dir):
                     best_f1 = data.get("best_macro_f1", 0)
                     auc = data.get("final_auc", 0)
                     results.append((ds_match, mod_match, best_f1, auc))
-            except Exception as e:
+            except Exception:
                 pass
 
 aggregated = {}

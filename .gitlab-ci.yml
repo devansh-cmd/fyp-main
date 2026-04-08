@@ -42,7 +42,8 @@ test_job:
   extends: .base_job
   stage: test
   script:
-    - python -m pip install pytest pytest-cov torch torchvision
+    - python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+    - python -m pip install -r product/requirements.txt
     - pytest -q --disable-warnings --maxfail=1
 
 audit_job:

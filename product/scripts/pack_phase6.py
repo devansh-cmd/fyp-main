@@ -7,7 +7,6 @@ Includes:
   - The Phase 6 notebook
 """
 import zipfile
-import os
 from pathlib import Path
 
 PROJECT_ROOT = Path(r'c:\FYP\PROJECT')

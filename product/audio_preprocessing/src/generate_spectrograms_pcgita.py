@@ -37,7 +37,7 @@ def main():
 
     # Gather all WAVs from hc/ and pd/ subdirectories
     wavs = list(DATA_DIR.glob("**/*.wav"))
-    print(f"--- PC-GITA DDK Spectrogram Generation ---")
+    print("--- PC-GITA DDK Spectrogram Generation ---")
     print(f"Source: {DATA_DIR}")
     print(f"Output: {SPEC_OUT}")
     print(f"Total WAV files: {len(wavs)}")
@@ -47,7 +47,7 @@ def main():
         if process_file(wav, SPEC_OUT, target_sr=16000):
             success += 1
 
-    print(f"\n--- Complete ---")
+    print("\n--- Complete ---")
     print(f"Generated: {success}/{len(wavs)} spectrograms")
     print(f"Saved to: {SPEC_OUT}")
 

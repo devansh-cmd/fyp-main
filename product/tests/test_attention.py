@@ -7,7 +7,6 @@ fundamental contract required for residual skip connections to work.
 """
 import pytest
 import torch
-import torch.nn as nn
 
 from freq_prior_attention import FrequencyPriorSelfAttention
 from coordinate_attention import CoordinateAttention
