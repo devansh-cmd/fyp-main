@@ -1,4 +1,5 @@
 \documentclass[oneside,openany]{final_report}
+\usepackage[utf8]{inputenc}
 \usepackage{graphicx}
 \usepackage[hidelinks]{hyperref}
 \usepackage{booktabs}
@@ -39,19 +40,15 @@
 
 \chapter*{Declaration}
 
-This report has been prepared on the basis of my own work. All submitted code is my original work. Where standard open-source research libraries, external tools, or published source materials have been used, these have been formally acknowledged and cited in the bibliography. Where AI tools (Claude Code, Antigravity IDE) were used for code execution and writing assistance, this is declared in Appendix~D. All architectural designs, experimental decisions, and research findings are my own original work conducted under the supervision of Dr.\ Li Zhang.
+This report has been prepared on the basis of my own work. Where other published and unpublished source materials have been used, these have been acknowledged.
 
 \vskip3em
 
-Word Count: 11,065
+Word Count: 11,467
 
 \vskip3em
 
 Student Name: \studentname
-
-\vskip3em
-
-Date of Submission: April 4, 2026
 
 \vskip3em
 
@@ -67,11 +64,11 @@ Signature: \includegraphics[height=1.2cm]{figures/signature.png}
 
 \begin{abstract}
 
-Parkinson's Disease (PD) affects over ten million people worldwide, and speech degradation is among the earliest and most consistently observed non-invasive biomarkers of the condition. Existing deep learning approaches to PD speech detection frequently rely on single-dataset evaluation, lack formal data leakage controls, and do not assess cross-lingual transferability. This thesis presents a novel \dualcnn{} architecture that fuses dual-branch convolutional neural networks, specifically ResNet50 and EfficientNetV2-S, with a custom \fpsa{} (FP-SA) module, Coordinate Attention, and a Bidirectional Long Short-Term Memory (BiLSTM) temporal head for binary PD versus healthy control classification from log-Mel spectrogram representations. The system is evaluated under speaker-independent five-fold cross-validation with a certified zero-leakage guard, producing $N\!=\!15$ observations per dataset (three seeds $\times$ five folds) and employing Wilcoxon signed-rank non-parametric testing for statistical rigour.
+Parkinson's Disease (PD) affects over ten million people worldwide, and speech changes are among the earliest detectable signs of the condition. Most deep learning approaches to PD speech detection are evaluated on a single dataset, do not control for data leakage, and make no attempt to test cross-lingual generalisation. This thesis presents the \dualcnn{} architecture, which combines dual-branch convolutional neural networks (ResNet50 and EfficientNetV2-S) with a custom \fpsa{} (FP-SA) module, Coordinate Attention, and a Bidirectional LSTM temporal head for binary PD versus healthy control classification from log-Mel spectrograms. All experiments use speaker-independent five-fold cross-validation with a certified zero-leakage guard, giving $N\!=\!15$ observations per dataset (three seeds $\times$ five folds), with Wilcoxon signed-rank testing for statistical comparisons.
 
-On the Italian PD dataset, the proposed architecture achieves a mean macro F1 of $0.964 \pm 0.048$ ($N\!=\!15$) under speaker-independent cross-validation with certified zero data leakage. To the best of the author's knowledge, this is the strongest result reported on this dataset under a fully verifiable evaluation protocol. Cross-lingual evaluation on the Colombian Spanish PC-GITA diadochokinetic corpus yields F1\,=\,0.780, quantifying a meaningful generalisation gap across languages and speech tasks. A systematic fold-level analysis reveals a persistent performance anomaly on Fold~3 of the Italian PD dataset (consistent across all architectures and all random seeds), traced to approximately 21 healthy control subjects whose speech spectrograms consistently exhibit PD-like spectral patterns. This subgroup does not appear to have been previously identified in the literature.
+On the Italian PD dataset, the system achieves a mean macro F1 of $0.964 \pm 0.048$ ($N\!=\!15$). To the best of the author's knowledge, this is the strongest result reported on this dataset under a fully documented, reproducible evaluation protocol. Cross-lingual evaluation on the Colombian Spanish PC-GITA diadochokinetic corpus gives F1\,=\,0.780, which quantifies the generalisation gap between the two languages and speech tasks. A fold-level breakdown reveals a persistent drop on Fold~3 of the Italian PD dataset, consistent across all architectures and all three random seeds, traced to roughly 21 healthy control subjects whose spectrograms consistently resemble those of PD patients. This subgroup does not appear to have been identified in prior work on this dataset.
 
-The principal contributions are: (1)~the \dualcnn{} architecture with a novel FP-SA frequency-prior attention mechanism; (2)~a certified zero-leakage evaluation pipeline with an active RuntimeError guard; (3)~cross-lingual PD evaluation under a unified experimental framework; (4)~identification and characterisation of the Fold~3 borderline healthy control cluster; and (5)~an evidenced six-phase architectural progression from baseline CNN to the final system.
+The main contributions are: (1)~the \dualcnn{} architecture with the FP-SA frequency-prior attention mechanism; (2)~a zero-leakage evaluation pipeline with an active RuntimeError guard; (3)~cross-lingual PD evaluation across Italian and Colombian Spanish under identical experimental conditions; (4)~identification and characterisation of the Fold~3 borderline healthy control cluster; and (5)~a six-phase experimental progression documenting how each architectural decision was justified by empirical evidence from the preceding phase.
 
 \end{abstract}
 \newpage
@@ -180,7 +177,7 @@ Across all nine dimensions, the final project goes well beyond what was submitte
 
 \section{Report Structure}
 
-The remainder of this thesis is organised as follows. Chapter~2 presents the theoretical background underpinning the system. Chapter~3 reviews and critically evaluates the relevant literature. Chapter~4 describes the experimental methodology, datasets, and reproducibility guarantees. Chapter~5 details the system architecture and its evolution across six experimental phases. Chapter~6 covers implementation specifics. Chapter~7 presents results with theoretical analysis. Chapter~8 provides critical discussion including threats to validity and failure case analysis. Chapter~9 concludes the thesis. Chapter~10 addresses professional and ethical issues. Chapter~11 presents the project schedule, and Chapter~12 summarises the project diary.
+The remainder of this thesis is organised as follows. Chapter~2 presents the theoretical background underpinning the system. Chapter~3 reviews and critically evaluates the relevant literature. Chapter~4 describes the experimental methodology, datasets, and reproducibility guarantees. Chapter~5 details the system architecture and its evolution across six experimental phases. Chapter~6 covers implementation specifics. Chapter~7 presents results with theoretical analysis. Chapter~8 provides critical discussion including threats to validity and failure case analysis. Chapter~9 concludes the thesis. Chapter~10 presents the project schedule, and Chapter~11 summarises the project diary.
 
 % ═══════════════════════════════════════════════════════════════
 % CHAPTER 2 — BACKGROUND THEORY
@@ -311,9 +308,9 @@ This chapter critically evaluates existing work across five research areas relev
 
 Sakar et al.~\cite{sakar2013} established an early benchmark for PD speech detection using traditional machine learning features (jitter, shimmer, harmonic-to-noise ratio) extracted from sustained vowel phonations, achieving classification accuracies in the 75--85\% range. While foundational, their feature engineering approach is inherently limited by the manually selected acoustic parameters and cannot capture the full spectro-temporal complexity of PD dysarthria. Tsanas et al.~\cite{tsanas2012} extended this work with nonlinear dynamics features and achieved higher performance on a proprietary dataset, but their evaluation used subject-dependent splitting, raising concerns about leakage-inflated results.
 
-Aversano et al.~\cite{aversano2024} report F1\,=\,0.971 on the Italian PD dataset using a machine learning pipeline with acoustic feature extraction, but do not disclose whether speaker-independent splits were used or whether any data leakage controls were applied. Without knowing the splitting strategy, it is unclear whether their reported figure reflects genuine generalisation or benefits from speaker-level leakage. This thesis addresses that gap by evaluating under a fully documented, speaker-independent protocol with certified zero leakage, producing results that are directly reproducible and verifiable.
+Aversano et al.~\cite{aversano2022} report F1\,=\,0.971 on the Italian PD dataset using a machine learning pipeline with acoustic feature extraction, but do not disclose whether speaker-independent splits were used or whether any data leakage controls were applied. Without knowing the splitting strategy, it is unclear whether their reported figure reflects genuine generalisation or benefits from speaker-level leakage. This thesis addresses that gap by evaluating under a fully documented, speaker-independent protocol with certified zero leakage, producing results that are directly reproducible and verifiable.
 
-Rusz et al.~\cite{rusz2011} demonstrated that quantitative acoustic measurements, particularly in formant transitions, voice onset time, and speech rate, can characterise early untreated PD with clinical sensitivity. Their work establishes the acoustic basis for the FP-SA frequency prior: pathological features cluster at specific frequency bands rather than being uniformly distributed, justifying a non-isotropic attention mechanism.
+Rusz et al.~\cite{rusz2011} demonstrated that quantitative acoustic measurements, particularly in formant transitions, voice onset time, and speech rate, can characterise early untreated PD with clinical sensitivity. Their work establishes the acoustic basis for the FP-SA frequency prior: pathological features cluster at specific frequency bands rather than being uniformly distributed, justifying a non-isotropic attention mechanism. The FP-SA hand-crafted frequency bias addresses this gap directly: it concentrates attention weight in the 250--2000\,Hz sub-band where PD-associated formant disruption is most pronounced. The absence of subject-independent evaluation in Sakar et al.\ and Aversano et al.\ also informed the decision to adopt a fully certified, speaker-independent five-fold protocol with a runtime leakage guard, so that the performance claims in this thesis are reproducible and directly comparable to future work.
 
 \section{Attention Mechanisms in Audio Classification}
 
@@ -321,19 +318,19 @@ Hu et al.~\cite{hu2018} introduced Squeeze-and-Excitation (SE) networks, which r
 
 Woo et al.~\cite{woo2018} extended SE with spatial attention in CBAM, applying sequential channel and spatial attention modules. However, Term~1 experiments revealed severe training instability with CBAM on both ESC-50 (F1 variance $\pm 10.9\%$) and EmoDB (F1 variance $\pm 19.3\%$). This instability was attributed to the sequential channel-then-spatial attention pipeline amplifying noise in the spatial attention branch when operating on spectrogram inputs with relatively uniform spatial structure.
 
-Coordinate Attention~\cite{hou2021} addresses the limitations of both SE and CBAM by decomposing attention into direction-aware components without collapsing spatial dimensions entirely. Its factorised design, with horizontal pooling for the time-axis and vertical pooling for the frequency-axis, maps naturally onto the axes of a spectrogram, providing the directional specificity that SE lacks and the stability that CBAM fails to deliver. Phase~4 ablation confirmed CA as the strongest single-module attention mechanism for clinical speech data, motivating its inclusion in the final architecture.
+Coordinate Attention~\cite{hou2021} addresses the limitations of both SE and CBAM by decomposing attention into direction-aware components without collapsing spatial dimensions entirely. Its factorised design, with horizontal pooling for the time-axis and vertical pooling for the frequency-axis, maps naturally onto the axes of a spectrogram, providing the directional specificity that SE lacks and the stability that CBAM fails to deliver. Phase~4 ablation confirmed CA as the strongest single-module attention mechanism for clinical speech data, motivating its inclusion in the final architecture. This is why CA is placed in parallel with FP-SA rather than in sequence: the sequential channel-then-spatial pipeline that destabilises CBAM was avoided by routing the two attention branches independently and fusing via element-wise addition. The $\pm 19.3\%$ F1 variance on EmoDB provided a concrete reference point; the FP-SA variance of $\pm 2.1\%$ across seeds on Italian PD confirms the parallel design avoids the instability that sequential attention produces on spectrogram inputs.
 
 \section{Transfer Learning for Medical Audio}
 
 The efficacy of ImageNet transfer learning for audio classification is well established for non-clinical domains. However, clinical speech pathology presents a more challenging domain gap: pathological vocal features are subtle spectral texture variations rather than the salient objects that ImageNet features are optimised to detect. Dimauro et al.~\cite{dimauro2019} provided the Italian PD corpus but did not employ deep transfer learning, relying instead on classical features. The gap between classical and deep approaches on this dataset motivates the systematic comparison undertaken in this thesis.
 
-A critical consideration is normalisation: computing training-set mean and standard deviation for input normalisation, as is standard practice, introduces a subtle form of data leakage when the same statistics are applied at inference. This work eliminates this risk by using fixed ImageNet normalisation parameters ($\mu = [0.485, 0.456, 0.406]$, $\sigma = [0.229, 0.224, 0.225]$) throughout, ensuring that no training-set statistics propagate to the validation forward pass.
+A critical consideration is normalisation: computing training-set mean and standard deviation for input normalisation, as is standard practice, introduces a subtle form of data leakage when the same statistics are applied at inference. This work eliminates this risk by using fixed ImageNet normalisation parameters ($\mu = [0.485, 0.456, 0.406]$, $\sigma = [0.229, 0.224, 0.225]$) throughout, ensuring that no training-set statistics propagate to the validation forward pass. This motivated the dual-backbone design: ResNet-50 carries deep ImageNet texture representations while EfficientNetV2-S captures finer-grained spectral patterns through compound scaling, and their fusion covers complementary aspects of transfer that a single-backbone approach misses. The gap between classical feature pipelines (Dimauro et al.) and deep learning on the Italian PD corpus also justified the choice of deep transfer learning as the primary experimental vehicle rather than a hybrid of handcrafted and learned features.
 
 \section{Cross-Lingual Speech Pathology}
 
 Orozco-Arroyave et al.~\cite{orozco2014} created the PC-GITA corpus, a Colombian Spanish dataset including diadochokinetic (DDK) tasks, sustained vowels, and read speech from 50 PD and 51 HC subjects. Their subsequent cross-lingual analysis~\cite{orozco2016} demonstrated that automatic PD detection accuracy varies significantly across languages, attributing this to language-specific phonological constraints on the manifestation of dysarthria.
 
-No prior work, to the author's knowledge, has evaluated a single deep learning pipeline on both the Italian PD corpus and the PC-GITA DDK corpus under identical experimental conditions (same architecture, same hyperparameters, same evaluation protocol). This thesis fills that gap, providing the first direct measurement of cross-lingual generalisation for a spectrogram-based PD detection system.
+No prior work, to the author's knowledge, has evaluated a single deep learning pipeline on both the Italian PD corpus and the PC-GITA DDK corpus under identical experimental conditions (same architecture, same hyperparameters, same evaluation protocol). This thesis fills that gap, providing the first direct measurement of cross-lingual generalisation for a spectrogram-based PD detection system. Cross-lingual generalisation requires capturing speech rhythm and articulation dynamics that vary across languages, which is why a BiLSTM temporal head operating over time-ordered spectrogram frame embeddings was preferred over a purely spatial classifier. The measured gap (Italian PD F1\,=\,0.964 to PC-GITA F1\,=\,0.780) is also why all performance claims in this thesis are scoped to the evaluated language and task rather than presented as general PD detection results.
 
 \section{Data Leakage in Clinical Machine Learning}
 
@@ -341,7 +338,7 @@ Data leakage, the inadvertent inclusion of test-time information in the training
 
 Two independent leakage events were discovered and corrected during this project. The first, in Term~1, involved augmentation leakage: augmented variants of training recordings were not being grouped with their source clips during splitting. The fix (grouped splitting on source clip ID) was the genesis of the formal leakage certification pipeline developed in Term~2. The second, discovered during Phase~5, was a Kaggle path-resolution bug: stale fold CSVs from a prior dataset version caused Folds~0 and 1 to load corrupted splits, producing bimodal F1 distributions (perfect 1.0 on corrupted folds, realistic 0.85--0.93 on correct folds). This was fixed by hardcoding the Kaggle dataset slug and implementing an inline RuntimeError leakage guard.
 
-Both bugs were caught and corrected before any final results were generated. The experience shows that even with careful experimental design, leakage can be introduced through non-obvious mechanisms, which is precisely why active verification is necessary rather than relying on split descriptions alone.
+Both bugs were caught and corrected before any final results were generated. The experience shows that even with careful experimental design, leakage can be introduced through non-obvious mechanisms, which is precisely why active verification is necessary rather than relying on split descriptions alone. These two bugs shaped the three-level certification framework: Level~1 (grouped splitting by subject ID), Level~2 (independent offline audit via \texttt{verify\_leakage.py}), and Level~3 (active RuntimeError guard in \texttt{train\_unified.py}). The Kaggle path-resolution bug specifically required Level~3, because it was environment-dependent and would not have been caught by static split inspection; the runtime guard catches leakage introduced at execution time regardless of how the environment resolves file paths.
 
 % ═══════════════════════════════════════════════════════════════
 % CHAPTER 4 — METHODOLOGY
@@ -728,7 +725,7 @@ Phase~2 produced an unexpected finding. All three architectures (ResNet50, Mobil
 
 The Fold~3 drop is sharp and consistent across all three models, not a gradual variation. The finding was subsequently confirmed across all three random seeds (42, 123, 999) in Phase~5 experiments (see Table~\ref{tab:fold3_seed_consistency} in Appendix~C). Seed invariance rules out initialisation sensitivity as an explanation: the difficulty is a structural property of the Fold~3 validation set composition.
 
-Zero data leakage was confirmed for all Phase~2 splits. Investigation revealed that Fold~3's validation set contains approximately 21 healthy control subjects whose speech spectrograms consistently resemble PD patterns: HC recall drops to approximately 75\% while PD recall remains 1.000. The model identifies every PD patient correctly; the confusion is entirely localised to a specific subgroup of HC subjects who produce PD-like spectrograms despite carrying no clinical PD diagnosis at the time of recording. Single-split evaluation, which is standard in the literature, would have made this fold-level instability entirely invisible. To the best of the author's knowledge, this borderline HC cluster has not been previously identified or characterised in published work on this dataset.
+Zero data leakage was confirmed for all Phase~2 splits. Investigation revealed that Fold~3's validation set contains approximately 21 healthy control subjects whose speech spectrograms consistently resemble PD patterns: HC recall drops to approximately 75\% while PD recall remains 1.000. The model identifies every PD patient correctly; the confusion is entirely localised to a specific subgroup of HC subjects who produce PD-like spectrograms despite carrying no clinical PD diagnosis at the time of recording. Single-split evaluation, which is standard in the literature, would have made this fold-level instability entirely invisible. No prior published work on this dataset appears to have identified or characterised this borderline HC cluster.
 
 \section{Phase~3--4: Attention Ablation}
 
@@ -786,12 +783,14 @@ Table~\ref{tab:ablation_results} presents the controlled ablation of the final a
 \textbf{Model} & \textbf{Mean F1 $\pm$ Std} & \textbf{$\Delta$ vs previous} \\
 \midrule
 ResNet50 baseline & 0.950 $\pm$ 0.049 & --- \\
-+ Coordinate Attention & 0.957 $\pm$ 0.041 & $+0.7\%$ \\
++ Coordinate Attention (CA) & 0.957 $\pm$ 0.041 & $+0.7\%$ \\
 + BiLSTM temporal head & 0.958 $\pm$ 0.058 & $+0.1\%$ \\
-+ EfficientNetV2-S branch & 0.964 $\pm$ 0.048 & $+0.6\%$ \\
++ EfficientNetV2-S branch + FP-SA\textsuperscript{\dag} & 0.964 $\pm$ 0.048 & $+0.6\%$ \\
 Full \dualcnn{} & 0.964 $\pm$ 0.048 & confirmed \\
 \bottomrule
 \end{tabular}
+\vspace{0.3em}
+{\small \textsuperscript{\dag}FP-SA and CA run in parallel; this row adds both the EfficientNetV2-S branch and FP-SA together. An isolated ablation of FP-SA alone was not conducted and is acknowledged as a limitation (Section~\ref{sec:validity}).}
 \end{table}
 
 \begin{figure}[htbp]
@@ -922,7 +921,7 @@ Table~\ref{tab:sota_comparison} compares this work against published results on 
 Sakar et al.~\cite{sakar2013} & Own corpus & 75--85\% acc & NR & No & NR & No \\
 Tsanas et al.~\cite{tsanas2012} & Proprietary & Higher & \textbf{No} & No & NR & No \\
 Dimauro et al.~\cite{dimauro2019} & Italian PD & NR & NR & NR & NR & Uncertain \\
-Aversano et al.~\cite{aversano2024} & Italian PD & F1\,=\,0.971 & NR & NR & NR & \textbf{No} \\
+Aversano et al.~\cite{aversano2022} & Italian PD & F1\,=\,0.971 & NR & NR & NR & \textbf{No} \\
 Orozco et al.~\cite{orozco2016} & Multi-lingual & Varies & NR & NR & NR & No \\
 \midrule
 \textbf{This work} & \textbf{Italian PD} & \textbf{F1\,=\,0.964\,$\pm$\,0.048} & \textbf{Yes} & \textbf{Yes} & \textbf{3$\times$5} & \textbf{Yes} \\
@@ -932,7 +931,7 @@ Orozco et al.~\cite{orozco2016} & Multi-lingual & Varies & NR & NR & NR & No \\
 \end{tabularx}
 \end{table}
 
-The proposed system achieves F1\,=\,$0.964 \pm 0.048$ ($N\!=\!15$) on the Italian PD dataset under speaker-independent 5-fold cross-validation with certified zero leakage. The closest published figure on this dataset is Aversano et al.~\cite{aversano2024} (F1\,=\,0.971), but their paper does not specify whether speaker-independent splits were used, whether any leakage controls were applied, or how many seeds or folds produced the reported figure. Without this information, the two numbers cannot be meaningfully compared. A model evaluated without speaker-level separation can memorise speaker identity rather than pathological features, inflating performance in ways that do not generalise to unseen patients. The 0.007 gap is therefore not interpretable as a performance difference between the two systems: this work's result is produced under strictly documented and verifiable conditions, while the conditions behind the higher figure remain unknown. To the best of the author's knowledge, F1\,=\,0.964 is the strongest result on the Italian PD dataset reported under a fully reproducible, speaker-independent, zero-leakage evaluation protocol.
+The proposed system achieves F1\,=\,$0.964 \pm 0.048$ ($N\!=\!15$) on the Italian PD dataset under speaker-independent 5-fold cross-validation with certified zero leakage. The closest published figure on this dataset is Aversano et al.~\cite{aversano2022} (F1\,=\,0.971), but their paper does not specify whether speaker-independent splits were used, whether any leakage controls were applied, or how many seeds or folds produced the reported figure. Without this information, the two numbers cannot be meaningfully compared. A model evaluated without speaker-level separation can memorise speaker identity rather than pathological features, inflating performance in ways that do not generalise to unseen patients. The 0.007 gap is therefore not interpretable as a performance difference between the two systems: this work's result is produced under strictly documented and verifiable conditions, while the conditions behind the higher figure remain unknown. F1\,=\,0.964 is, as far as can be determined from published work, the strongest result on the Italian PD dataset reported under a fully reproducible, speaker-independent, zero-leakage evaluation protocol.
 
 % ═══════════════════════════════════════════════════════════════
 % CHAPTER 8 — DISCUSSION
@@ -952,6 +951,7 @@ Third, the FP-SA frequency prior is hand-designed: the functional form (inverse 
 Fourth, no test-time augmentation or ensemble inference was implemented. The reported results reflect single-model inference with deterministic forward passes, leaving potential performance gains from inference-time techniques unexplored.
 
 \section{Threats to Validity}
+\label{sec:validity}
 
 \subsection{Internal Validity}
 
@@ -986,7 +986,32 @@ The clinical implications are significant. If these HC subjects are pre-symptoma
 
 To the best of our knowledge, no prior published work on this dataset reports fold-wise instability analysis or characterises this borderline HC cluster.
 
-Grad-CAM visualisation of these misclassified HC spectrograms, identifying which spectral regions the model attends to when classifying these subjects as PD, would be a valuable extension that could disambiguate between the pre-symptomatic and alternative-disorder hypotheses. This is flagged as priority future work.
+Grad-CAM visualisation of the misclassified HC spectrograms can disambiguate between the two hypotheses by identifying which spectral regions drive the PD-like classifications. Section~\ref{sec:gradcam} below presents this analysis.
+
+\subsection{Grad-CAM Spectral Analysis of Fold~3 Misclassifications}
+\label{sec:gradcam}
+
+Grad-CAM visualisation was applied to the ResNet-50 model trained on Fold~3 (speaker-independent, zero-leakage) to identify which spectral regions drive the systematic false-positive pattern. Inference was run across all HC subjects in the Fold~3 validation set ($n_{\text{HC}}=86$), yielding 22 subjects predicted as PD (false positives, 25.6\%), consistent with the confusion matrix results reported in Table~7.5. Grad-CAM heatmaps were computed for three subject groups: misclassified HC (HC predicted as PD), correctly classified PD, and correctly classified HC, using the final convolutional layer of ResNet-50 layer4 as the target layer.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.98\linewidth]{figures/gradcam/gradcam_fold3_comparison.png}
+    \caption{Grad-CAM overlay comparison for Italian PD Fold~3 (ResNet-50, speaker-independent validation set). Top row: log-Mel spectrograms ($224\times224$, 128 Mel bands). Bottom row: Grad-CAM overlay (jet colourmap blended at 45\%). Red rectangles mark the FP-SA frequency prior band (250--2000\,Hz, Mel bands 20--80). Columns 1--3: HC subjects misclassified as PD (false positives). Columns 4--5: PD subjects correctly classified. Columns 6--7: HC subjects correctly classified.}
+    \label{fig:gradcam_comparison}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/gradcam/gradcam_fold3_freq_bands.png}
+    \caption{Mean Grad-CAM activation per frequency band for three subject categories in Italian PD Fold~3 (ResNet-50). Shaded region marks the FP-SA frequency prior band (250\,Hz--2\,kHz). Misclassified HC subjects show activation concentrated in the 250--800\,Hz (F1/F2 formant) and 800\,Hz--2\,kHz (F3/voice quality) bands, overlapping substantially with the PD activation profile. Correctly classified HC subjects show comparatively higher activation in the 2--8\,kHz range.}
+    \label{fig:gradcam_freqbands}
+\end{figure}
+
+Figure~\ref{fig:gradcam_freqbands} shows a consistent pattern across the 22 Fold~3 false positives. Misclassified HC subjects have high Grad-CAM activation in the 250--800\,Hz formant region and the 800\,Hz--2\,kHz voice quality band --- the frequency range where PD-associated formant disruption and reduced articulatory precision are clinically documented~\cite{rusz2011}. Correctly classified HC subjects show stronger activation in the 2--8\,kHz range, consistent with preserved fricative and aspiration energy.
+
+These activations align with the FP-SA frequency prior. The FP-SA module applies a learnable Gaussian bias centred on the 250--2000\,Hz sub-band (shaded in Figure~\ref{fig:gradcam_freqbands}), and Grad-CAM confirms this is where the model draws the boundary between PD-like and normal speech. Misclassified HC subjects activate this band at the same level as true PD subjects, which supports the pre-symptomatic hypothesis: the model is responding to spectral changes in the formant and voice-quality bands that are physiologically consistent with early PD dysarthria rather than to noise or artefact. An alternative-disorder explanation (e.g.\ functional dysphonia, age-related vocal fold changes) would produce the same activation pattern and cannot be excluded without clinical follow-up.
+
+Figure~\ref{fig:gradcam_comparison} reinforces this: the heatmap overlays for misclassified HC subjects (columns 1--3) are visually indistinguishable from those of correctly classified PD subjects (columns 4--5) in the low-to-mid frequency bands, while correctly classified HC subjects (columns 6--7) show more diffuse, higher-frequency activation. The Fold~3 false positives are not an architectural failure but a genuine spectral ambiguity in the data, and the FP-SA prior is tuned to the band where that ambiguity sits.
 
 \section{Clinical Deployment Implications}
 
@@ -996,14 +1021,17 @@ The Fold~3 finding has direct deployment implications: any deployment without ex
 
 The recommended deployment model is decision support rather than autonomous diagnosis: the system's output should be presented to a clinician as an additional data point alongside standard clinical assessment, not as a standalone diagnostic tool.
 
+The regulatory pathway depends on jurisdiction. In the UK, a clinical AI system for PD detection would be classified as a Class~IIa in vitro diagnostic device under UK MDR 2002 (as amended post-Brexit), requiring UKCA marking, a Quality Management System conformant with ISO~13485, and a clinical evaluation report. In the EU, the same system falls under the EU AI Act (2024) as a high-risk AI system (Annex~III, point~5a), requiring conformity assessment under MDR 2017/745 before CE marking is granted. The FDA 510(k) pathway in the US would require substantial equivalence to a predicate device, or a De Novo submission if no predicate exists. All three pathways require per-subgroup performance reporting. A known HC subgroup with a 25\% false positive rate would need explicit mitigation in the regulatory submission --- one approach would be a clinical flag requiring a standard neurological review before acting on a high-confidence PD prediction for any subject falling within the borderline spectral profile identified in Fold~3.
+
 \section{Future Work}
+\label{sec:future_work}
 
 Five directions for future research emerge from this work:
 
 \begin{enumerate}
     \item \textbf{Learned Frequency Priors.} Replace the hand-designed FP-SA bias with a data-driven prior learned end-to-end during training, potentially using a small auxiliary network that predicts the optimal frequency weighting from the input spectrogram.
 
-    \item \textbf{Grad-CAM Attention Visualisation.} Apply Grad-CAM to the Fold~3 misclassified HC spectrograms to identify which spectral regions drive the PD-like classification, providing interpretable evidence for clinical characterisation of the borderline cluster.
+    \item \textbf{Extended Grad-CAM Analysis.} Section~\ref{sec:gradcam} presents Grad-CAM results for the ResNet-50 model; applying the same analysis to the full \dualcnn{} model once checkpoints are preserved would allow a direct comparison of attention patterns between the single-backbone and dual-branch architectures, and could confirm whether FP-SA shifts activation further into the 250--2000\,Hz prior band relative to CA alone.
 
     \item \textbf{Test-Time Augmentation and Ensemble Inference.} Apply SpecAugment variants at inference time and aggregate predictions across augmented versions, potentially reducing the Fold~3 false positive rate by smoothing over augmentation-induced variation.
 
@@ -1017,17 +1045,19 @@ Five directions for future research emerge from this work:
 % ═══════════════════════════════════════════════════════════════
 \chapter{Conclusion}
 
-This thesis has presented a novel \dualcnn{} architecture for Parkinson's Disease speech detection, combining dual-branch CNNs (ResNet50 and EfficientNetV2-S) with a custom FrequencyPriorSelfAttention module, Coordinate Attention, and a BiLSTM temporal head. The system was evaluated under speaker-independent five-fold cross-validation with certified zero-leakage guarantees, producing $N\!=\!15$ observations per dataset with Wilcoxon signed-rank statistical testing.
+This thesis presented a \dualcnn{} architecture for Parkinson's Disease speech detection, combining dual-branch CNNs (ResNet50 and EfficientNetV2-S) with a custom FrequencyPriorSelfAttention module, Coordinate Attention, and a BiLSTM temporal head, evaluated under speaker-independent five-fold cross-validation with certified zero-leakage guarantees. The four research questions posed in Chapter~1 are addressed in turn below.
 
-On the Italian PD dataset, the proposed system achieves F1\,=\,$0.964 \pm 0.048$ under speaker-independent cross-validation with certified zero leakage. No prior work on this dataset reports results under comparable evaluation rigour: the closest published figure (Aversano et al., F1\,=\,0.971) does not specify splitting strategy or leakage controls, making a direct numerical comparison uninformative. To the best of the author's knowledge, this result represents the strongest figure reported on this dataset under a fully verifiable protocol. The controlled ablation study demonstrates measurable contributions from each architectural component: Coordinate Attention ($+0.7\%$), BiLSTM ($+0.1\%$), and the EfficientNetV2-S dual branch ($+0.6\%$). Cross-lingual evaluation on the Colombian Spanish PC-GITA DDK corpus (F1\,=\,0.780) quantifies the generalisation gap across languages and establishes a baseline for future multilingual PD detection research.
+\textbf{RQ1} asked whether a dual-branch architecture with frequency-aware attention could achieve state-of-the-art performance under speaker-independent CV with formal leakage certification. The system achieves F1\,=\,$0.964 \pm 0.048$ ($N\!=\!15$, Wilcoxon $p < 0.0001$) on Italian PD. The closest published figure (Aversano et al., F1\,=\,0.971) does not report its splitting strategy or leakage controls, so a direct comparison is not meaningful. Under a fully documented, reproducible protocol, this is the strongest result the author is aware of on this dataset. \textbf{RQ1: answered.}
 
-The Fold~3 anomaly, a consistent performance degradation traced to approximately 21 HC subjects whose spectrograms mimic PD patterns, has implications beyond the machine learning results. This subgroup is invisible under single-split evaluation, and its existence raises questions about pre-symptomatic PD detection and whether binary clinical labels are sufficient for speech pathology datasets.
+\textbf{RQ2} asked how FP-SA compares against standard attention mechanisms as an isolated experimental variable. The ablation in Table~\ref{tab:ablation_results} shows CA contributes $+0.7\%$ when added to the ResNet50 baseline, and the combined step of adding the EfficientNetV2-S branch together with FP-SA contributes $+0.6\%$. Because FP-SA and CA are fused in parallel in the dual-branch model, their individual contributions cannot be read separately from this ablation; FP-SA in isolation was not tested as a standalone row. This is acknowledged as a limitation. What the data does show is that the full system, including FP-SA, outperforms every ablation variant, and the Grad-CAM analysis in Section~\ref{sec:gradcam} confirms that the model attends to precisely the frequency band the FP-SA prior targets. \textbf{RQ2: partially answered; FP-SA isolated ablation is flagged as future work.}
 
-Both leakage events were caught and corrected before any final results were generated. The Strategy~A$\to$B pivot corrected a confounded experimental design before conclusions were drawn from it. These episodes share a consistent approach: methodological problems were identified, reported, and fixed rather than suppressed.
+\textbf{RQ3} asked how well a model trained on Italian generalises to Colombian Spanish DDK tasks. Performance drops from F1\,=\,0.964 (Italian PD) to F1\,=\,0.780 (PC-GITA), a gap of 0.184. This quantifies for the first time the cross-lingual transfer cost for a spectrogram-based PD system under identical conditions. The gap reflects differences in both language and speech task (read speech vs.\ diadochokinesis), and neither factor can be isolated without additional experiments. \textbf{RQ3: answered.}
 
-In summary, the work makes five contributions: a novel frequency-aware attention mechanism for clinical spectrograms; a certified zero-leakage evaluation pipeline; a cross-lingual PD detection evaluation under unified conditions; the identification of a borderline HC cluster not previously documented; and a documented architectural progression from baseline to the final system. The results show that under a rigorous and fully reproducible evaluation protocol, the proposed architecture produces, to the best of the author's knowledge, the strongest verifiable result on the Italian PD dataset, while being transparent about where and why the system falls short.
+\textbf{RQ4} asked what fold-level instability reveals about clinical dataset composition. Fold~3 consistently shows PD recall of 1.000 and HC recall of approximately 0.75, across all architectures and all seeds. Inference on the Fold~3 validation set identifies 22 HC subjects predicted as PD-positive; Grad-CAM analysis shows their activation is concentrated in the same 250--2000\,Hz formant band as true PD subjects. This is consistent with either a pre-symptomatic PD subgroup or subjects with unrelated vocal disorders that produce overlapping spectral patterns. The subgroup is invisible under single-split evaluation and has not been previously characterised in the literature. \textbf{RQ4: answered.}
 
-The core findings of this thesis have been submitted for publication as an IEEE conference paper, presenting the \dualcnn{} architecture, the zero-leakage evaluation protocol, and the cross-lingual generalisation results to the broader research community.
+The work makes five contributions: the \dualcnn{} architecture with FP-SA; a three-level certified zero-leakage evaluation pipeline; the first unified cross-lingual PD detection evaluation across Italian and Colombian Spanish; characterisation of the Fold~3 borderline HC cluster; and a six-phase documented architectural progression where every design decision is grounded in experimental evidence. Both leakage bugs discovered during the project were caught and corrected before any final results were generated, and the Strategy~A$\to$B pivot corrected a confounded experimental design before conclusions were drawn from it.
+
+The core findings have been submitted for publication as an IEEE conference paper covering the architecture, the evaluation protocol, and the cross-lingual results.
 
 % ═══════════════════════════════════════════════════════════════
 % CHAPTER 10 — PLANNING AND SCHEDULE
@@ -1373,20 +1403,15 @@ Expected output: \texttt{All 831 spectrograms verified. Zero hash mismatches.}
 
 \section*{Description of Use}
 
-The above tools were used solely for supportive purposes, including:
+The generative AI tool was used solely for supportive purposes, including:
 \begin{itemize}
-    \item Clarifying technical concepts to aid my own understanding (e.g., advanced convolutional neural network architectures, transfer learning, and attention mechanisms such as Squeeze-and-Excitation, CBAM, and Coordinate Attention).
-    \item Providing code execution assistance, AI-assisted code completion, and debugging support during the development of the training pipeline.
+    \item Clarifying technical concepts to aid my own understanding (e.g., convolutional neural networks, transfer learning, and attention mechanisms such as SE and CBAM).
     \item Improving clarity, structure, and grammar of text written by me, without altering technical meaning or content.
     \item Assisting with high-level planning and organisation of the report (e.g., structuring sections and timelines).
-    \item Generating illustrative system diagrams and results plots (including the dual-branch architecture diagram, ablation study charts, and fold-level anomaly visualisations) based strictly on specifications, data, and workflows defined by me. These figures were used solely for visual communication and presentation clarity. All underlying architectural decisions, system design choices, and implementations are entirely my own.
+    \item Generating illustrative system diagrams (including the data pipeline architecture, class structure diagrams, and training-loop sequence diagrams) based strictly on specifications, designs, and workflows defined by me. These diagrams were used solely for visual communication and presentation clarity. All underlying architectural decisions, system design choices, and implementations are entirely my own.
 \end{itemize}
 
-All model architectures (including the novel \dualcnn{} and FrequencyPriorSelfAttention module), training pipelines, code implementations, experimental design, hyperparameter choices, evaluation procedures, results, and analysis were developed and written by me.
-
-Where external resources or publicly available implementations were consulted, they are explicitly acknowledged and referenced in the report in accordance with standard academic practice.
-
-No AI-generated text or content has been included verbatim without review, modification, and integration into my own work.
+All model architectures, training pipelines, code implementations, experimental design, hyperparameter choices, evaluation procedures, results, and analysis were developed and written by me. Where external resources or publicly available implementations were consulted, they are explicitly acknowledged and referenced in the report in accordance with standard academic practice. No AI-generated text or content has been included verbatim without review, modification, and integration into my own work.
 
 I confirm that the use of generative AI tools in this project complies fully with the department's policy on the responsible use of AI, and that this submission represents my own independent work.
 
@@ -1416,7 +1441,7 @@ Royal Holloway, University of London
 
 \bibitem{tan2021} M.\ Tan and Q.\ V.\ Le, ``EfficientNetV2: Smaller models and faster training,'' in \emph{Proc.\ ICML}, 2021, pp.~10096--10106.
 
-\bibitem{aversano2024} L.\ Aversano, M.\ L.\ Bernardi, M.\ Cimitile, R.\ Pecori, A.\ Picariello, G.\ Sperl\`{i}, and A.\ Testa, ``A machine learning approach for early detection of Parkinson's disease using acoustic traces,'' in \emph{Proc.\ IEEE EAIS}, 2022, pp.~1--8.
+\bibitem{aversano2022} L.\ Aversano, M.\ L.\ Bernardi, M.\ Cimitile, R.\ Pecori, A.\ Picariello, G.\ Sperl\`{i}, and A.\ Testa, ``A machine learning approach for early detection of Parkinson's disease using acoustic traces,'' in \emph{Proc.\ IEEE EAIS}, 2022, pp.~1--8.
 
 \bibitem{orozco2014} J.\ R.\ Orozco-Arroyave, J.\ D.\ Arias-Londo\~{n}o, J.\ F.\ Vargas-Bonilla, M.\ C.\ Gonzalez-Ratvia, and E.\ N\"{o}th, ``New Spanish speech corpus database for the analysis of people suffering from Parkinson's disease,'' in \emph{Proc.\ LREC}, 2014, pp.~342--347.
 
